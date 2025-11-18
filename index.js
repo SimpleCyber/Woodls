@@ -6,7 +6,7 @@ const activeWin = require("active-win");
 const { GlobalKeyboardListener } = require("node-global-key-listener");
 const { GoogleGenerativeAI } = require("@google/generative-ai"); // keep as placeholder
 const { GoogleAIFileManager } = require("@google/generative-ai/server");
-const robot = require("robotjs");
+const robot = require("@jitsi/robotjs");
 
 
 
@@ -164,9 +164,8 @@ ipcMain.on("save-audio", async (event, arrayBuffer) => {
 ipcMain.handle("auto-type", async (_, text) => {
   try {
     if (!text || typeof text !== "string") return "No text";
-    
-    // Small delay to ensure window focus
-    await new Promise(res => setTimeout(res, 300));
+
+    await new Promise(res => setTimeout(res, 300)); // ensure focus
 
     robot.typeString(text);
     return "typed";
@@ -175,6 +174,7 @@ ipcMain.handle("auto-type", async (_, text) => {
     return "error";
   }
 });
+
 
 
 
@@ -219,7 +219,7 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
 // ----------------- IPC: LLM generation (placeholder) -----------------
 ipcMain.handle("generate-text", async (_, { info, assistantName, appName }) => {
   const prompt = `
-You are my AI assistant and my name is "${assistantName}".
+You are my AI assistant.
 Your job is to rewrite the given input text with proper punctuation, grammar, formatting, and clarity.  
 Rewrite it as if I am describing something to you, and you are returning a refined version of what I should write.  
 Return **only the rewritten output**, nothing extra.
@@ -229,12 +229,12 @@ In such cases, rewrite the content in the style and tone appropriate for that pl
 
 Occasionally, I may ask you to perform a task instead of rewriting.  
 In those cases, complete the task *if u feel I explicitly asked to write insted or rewrite*.
-
+Always return the content only
 App: ${appName}
 Text: "${info}"
 `;
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
     return result.response.text();
   } catch (err) {
