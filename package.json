@@ -1,34 +1,20 @@
 {
   "name": "woodls",
   "version": "1.0.0",
-  "description": "Auto voice typing using hotkey, speech-to-text, and AI rewriting",
-  "main": "main.js",
+  "description": "Auto voice typing",
+  "main": "index.js",
   "author": "Satyam Yadav",
   "license": "ISC",
   "type": "commonjs",
-
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
-    "rebuild": "electron-rebuild -f -w robotjs"
+    "build": "electron-builder"
   },
-
   "devDependencies": {
     "electron": "^39.2.0",
     "electron-builder": "^24.13.3",
     "electron-rebuild": "^3.2.9"
   },
-
-  "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "@google/generative-ai/server": "^0.1.0",
-    "@jitsi/robotjs": "^0.6.18",
-    "active-win": "^8.2.1",
-    "axios": "^1.13.2",
-    "node-global-key-listener": "^0.3.0",
-    "wav": "^1.0.2"
-  },
-
   "build": {
     "appId": "com.satyam.autovoicetyping",
     "productName": "Auto Voice Typing",
@@ -48,5 +34,12 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     }
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@jitsi/robotjs": "^0.6.18",
+    "active-win": "^8.2.1",
+    "axios": "^1.13.2",
+    "node-global-key-listener": "^0.3.0"
   }
 }
