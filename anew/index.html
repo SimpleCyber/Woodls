@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Hotkey Tracker</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 16px; }
+      .btn { padding:8px 12px; margin:6px; cursor:pointer; border-radius:6px; border:1px solid #ccc; }
+      #capture { background:#f0f8ff; }
+      #hotkeyDisplay { font-weight:600; margin-top:8px; }
+      #logs { margin-top:16px; max-height:350px; overflow:auto; border:1px solid #eee; padding:8px; background:#fafafa; }
+      .log-item { padding:6px 4px; border-bottom:1px dashed #eee; }
+    </style>
+  </head>
+  <body>
+    <h1>Hotkey Tracker</h1>
+
+    <div>
+      <label>
+        Mode:
+        <select id="mode">
+          <option value="single">Single key</option>
+          <option value="combo">Combo (strict)</option>
+        </select>
+      </label>
+    </div>
+
+    <div style="margin-top:12px;">
+      <button id="startCapture" class="btn" >Set Hotkey</button>
+      <button id="clearHotkey" class="btn">Clear Hotkey</button>
+      <div id="hotkeyDisplay">No hotkey set</div>
+      <div style="margin-top:8px;color:#666;font-size:13px;">
+        Click <b>Set Hotkey</b>, then press the key(s) you want. For combo mode: press ALL keys together.
+      </div>
+    </div>
+
+    <div id="captureArea" style="display:none; margin-top:12px; padding:10px; border:1px solid #ddd; background:#fff;">
+      <div><b>Capturing keys...</b></div>
+      <div style="margin-top:8px;">
+        <span id="capturedKeys">[]</span>
+      </div>
+      <div style="margin-top:10px;">
+        <button id="saveHotkey" class="btn">Save</button>
+        <button id="cancelCapture" class="btn">Cancel</button>
+      </div>
+      <div style="margin-top:8px;color:#555;font-size:13px;">Press the keys now.</div>
+    </div>
+
+    <h3 style="margin-top:18px;">Logs</h3>
+    <div id="logs"></div>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

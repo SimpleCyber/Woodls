@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Productivity Assistant — Recorder + Hotkey</title>
+  <style>
+    body { margin:0; padding:0; font-family: Inter, Arial, sans-serif; height:100vh; display:flex; background:#f4f6fb; }
+    #left { width:60%; padding:20px; background:#fff; border-right:1px solid #e6e9ef; overflow:auto; }
+    #right { width:40%; display:flex; flex-direction:column; }
+
+    #activeTabs { flex:1; padding:18px; background:#fff; border-bottom:1px solid #e6e9ef; overflow:auto; }
+    #hotkeys { flex:1; padding:18px; background:#fff; overflow:auto; }
+
+    h2 { margin:0 0 12px 0; font-size:18px; }
+    label { display:block; margin-top:8px; margin-bottom:6px; color:#333; font-size:13px; }
+    input, textarea { width:100%; padding:10px; border-radius:8px; border:1px solid #d6dbe7; box-sizing:border-box; font-size:14px; }
+    textarea { min-height:160px; resize:vertical; }
+    button { margin-top:10px; padding:10px 14px; border-radius:8px; border:none; cursor:pointer; background:#2563eb; color:#fff; font-size:14px; }
+
+    .box { background:#f7fbff; padding:12px; border:1px solid #e2e8f0; border-radius:8px; margin-top:12px; }
+    .controls { display:flex; gap:8px; margin-top:10px; align-items:center; }
+    .log-item { padding:8px 6px; border-bottom:1px dashed #eef2f7; font-size:13px; }
+
+    /* capture area specifics */
+    #captureArea { margin-top:12px; padding:12px; border-radius:8px; background:#fff8eb; border:1px solid #ffe8b5; }
+    #player { width:100%; margin-top:10px; }
+    #saveRecording { background:#059669; }
+    #clearHotkey { background:#ef4444; }
+  </style>
+</head>
+<body>
+
+  <!-- LEFT: LLM & AUDIO PLAYER -->
+  <div id="left">
+    <h2>AI Text Generator</h2>
+
+    <label>Your Name</label>
+    <input id="assistantName" placeholder="Enter Name here" />
+
+    <label>Application Name</label>
+    <input id="appName" placeholder="Desktop App" />
+
+    <label>Input Text</label>
+    <textarea id="llmInput" placeholder="Type text to be rewritten..."></textarea>
+
+    <!-- <div class="controls">
+      <button id="generateBtn">Generate</button>
+    </div> -->
+
+    <h3 style="margin-top:18px;">Generated Output</h3>
+<div id="finalOutput" class="box">Final rewritten output will appear here...</div>
+
+
+    <h3 style="margin-top:18px;">Recorded Audio</h3>
+    <div class="box">
+      <audio id="player" controls></audio>
+      <div class="controls">
+        <button id="saveRecording">Save Recording</button>
+      </div>
+      <div style="margin-top:8px; color:#555; font-size:13px;">
+        Recording is automatically started/stopped by your configured hotkey press/release.
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Active window (top) and Hotkey (bottom) -->
+  <div id="right">
+    <div id="activeTabs">
+      <h2>Active Window</h2>
+      <div id="activeInfo" class="box">Waiting for active window info...</div>
+    </div>
+
+    <div id="hotkeys">
+      <h2>Hotkey & Recorder</h2>
+
+      <div class="controls">
+        <button id="startCapture">Set Hotkey</button>
+        <button id="clearHotkey">Clear Hotkey</button>
+      </div>
+
+      <div id="hotkeyDisplay" class="box">No hotkey set</div>
+
+      <h3 style="margin-top:14px;">Logs</h3>
+      <div id="logs" class="box" style="height:200px; overflow:auto;"></div>
+
+      <div id="captureArea" style="display:none;">
+        <div style="font-weight:600; margin-bottom:8px;">Press the key you want to set as hotkey</div>
+        <div>Captured: <span id="capturedKeys">[]</span></div>
+        <div style="margin-top:10px;">
+          <button id="saveHotkey">Save</button>
+          <button id="cancelCapture" style="background:#6b7280;">Cancel</button>
+        </div>
+        <div style="margin-top:8px; color:#444; font-size:13px;">
+          Note: This app expects a <b>single key</b> hotkey (e.g., Numpad8, F9, KeyA).
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

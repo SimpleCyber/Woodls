@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <h2>Active Window Logs</h2>
+    <div id="log"></div>
+
+    <script>
+      const { ipcRenderer } = require("electron");
+
+      ipcRenderer.on("active-window", (event, data) => {
+        if (!data) return;
+
+        const log = document.getElementById("log");
+        const item = document.createElement("div");
+        item.textContent = `${new Date().toLocaleTimeString()} — ${data.owner.name} | ${data.title}`;
+        log.prepend(item);
+      });
+    </script>
+  </body>
+</html>
+
