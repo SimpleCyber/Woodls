@@ -165,7 +165,7 @@ ipcMain.handle("auto-type", async (_, text) => {
   try {
     if (!text || typeof text !== "string") return "No text";
 
-    await new Promise(res => setTimeout(res, 300)); // ensure focus
+    await new Promise(res => setTimeout(res, 1)); // ensure focus
 
     robot.typeString(text);
     return "typed";
