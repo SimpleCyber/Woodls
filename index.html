@@ -1,103 +1,333 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
   <meta charset="utf-8" />
-  <title>Productivity Assistant — Recorder + Hotkey</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Assistant</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            },
+            slate: {
+              850: '#1e293b', // Custom dark slate
+            }
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
-    body { margin:0; padding:0; font-family: Inter, Arial, sans-serif; height:100vh; display:flex; background:#f4f6fb; }
-    #left { width:60%; padding:20px; background:#fff; border-right:1px solid #e6e9ef; overflow:auto; }
-    #right { width:40%; display:flex; flex-direction:column; }
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
 
-    #activeTabs { flex:1; padding:18px; background:#fff; border-bottom:1px solid #e6e9ef; overflow:auto; }
-    #hotkeys { flex:1; padding:18px; background:#fff; overflow:auto; }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
 
-    h2 { margin:0 0 12px 0; font-size:18px; }
-    label { display:block; margin-top:8px; margin-bottom:6px; color:#333; font-size:13px; }
-    input, textarea { width:100%; padding:10px; border-radius:8px; border:1px solid #d6dbe7; box-sizing:border-box; font-size:14px; }
-    textarea { min-height:160px; resize:vertical; }
-    button { margin-top:10px; padding:10px 14px; border-radius:8px; border:none; cursor:pointer; background:#2563eb; color:#fff; font-size:14px; }
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
 
-    .box { background:#f7fbff; padding:12px; border:1px solid #e2e8f0; border-radius:8px; margin-top:12px; }
-    .controls { display:flex; gap:8px; margin-top:10px; align-items:center; }
-    .log-item { padding:8px 6px; border-bottom:1px dashed #eef2f7; font-size:13px; }
+    .sidebar-item.active {
+      background-color: #eff6ff;
+      color: #2563eb;
+      font-weight: 500;
+    }
+    
+    .sidebar-item {
+      transition: all 0.2s ease-in-out;
+    }
 
-    /* capture area specifics */
-    #captureArea { margin-top:12px; padding:12px; border-radius:8px; background:#fff8eb; border:1px solid #ffe8b5; }
-    #player { width:100%; margin-top:10px; }
-    #saveRecording { background:#059669; }
-    #clearHotkey { background:#ef4444; }
+    .smooth-transition {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
   </style>
 </head>
-<body>
 
-  <!-- LEFT: LLM & AUDIO PLAYER -->
-  <div id="left">
-    <h2>AI Text Generator</h2>
+<body class="bg-slate-50 h-screen flex overflow-hidden text-slate-800 selection:bg-primary-100 selection:text-primary-700">
 
-    <label>Your Name</label>
-    <input id="assistantName" placeholder="Enter Name here" />
-
-    <label>Application Name</label>
-    <input id="appName" placeholder="Desktop App" />
-
-    <label>Voice to Text</label>
-    <textarea id="llmInput" placeholder="Type text to be rewritten..."></textarea>
-
-    <!-- <div class="controls">
-      <button id="generateBtn">Generate</button>
-    </div> -->
-
-    <h3 style="margin-top:18px;">Generated Output</h3>
-<div id="finalOutput" class="box">Final rewritten output will appear here...</div>
-
-
-    <h3 style="margin-top:18px;">Recorded Audio</h3>
-    <div class="box">
-      <audio id="player" controls></audio>
-      <div class="controls">
-        <button id="saveRecording">Save Recording</button>
+  <!-- SIDEBAR -->
+  <aside class="w-64 bg-white border-r border-slate-200 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
+    <div class="p-6 flex items-center gap-3">
+      <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary-500/30">
+        <i class="fa-solid fa-robot"></i>
       </div>
-      <div style="margin-top:8px; color:#555; font-size:13px;">
-        Recording is automatically started/stopped by your configured hotkey press/release.
-      </div>
-    </div>
-  </div>
-
-  <!-- RIGHT: Active window (top) and Hotkey (bottom) -->
-  <div id="right">
-    <div id="activeTabs">
-      <h2>Active Window</h2>
-      <div id="activeInfo" class="box">Waiting for active window info...</div>
+      <h1 class="text-xl font-bold text-slate-800 tracking-tight">Assistant</h1>
     </div>
 
-    <div id="hotkeys">
-      <h2>Hotkey & Recorder</h2>
-
-      <div class="controls">
-        <button id="startCapture">Set Hotkey</button>
-        <button id="clearHotkey">Clear Hotkey</button>
+    <nav class="flex-1 px-4 space-y-1 mt-2">
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 px-2">Menu</div>
+      
+      <div data-page="dashboard"
+        class="sidebar-item active px-3 py-2.5 rounded-xl cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group">
+        <i class="fa-solid fa-border-all w-5 text-center group-hover:text-primary-600 transition-colors"></i>
+        <span>Dashboard</span>
       </div>
 
-      <div id="hotkeyDisplay" class="box">No hotkey set</div>
+      <div data-page="settings"
+        class="sidebar-item px-3 py-2.5 rounded-xl cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group">
+        <i class="fa-solid fa-gear w-5 text-center group-hover:text-primary-600 transition-colors"></i>
+        <span>Settings</span>
+      </div>
+    </nav>
 
-      <h3 style="margin-top:14px;">Logs</h3>
-      <div id="logs" class="box" style="height:200px; overflow:auto;"></div>
-
-      <div id="captureArea" style="display:none;">
-        <div style="font-weight:600; margin-bottom:8px;">Press the key you want to set as hotkey</div>
-        <div>Captured: <span id="capturedKeys">[]</span></div>
-        <div style="margin-top:10px;">
-          <button id="saveHotkey">Save</button>
-          <button id="cancelCapture" style="background:#6b7280;">Cancel</button>
+    <div class="p-4 border-t border-slate-100">
+      <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
+          <i class="fa-solid fa-user text-xs"></i>
         </div>
-        <div style="margin-top:8px; color:#444; font-size:13px;">
-          Note: This app expects a <b>single key</b> hotkey (e.g., Numpad8, F9, KeyA).
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-slate-700 truncate">User</p>
+          <p class="text-xs text-slate-500 truncate">Pro Plan</p>
         </div>
       </div>
-
     </div>
-  </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 flex flex-col overflow-hidden relative">
+    <!-- Background decoration -->
+    <div class="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-white to-transparent -z-10"></div>
+
+    <!-- HEADER -->
+    <header class="px-8 py-5 flex justify-between items-center z-10">
+      <div>
+        <h2 id="pageTitle" class="text-2xl font-bold text-slate-800">Dashboard</h2>
+        <p class="text-slate-500 text-sm mt-1">Welcome back to your workspace</p>
+      </div>
+
+      <button id="themeToggle" class="w-10 h-10 rounded-full bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 flex items-center justify-center smooth-transition shadow-sm">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </header>
+
+    <!-- CONTENT -->
+    <section id="content" class="flex-1 p-8 pt-2 overflow-y-auto">
+
+      <!-- DASHBOARD -->
+      <div id="dashboard" class="page space-y-6 max-w-7xl mx-auto">
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- LLM INPUT -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm card-hover smooth-transition flex flex-col h-full">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square text-primary-500"></i>
+                AI Text Generator
+              </h3>
+              <span class="text-xs bg-primary-50 text-primary-600 px-2 py-1 rounded-full font-medium">GPT-4</span>
+            </div>
+
+            <textarea id="llmInput" 
+              placeholder="Type something to generate..."
+              class="w-full flex-1 min-h-[120px] bg-slate-50 border border-slate-200 rounded-xl p-4 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all resize-none text-slate-700 placeholder:text-slate-400"></textarea>
+
+            <div class="mt-4 flex justify-end">
+               <button class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-primary-600/20 flex items-center gap-2">
+                 Generate <i class="fa-solid fa-wand-magic-sparkles"></i>
+               </button>
+            </div>
+
+            <div id="finalOutput"
+              class="mt-4 bg-slate-50 border border-slate-200 rounded-xl p-4 min-h-[100px] text-slate-600 text-sm leading-relaxed">
+              <span class="text-slate-400 italic">Final rewritten output will appear here...</span>
+            </div>
+          </div>
+
+          <!-- WINDOW INFO -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm card-hover smooth-transition h-full">
+            <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <i class="fa-regular fa-window-maximize text-indigo-500"></i>
+              Active Window
+            </h3>
+
+            <div id="activeInfo" class="bg-slate-50 border border-slate-200 p-6 rounded-xl h-[calc(100%-3rem)] flex items-center justify-center text-slate-400 text-sm border-dashed">
+              <div class="text-center">
+                <i class="fa-solid fa-layer-group text-2xl mb-2 opacity-50"></i>
+                <p>Waiting for active window info...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          <!-- AUDIO -->
+          <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm card-hover smooth-transition">
+            <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-microphone text-rose-500"></i>
+              Audio Recording
+            </h3>
+
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 mb-4">
+              <audio id="player" controls class="w-full"></audio>
+            </div>
+
+            <div class="flex justify-end">
+              <button id="saveRecording"
+                class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-sm font-medium transition-all shadow-lg shadow-slate-800/20 flex items-center gap-2">
+                <i class="fa-solid fa-floppy-disk"></i>Save Recording
+              </button>
+            </div>
+          </div>
+
+          <!-- LOGS -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm card-hover smooth-transition">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-terminal text-emerald-500"></i>
+                Logs
+              </h3>
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            </div>
+
+            <div id="logs" class="bg-slate-900 text-slate-300 p-4 rounded-xl h-48 overflow-y-auto text-xs font-mono leading-5 shadow-inner">
+              <div class="border-b border-slate-800 pb-2 mb-2 text-emerald-400">System ready...</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="settings" class="page hidden space-y-6 max-w-3xl mx-auto">
+
+        <!-- GENERAL -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+          <h3 class="text-lg font-semibold text-slate-800 mb-6 border-b border-slate-100 pb-4">General Settings</h3>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Assistant Name</label>
+              <input id="assistantName" placeholder="e.g. Jarvis"
+                class="w-full bg-white border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all text-slate-700" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Application Name</label>
+              <input id="appName" placeholder="e.g. My App"
+                class="w-full bg-white border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all text-slate-700" />
+            </div>
+          </div>
+        </div>
+
+        <!-- HOTKEY -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+          <h3 class="text-lg font-semibold text-slate-800 mb-6 border-b border-slate-100 pb-4">Hotkey Configuration</h3>
+
+          <div class="flex items-center gap-4">
+            <div id="hotkeyDisplay" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-4 text-center font-mono text-slate-600 tracking-wider">
+              No hotkey set
+            </div>
+            
+            <div class="flex gap-2">
+              <button id="startCapture" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">Set Hotkey</button>
+              <button id="clearHotkey" class="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Clear</button>
+            </div>
+          </div>
+
+          <div id="captureArea" class="hidden mt-6 bg-primary-50 border border-primary-100 rounded-xl p-8 text-center animate-in fade-in slide-in-from-top-2">
+            <h4 class="mb-2 font-medium text-primary-900">Press any key combination</h4>
+            <p class="text-sm text-primary-600 mb-6">The app will listen for your input...</p>
+
+            <div id="capturedKeys" class="text-3xl font-bold text-primary-600 mb-8 tracking-tight">Waiting...</div>
+
+            <div class="flex justify-center gap-3">
+              <button id="saveHotkey" class="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium shadow-lg shadow-primary-600/20 transition-all">Save Configuration</button>
+              <button id="cancelCapture" class="px-6 py-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    // PAGE SWITCH
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+      item.onclick = () => {
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+        document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+
+        item.classList.add('active');
+        const page = item.dataset.page;
+        document.getElementById(page).classList.remove('hidden');
+        
+        // Update title with fade effect
+        const title = document.getElementById('pageTitle');
+        title.style.opacity = '0';
+        setTimeout(() => {
+          title.textContent = page.charAt(0).toUpperCase() + page.slice(1);
+          title.style.opacity = '1';
+        }, 150);
+      };
+    });
+
+    // THEME TOGGLE (Simple implementation for now, can be expanded)
+    const themeToggle = document.getElementById('themeToggle');
+    let isDark = false;
+    
+    themeToggle.onclick = () => {
+      isDark = !isDark;
+      const icon = themeToggle.querySelector('i');
+      
+      if (isDark) {
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+        // Add dark mode logic here if needed, for now just icon toggle as requested in plan
+        // To fully implement dark mode, we'd toggle 'dark' class on html and use dark: variants
+      } else {
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
+      }
+    };
+  </script>
 
   <script src="renderer.js"></script>
 </body>
+
 </html>
+
+
+
+
