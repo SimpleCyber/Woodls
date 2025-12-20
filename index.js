@@ -100,7 +100,9 @@ function createWindow() {
   });
   ipcMain.on("window-close", () => win.close());
 
-  win.loadFile("index.html");
+  // Robustly load the file
+  const indexPath = path.join(__dirname, "index.html");
+  win.loadFile(indexPath).catch(e => console.error("Failed to load index.html:", e));
 
   requiredKeys = readSettings();
 
@@ -121,11 +123,19 @@ function createWindow() {
 }
 
 function createOverlayWindow() {
+  const { width, height } = require("electron").screen.getPrimaryDisplay().workAreaSize;
+  
+  // Pill size
+  const w = 140;
+  const h = 60;
+  const x = Math.round((width - w) / 2);
+  const y = height - h - 50; // 50px from bottom
+
   overlayWin = new BrowserWindow({
-    maxWidth: 200,
-    maxHeight: 200,
-    width: 200,
-    height: 200,
+    width: w,
+    height: h,
+    x: x,
+    y: y,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -134,14 +144,16 @@ function createOverlayWindow() {
     show: false, // hidden by default
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false, // Simpler for this small overlay
+      contextIsolation: false, 
     },
-    focusable: false, // Don't steal focus
+    focusable: false, 
     hasShadow: false,
+    type: "toolbar", // Helps with staying on top on Windows
   });
   
-  overlayWin.setIgnoreMouseEvents(true); // Click through
+  overlayWin.setIgnoreMouseEvents(true);
   overlayWin.loadFile("overlay.html");
+  overlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 }
 
 // ----------------- Active Window Monitor -----------------

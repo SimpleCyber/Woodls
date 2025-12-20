@@ -21,32 +21,38 @@
   </style>
 </head>
 <body>
-  <!-- Centered Microphone Overlay -->
-  <div id="mic-container" class="relative group">
-     <!-- Ripple/Glow based on volume -->
-     <div id="glow" class="absolute inset-0 bg-red-500/30 rounded-full blur-xl transition-all duration-75 opacity-0"></div>
-     
-     <!-- Icon -->
-     <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white shadow-2xl border-4 border-white/20 z-10 relative">
-        <i class="fa-solid fa-microphone text-2xl animate-pulse"></i>
-     </div>
+  <!-- Pill Container -->
+  <div class="bg-black/90 backdrop-blur-md rounded-full px-5 py-3 flex items-center justify-center gap-1.5 shadow-2xl border border-white/10 transition-transform duration-100" id="pill">
+     <!-- Waveform Bars -->
+     <div class="bar w-1.5 bg-white rounded-full h-3 transition-all duration-75"></div>
+     <div class="bar w-1.5 bg-white rounded-full h-5 transition-all duration-75"></div>
+     <div class="bar w-1.5 bg-white rounded-full h-8 transition-all duration-75"></div>
+     <div class="bar w-1.5 bg-white rounded-full h-5 transition-all duration-75"></div>
+     <div class="bar w-1.5 bg-white rounded-full h-3 transition-all duration-75"></div>
   </div>
 
   <script>
     const { ipcRenderer } = require('electron');
+    const bars = document.querySelectorAll('.bar');
+    const pill = document.getElementById('pill');
 
-    const container = document.getElementById('mic-container');
-    const glow = document.getElementById('glow');
-
-    // Listen for volume updates from main process (relayed from renderer)
     ipcRenderer.on('mic-volume', (event, volume) => {
-      // Volume expected 0.0 to 1.0 (or greater if loud)
-      // Scale from 1.0 to 1.5 based on volume
-      const scale = 1 + Math.min(volume * 2, 0.5); 
-      container.style.transform = `scale(${scale})`;
+      // volume is 0.0 - 1.0
+      // Animate bars based on volume locally for smoothness
       
-      // Opacity of glow
-      glow.style.opacity = Math.min(volume * 3, 0.8);
+      const v = Math.max(volume, 0.1); // min visual
+      
+      // Update bars heights with some randomness for wave effect
+      bars.forEach((bar, i) => {
+          // Center bars (idx 2) get most amplitude
+          const centerFactor = 1 - Math.abs(i - 2) * 0.2; 
+          const h = 8 + (v * 40 * centerFactor * (0.8 + Math.random() * 0.4));
+          bar.style.height = h + 'px';
+      });
+
+      // Subtle pulse of the pill
+      const scale = 1 + (v * 0.05);
+      pill.style.transform = `scale(${scale})`;
     });
   </script>
 </body>
