@@ -16,6 +16,7 @@ const { getFirestore } = require("firebase/firestore");
 // ---- CONFIG ----
 require('dotenv').config();
 const API_KEY = process.env.GEN_AI_API_KEY;
+const MODEL_NAME = process.env.GEN_AI_MODEL || "gemini-1.5-flash";
 let genAI;
 try {
   genAI = new GoogleGenerativeAI(API_KEY);
@@ -284,8 +285,8 @@ function createWindow() {
     });
   });
   
-  /* const PORT = 3456; */
-  server.listen(0, '127.0.0.1', () => {
+  const PORT = 3456;
+  server.listen(PORT, '127.0.0.1', () => {
      const port = server.address().port;
      console.log(`Server running at http://localhost:${port}/`);
      win.loadURL(`http://localhost:${port}/index.html`);
@@ -596,7 +597,7 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
     });
 
     // now transcribe
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
     const result = await model.generateContent([
       "Transcribe this audio to plain text only: ",
@@ -651,7 +652,7 @@ App: ${appName}
 Text: "${info}"
 `;
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
     const result = await model.generateContent(prompt);
     let txt = result.response.text();
     // Extra safety cleanup for hallucinations

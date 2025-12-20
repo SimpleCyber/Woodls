@@ -31,12 +31,16 @@ if (minBtn) minBtn.onclick = () => window.api.minimizeWindow();
 if (maxBtn) maxBtn.onclick = () => window.api.maximizeWindow();
 if (closeBtn) closeBtn.onclick = () => window.api.closeWindow();
 
-// ---------- Global State ----------
+// Global State
 let capturing = false;
 let captured = new Set();
 let currentHotkey = [];
 let mediaRecorder = null;
 let mediaStream = null;
+let audioContext = null;
+let audioAnalyser = null;
+let audioSource = null;
+let animationFrameId = null;
 let chunks = [];
 let lastArrayBuffer = null;
 
@@ -247,12 +251,42 @@ function setupRecordingEvents() {
           mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
           mediaRecorder = new MediaRecorder(mediaStream);
           chunks = [];
+
+          // Audio Context for Visualizer
+          audioContext = new AudioContext();
+          await audioContext.resume();
+          audioSource = audioContext.createMediaStreamSource(mediaStream);
+          audioAnalyser = audioContext.createAnalyser();
+          audioAnalyser.fftSize = 64;
+          audioSource.connect(audioAnalyser);
+
+          const dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+          const updateVolume = () => {
+             if (!capturing && mediaRecorder.state === "inactive") return;
+             audioAnalyser.getByteFrequencyData(dataArray);
+             // Average volume
+             let values = 0;
+             for (let i = 0; i < dataArray.length; i++) {
+                 values += dataArray[i];
+             }
+             const average = values / dataArray.length;
+             const vol = Math.min(average / 128, 1); // 0.0 to 1.0 (approx)
+             
+             window.api.sendMicVolume(vol);
+             animationFrameId = requestAnimationFrame(updateVolume);
+          };
+          updateVolume();
       
           mediaRecorder.ondataavailable = (e) => {
             if (e.data && e.data.size > 0) chunks.push(e.data);
           };
       
           mediaRecorder.onstop = async () => {
+             // Cleanup Audio Context & Stream here to ensure recording finishes
+             if (animationFrameId) cancelAnimationFrame(animationFrameId);
+             if (audioContext) audioContext.close();
+             if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
+
             window.api.processingStart();
             
             const blob = new Blob(chunks, { type: "audio/webm" });
@@ -306,6 +340,7 @@ function setupRecordingEvents() {
           if (mediaRecorder && mediaRecorder.state !== "inactive") {
             mediaRecorder.stop();
           }
+          // Cleanup handled in onstop
         } catch (err) { console.error(err); }
       });
 }
@@ -339,19 +374,47 @@ function renderHistory(items) {
         div.innerHTML = `
             <div class="flex justify-between items-start mb-2">
                 <div class="text-[10px] uppercase font-bold text-slate-400">${new Date(item.timestamp).toLocaleString()}</div>
-                <button class="del-btn text-slate-400 hover:text-red-500"><i class="fa-solid fa-trash"></i></button>
+                <div class="flex gap-2">
+                    <button class="play-btn text-slate-300 hover:text-slate-700 transition-colors" title="Play Recording"><i class="fa-solid fa-play"></i></button>
+                    <button class="copy-btn text-slate-300 hover:text-slate-700 transition-colors" title="Copy Text"><i class="fa-solid fa-copy"></i></button>
+                    <button class="del-btn text-slate-300 hover:text-slate-700 transition-colors" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                </div>
             </div>
             <div class="bg-white border border-slate-100 rounded-xl p-4 shadow-sm text-sm text-slate-700">
                 ${item.text || "No text"}
             </div>
         `;
         const delBtn = div.querySelector(".del-btn");
+        const playBtn = div.querySelector(".play-btn");
+        const copyBtn = div.querySelector(".copy-btn");
+
         if (delBtn) {
             delBtn.onclick = async () => {
                 if (confirm("Delete?")) {
                     await window.api.deleteHistoryItem(item.id);
                     loadHistory();
                 }
+            };
+        }
+        if (playBtn) {
+            playBtn.onclick = async () => {
+                if (!item.audioPath) return alert("No audio file found.");
+                try {
+                    const b64 = await window.api.readAudioFile(item.audioPath);
+                    if (b64) {
+                        const snd = new Audio("data:audio/webm;base64," + b64);
+                        snd.play();
+                    } else {
+                        alert("Audio file missing on disk.");
+                    }
+                } catch(e) { console.error(e); }
+            };
+        }
+        if (copyBtn) {
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(item.text);
+                copyBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                setTimeout(() => copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i>', 1500);
             };
         }
         historyList.appendChild(div);
