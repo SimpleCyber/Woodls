@@ -102,10 +102,16 @@ function createWindow() {
   });
   ipcMain.on("window-close", () => win.close());
 
+  // Handle external links for new windows
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http')) {
+        require('electron').shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
   // Robustly load the file
   const indexPath = path.join(__dirname, "index.html");
-  win.loadFile(indexPath).catch(e => console.error("Failed to load index.html:", e));
-
   win.loadFile(indexPath).catch(e => console.error("Failed to load index.html:", e));
 
   const settings = readSettings();

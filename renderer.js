@@ -374,7 +374,7 @@ window.api.onRecordStart(async () => {
 
     mediaRecorder.onstop = async () => {
       // ------------------------------------
-      // Show spinner on overlay
+      // START PROCESSING - Show spinner and KEEP OVERLAY
       window.api.processingStart();
       // ------------------------------------
       
@@ -420,6 +420,12 @@ window.api.onRecordStart(async () => {
       }
 
       addLog("Final output generated.", "purple");
+      
+      // ------------------------------------
+      // END PROCESSING - Hide overlay now
+      window.api.processingEnd(); // Stop spinner
+      setTimeout(() => window.api.hideOverlay(), 1000); 
+      // ------------------------------------
     };
 
     mediaRecorder.start();
@@ -433,8 +439,9 @@ window.api.onRecordStart(async () => {
 window.api.onRecordStop(() => {
   addLog("Hotkey released — stopping recording.", "orange");
   
-  // Hide Overlay
-  window.api.hideOverlay();
+  // Hide Overlay -> REMOVED to keep it visible during processing
+  // window.api.hideOverlay();
+  
   stopAudioAnalysis();
   
   if (micStatus) {
