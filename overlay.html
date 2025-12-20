@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      background: transparent;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      -webkit-app-region: ignore; /* Click through everything by default if needed, but we might want the icon visible */
+    }
+    /* We want the icon to be visible, so the actionable area is just the icon div */
+    #mic-container {
+      transition: transform 0.1s ease-out;
+    }
+  </style>
+</head>
+<body>
+  <!-- Centered Microphone Overlay -->
+  <div id="mic-container" class="relative group">
+     <!-- Ripple/Glow based on volume -->
+     <div id="glow" class="absolute inset-0 bg-red-500/30 rounded-full blur-xl transition-all duration-75 opacity-0"></div>
+     
+     <!-- Icon -->
+     <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white shadow-2xl border-4 border-white/20 z-10 relative">
+        <i class="fa-solid fa-microphone text-2xl animate-pulse"></i>
+     </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    const container = document.getElementById('mic-container');
+    const glow = document.getElementById('glow');
+
+    // Listen for volume updates from main process (relayed from renderer)
+    ipcRenderer.on('mic-volume', (event, volume) => {
+      // Volume expected 0.0 to 1.0 (or greater if loud)
+      // Scale from 1.0 to 1.5 based on volume
+      const scale = 1 + Math.min(volume * 2, 0.5); 
+      container.style.transform = `scale(${scale})`;
+      
+      // Opacity of glow
+      glow.style.opacity = Math.min(volume * 3, 0.8);
+    });
+  </script>
+</body>
+</html>

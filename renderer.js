@@ -56,6 +56,48 @@ function normalizeCode(code) {
 //   }
 // };
 
+// ---------------- Audio Analysis (Visualizer) ----------------
+let audioContext = null;
+let analyser = null;
+let dataArray = null;
+let volumeInterval = null;
+
+function startAudioAnalysis(stream) {
+  if (!audioContext) audioContext = new AudioContext();
+  const source = audioContext.createMediaStreamSource(stream);
+  analyser = audioContext.createAnalyser();
+  analyser.fftSize = 64; // Low resolution for simple volume
+  source.connect(analyser);
+  
+  const bufferLength = analyser.frequencyBinCount;
+  dataArray = new Uint8Array(bufferLength);
+
+  // Send volume to main process every 50ms
+  volumeInterval = setInterval(() => {
+    if (!analyser) return;
+    analyser.getByteFrequencyData(dataArray);
+    
+    // Calculate average volume
+    let sum = 0;
+    for(let i = 0; i < bufferLength; i++) {
+        sum += dataArray[i];
+    }
+    let average = sum / bufferLength; // 0-255
+    let normalized = average / 255;   // 0.0-1.0
+    
+    // Send to overlay
+    window.api.sendMicVolume(normalized);
+  }, 50);
+}
+
+function stopAudioAnalysis() {
+  if (volumeInterval) clearInterval(volumeInterval);
+  if (analyser) analyser.disconnect();
+  // Don't close AudioContext, reuse it
+  volumeInterval = null;
+  analyser = null;
+}
+
 // ---------------- Active window updates ----------------
 window.api.onActiveWindow((_, info) => {
   if (!info) {
@@ -75,7 +117,11 @@ startCaptureBtn.onclick = () => {
   capturing = true;
   captured.clear();
   capturedKeysSpan.textContent = "[]";
-  captureArea.style.display = "block";
+  
+  // Ensure it's visible and flex
+  captureArea.classList.remove("hidden");
+  captureArea.style.display = "flex"; // Force flex for centering
+  
   addLog("Capturing hotkey: press the key you want (single key)", "gray");
   // focus the window so key events register
   window.focus();
@@ -83,7 +129,8 @@ startCaptureBtn.onclick = () => {
 
 cancelCaptureBtn.onclick = () => {
   capturing = false;
-  captureArea.style.display = "none";
+  captureArea.classList.add("hidden");
+  captureArea.style.display = ""; // Reset
 };
 
 window.addEventListener("keydown", (e) => {
@@ -105,7 +152,9 @@ saveHotkeyBtn.onclick = () => {
   const arr = Array.from(captured);
   const keyToSave = arr[arr.length - 1];
   window.api.saveHotkey([keyToSave]); // send normalized like "NUMPAD8"
-  captureArea.style.display = "none";
+  
+  captureArea.classList.add("hidden");
+  captureArea.style.display = "";
   capturing = false;
 };
 
@@ -122,21 +171,29 @@ window.api.onHotkeyLoaded((_, keys) => {
 
 window.api.onHotkeySaved((_, keys) => {
   currentHotkey = keys || [];
-  hotkeyDisplay.textContent = currentHotkey.length ? ("Hotkey: " + currentHotkey.join(" + ")) : "No hotkey set";
+  hotkeyDisplay.textContent = currentHotkey.length ? currentHotkey.join(" + ") : "Set Hotkey";
   addLog("Hotkey saved: " + currentHotkey.join(" + "), "blue");
 });
 
 window.api.onHotkeyCleared(() => {
   currentHotkey = [];
-  hotkeyDisplay.textContent = "No hotkey set";
+  hotkeyDisplay.textContent = "Set Hotkey";
   addLog("Hotkey cleared", "red");
 });
 
 // When main signals to start recording (hotkey pressed)
 window.api.onRecordStart(async () => {
   addLog("Hotkey pressed — starting recording.", "green");
+  
+  // Show Overlay
+  window.api.showOverlay();
+  
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    // Start Analysis
+    startAudioAnalysis(mediaStream);
+    
     mediaRecorder = new MediaRecorder(mediaStream);
     chunks = [];
 
@@ -145,52 +202,55 @@ window.api.onRecordStart(async () => {
     };
 
     mediaRecorder.onstop = async () => {
-  const blob = new Blob(chunks, { type: "audio/webm" });
-  const url = URL.createObjectURL(blob);
-  player.src = url;
+      const blob = new Blob(chunks, { type: "audio/webm" });
+      const url = URL.createObjectURL(blob);
+      player.src = url;
 
-  lastArrayBuffer = await blob.arrayBuffer();
-  addLog("Recording completed — sending for transcription...", "purple");
+      lastArrayBuffer = await blob.arrayBuffer();
+      addLog("Recording completed — sending for transcription...", "purple");
 
-  // 🔥 AUTO SEND TO MAIN FOR TRANSCRIPTION
-const text = await window.api.transcribeAudio(lastArrayBuffer);
+      // 🔥 AUTO SEND TO MAIN FOR TRANSCRIPTION
+      const text = await window.api.transcribeAudio(lastArrayBuffer);
 
-addLog("Transcription received — generating refined output...", "green");
+      addLog("Transcription received — generating refined output...", "green");
 
-// Put transcribed text into the input box
-llmInput.value = text;
+      // Put transcribed text into the input box
+      llmInput.value = text;
 
-// AUTO-GENERATE FINAL OUTPUT
-document.getElementById("finalOutput").textContent = "Generating...";
+      // AUTO-GENERATE FINAL OUTPUT
+      document.getElementById("finalOutput").textContent = "Generating...";
 
-const refined = await window.api.generateText({
-  info: text,
-  assistantName: assistantName.value || "Satyam",
-  appName: appName.value || "Desktop App",
-});
+      const refined = await window.api.generateText({
+        info: text,
+        assistantName: assistantName.value || "Satyam",
+        appName: appName.value || "Desktop App",
+      });
 
-// Show refined output
-document.getElementById("finalOutput").textContent = refined;
+      // Show refined output
+      document.getElementById("finalOutput").textContent = refined;
 
-// AUTO TYPE AT CURSOR
-await window.api.autoType(refined);
-addLog("Auto-typed generated output.", "green");
+      // AUTO TYPE AT CURSOR
+      await window.api.autoType(refined);
+      addLog("Auto-typed generated output.", "green");
 
-
-addLog("Final output generated automatically.", "purple");
-
-};
-
+      addLog("Final output generated automatically.", "purple");
+    };
 
     mediaRecorder.start();
   } catch (err) {
     addLog("Failed to start recording: " + (err.message || err), "red");
+    window.api.hideOverlay(); // Hide if failed
   }
 });
 
 // When main signals to stop recording (hotkey released)
 window.api.onRecordStop(() => {
   addLog("Hotkey released — stopping recording.", "orange");
+  
+  // Hide Overlay
+  window.api.hideOverlay();
+  stopAudioAnalysis();
+  
   try {
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
       mediaRecorder.stop();
@@ -242,3 +302,12 @@ function addLog(text, color = "#222") {
 
 // request saved hotkey on load
 window.api.getHotkey();
+
+// ---------- Window Controls ----------
+const minBtn = document.getElementById("min-btn");
+const maxBtn = document.getElementById("max-btn");
+const closeBtn = document.getElementById("close-btn");
+
+if (minBtn) minBtn.onclick = () => window.api.minimizeWindow();
+if (maxBtn) maxBtn.onclick = () => window.api.maximizeWindow();
+if (closeBtn) closeBtn.onclick = () => window.api.closeWindow();

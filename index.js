@@ -48,11 +48,14 @@ function normalizeKeyName(raw) {
   return String(raw).replace(/[^a-z0-9]/gi, "").toUpperCase();
 }
 
+let overlayWin;
+
 // ----------------- create window -----------------
 function createWindow() {
   win = new BrowserWindow({
     width: 1200,
     height: 760,
+    frame: false, // Custom title bar
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -61,6 +64,17 @@ function createWindow() {
     },
   });
 
+  // Window Controls IPC
+  ipcMain.on("window-minimize", () => win.minimize());
+  ipcMain.on("window-maximize", () => {
+    if (win.isMaximized()) {
+      win.unmaximize();
+    } else {
+      win.maximize();
+    }
+  });
+  ipcMain.on("window-close", () => win.close());
+
   win.loadFile("index.html");
 
   requiredKeys = readSettings();
@@ -68,22 +82,75 @@ function createWindow() {
   win.webContents.on("did-finish-load", () => {
     win.webContents.send("hotkey-loaded", requiredKeys);
   });
+  
+  // Close overlay when main window closes
+  win.on('closed', () => {
+    if (overlayWin) overlayWin.destroy();
+    win = null;
+  });
+
+  createOverlayWindow();
 
   setupGlobalKeyboard();
   startActiveWindowMonitor();
 }
 
-// ----------------- active window monitor -----------------
+function createOverlayWindow() {
+  overlayWin = new BrowserWindow({
+    maxWidth: 200,
+    maxHeight: 200,
+    width: 200,
+    height: 200,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    show: false, // hidden by default
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false, // Simpler for this small overlay
+    },
+    focusable: false, // Don't steal focus
+    hasShadow: false,
+  });
+  
+  overlayWin.setIgnoreMouseEvents(true); // Click through
+  overlayWin.loadFile("overlay.html");
+}
+
+// ----------------- Active Window Monitor -----------------
 function startActiveWindowMonitor() {
   setInterval(async () => {
     try {
       const info = await activeWin();
-      win.webContents.send("active-window", info);
+      if (win && !win.isDestroyed()) win.webContents.send("active-window", info);
     } catch (e) {
       // ignore
     }
   }, 1000);
 }
+
+// ----------------- Overlay IPC -----------------
+ipcMain.on('show-overlay', () => {
+  if (overlayWin && !overlayWin.isDestroyed()) {
+      // Center on screen or specific position? 
+      // For now, let's just show it. Default center is fine for the small 200x200 window.
+      overlayWin.showInactive();
+  }
+});
+
+ipcMain.on('hide-overlay', () => {
+  if (overlayWin && !overlayWin.isDestroyed()) {
+      overlayWin.hide();
+  }
+});
+
+ipcMain.on('mic-volume', (event, volume) => {
+    if (overlayWin && !overlayWin.isDestroyed()) {
+        overlayWin.webContents.send('mic-volume', volume);
+    }
+});
 
 // ----------------- global keyboard listener -----------------
 function setupGlobalKeyboard() {
@@ -234,7 +301,7 @@ App: ${appName}
 Text: "${info}"
 `;
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
     const result = await model.generateContent(prompt);
     return result.response.text();
   } catch (err) {
