@@ -186,6 +186,7 @@ ipcMain.on('show-overlay', () => {
       // Center on screen or specific position? 
       // For now, let's just show it. Default center is fine for the small 200x200 window.
       overlayWin.showInactive();
+      overlayWin.setAlwaysOnTop(true, "screen-saver");
   }
 });
 
