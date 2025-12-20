@@ -433,10 +433,8 @@ window.api.onRecordStart(async () => {
 window.api.onRecordStop(() => {
   addLog("Hotkey released — stopping recording.", "orange");
   
-  // DO NOT hide overlay here. It currently shows the spinner (processingStart called in onstop).
-  // We will hide it after text generation finishes.
-  // window.api.hideOverlay();
-  
+  // Hide Overlay
+  window.api.hideOverlay();
   stopAudioAnalysis();
   
   if (micStatus) {
