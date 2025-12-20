@@ -141,7 +141,7 @@
       </div>
   </div>
 
-  <div class="flex flex-1 overflow-hidden pt-[32px]">
+  <div id="content-container" class="flex flex-1 overflow-hidden pt-[32px]">
     <!-- SIDEBAR -->
     <aside class="w-64 bg-white flex flex-col z-10 border-r border-slate-100">
       <div class="p-6 flex items-center gap-2 mb-2">
@@ -187,10 +187,35 @@
       </nav>
       
       <!-- Bottom Promo (Removed misleading upgrade text) -->
-      <div class="p-4 mt-auto">
-          <div class="px-2 flex items-center gap-2 text-xs text-slate-400 cursor-pointer hover:text-slate-600 transition-colors">
-               <i class="fa-regular fa-circle-question"></i> Help & Support
-          </div>
+      <div class="p-4 mt-auto relative">
+           
+           <!-- User Profile Trigger -->
+           <div id="user-profile-btn" class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group">
+               <div id="user-avatar" class="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold overflow-hidden border border-slate-200 group-hover:border-slate-300">
+                   <i class="fa-solid fa-user"></i>
+               </div>
+               <div class="flex-1 min-w-0">
+                   <p id="user-name-display" class="text-sm font-medium text-slate-700 truncate">Guest</p>
+                   <p id="user-email-display" class="text-xs text-slate-400 truncate">Sign In</p>
+               </div>
+               <i class="fa-solid fa-chevron-up text-xs text-slate-300 group-hover:text-slate-500"></i>
+           </div>
+
+           <!-- User Popup Menu (Hidden) -->
+           <div id="user-menu-popup" class="hidden absolute bottom-full left-4 right-4 mb-2 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200 z-50">
+               <div class="p-1">
+                   <div id="upgrade-trigger-btn" class="px-3 py-2 hover:bg-amber-50 rounded-lg cursor-pointer transition-colors group">
+                       <div class="flex items-center gap-2 text-sm font-medium text-amber-600">
+                           <i class="fa-solid fa-crown text-amber-500"></i> Upgrade Plan
+                       </div>
+                       <div class="text-[10px] text-amber-500/70 pl-6">Unlock unlimited everything</div>
+                   </div>
+                   <div id="logout-option" class="px-3 py-2 hover:bg-red-50 rounded-lg cursor-pointer transition-colors text-red-600 flex items-center gap-2 text-sm">
+                       <i class="fa-solid fa-arrow-right-from-bracket w-4"></i> Sign Out
+                   </div>
+               </div>
+           </div>
+
       </div>
 
     </aside>
@@ -544,9 +569,10 @@
                      <a href="#" class="text-primary-600 hover:text-primary-700 font-medium">Terms</a>
                  </div>
                  
-                 <div class="mt-8 pt-8 border-t border-slate-100 text-xs text-slate-400">
+                 <div class="mt-8 pt-8 text-xs text-slate-400">
                      © 2024 Woodls AI. All rights reserved.
                  </div>
+                 
             </div>
         </div>
         
@@ -603,6 +629,245 @@
                    <button class="w-8 h-8 rounded-full hover:bg-black/10 text-slate-500 text-xs" title="Add Image" id="edit-add-image-btn"><i class="fa-regular fa-image"></i></button>
               </div>
               <button id="save-edit-btn" class="bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 px-6 py-2 rounded-xl text-sm font-medium shadow-sm transition-all hover:shadow-md">Close</button>
+          </div>
+      </div>
+  </div>
+  <!-- Upgrade Modal -->
+  <div id="upgrade-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div class="relative w-full max-w-4xl mx-4 perspective-1000">
+          
+          <!-- Close Button -->
+          <button id="close-upgrade-btn" class="absolute -top-12 right-0 text-white/80 hover:text-white transition-colors">
+              <i class="fa-solid fa-xmark text-2xl"></i>
+          </button>
+
+          <div class="bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[600px] animate-in zoom-in-95 duration-300">
+              
+              <!-- Left: Premium Visuals -->
+              <div class="w-full md:w-2/5 bg-slate-900 relative overflow-hidden p-8 flex flex-col justify-between text-white border-r border-slate-800">
+                  
+                  <!-- Gradient Blobs -->
+                  <div class="absolute top-0 right-0 p-32 bg-amber-500 rounded-full blur-[100px] opacity-20 -mr-20 -mt-20"></div>
+                  <div class="absolute bottom-0 left-0 p-32 bg-purple-600 rounded-full blur-[100px] opacity-20 -ml-20 -mb-20"></div>
+
+                  <div class="relative z-10">
+                      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider mb-6">
+                          <i class="fa-solid fa-crown"></i> Premium Access
+                      </div>
+                      <h2 class="text-4xl font-bold mb-4 leading-tight">Unlock the full power of your voice.</h2>
+                      <p class="text-slate-400 text-lg leading-relaxed">Remove limits and experience AI dictation without boundaries.</p>
+                  </div>
+
+                  <div class="relative z-10 space-y-4">
+                      <div class="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                          <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                              <i class="fa-solid fa-infinity"></i>
+                          </div>
+                          <div>
+                              <h4 class="font-bold">Unlimited Dictation</h4>
+                              <p class="text-xs text-slate-400">No more daily time limits.</p>
+                          </div>
+                      </div>
+                      <div class="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                           <div class="w-10 h-10 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                              <i class="fa-solid fa-wand-magic-sparkles"></i>
+                          </div>
+                          <div>
+                              <h4 class="font-bold">Advanced AI Models</h4>
+                              <p class="text-xs text-slate-400">Access to GPT-4 & Claude 3.5.</p>
+                          </div>
+                      </div>
+                  </div>
+
+              </div>
+
+              <!-- Right: Pricing Plans -->
+              <div class="w-full md:w-3/5 bg-white p-8 md:p-12 overflow-y-auto">
+                  
+                  <div class="text-center mb-10">
+                      <h3 class="text-2xl font-bold text-slate-900">Choose your plan</h3>
+                      <p class="text-slate-500 mt-2">Cancel anytime. No questions asked.</p>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                       <!-- Monthly -->
+                       <div class="border-2 border-slate-100 rounded-2xl p-6 cursor-pointer hover:border-slate-300 transition-all relative group" onclick="selectPlan(this, 'monthly')">
+                           <div class="absolute top-4 right-4 w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-slate-400 flex items-center justify-center">
+                               <div class="w-2.5 h-2.5 rounded-full bg-slate-900 opacity-0 transition-opacity check-dot"></div>
+                           </div>
+                           <h4 class="font-bold text-slate-900 mb-1">Monthly</h4>
+                           <div class="flex items-baseline gap-1">
+                               <span class="text-3xl font-bold text-slate-900">$9</span>
+                               <span class="text-slate-500">/mo</span>
+                           </div>
+                           <p class="text-xs text-slate-400 mt-4 leading-relaxed">Billed monthly.</p>
+                       </div>
+
+                       <!-- Annual -->
+                       <div class="border-2 border-amber-500 bg-amber-50/10 rounded-2xl p-6 cursor-pointer relative shadow-xl shadow-amber-500/10 ring-1 ring-amber-500/20" onclick="selectPlan(this, 'yearly')">
+                            <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                                Best Value
+                            </div>
+                           <div class="absolute top-4 right-4 w-5 h-5 rounded-full border-2 border-amber-500 flex items-center justify-center">
+                               <div class="w-2.5 h-2.5 rounded-full bg-amber-500 check-dot"></div>
+                           </div>
+                           <h4 class="font-bold text-slate-900 mb-1">Yearly</h4>
+                           <div class="flex items-baseline gap-1">
+                               <span class="text-3xl font-bold text-slate-900">$7</span>
+                               <span class="text-slate-500">/mo</span>
+                           </div>
+                           <p class="text-xs text-slate-500 mt-4 leading-relaxed text-amber-700 font-medium">Billed $84 yearly. Save 25%.</p>
+                       </div>
+                  </div>
+
+                  <button class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-lg shadow-xl shadow-slate-900/20 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                      Upgrade Now <i class="fa-solid fa-arrow-right"></i>
+                  </button>
+                  
+                  <p class="text-center text-xs text-slate-400 mt-6">
+                      Secured by Stripe. By upgrading, you agree to our Terms.
+                  </p>
+
+              </div>
+
+          </div>
+      </div>
+      
+      <script>
+          // Simple script to handle plan selection visuals inside the modal context
+          function selectPlan(el, plan) {
+              // Reset all
+              const container = el.parentElement;
+              const cards = container.querySelectorAll('div[onclick]');
+              cards.forEach(c => {
+                  c.className = "border-2 border-slate-100 rounded-2xl p-6 cursor-pointer hover:border-slate-300 transition-all relative group";
+                  c.querySelector('.check-dot').classList.remove('bg-amber-500');
+                  c.querySelector('.check-dot').classList.add('bg-slate-900', 'opacity-0');
+                  const ring = c.querySelector('.ring-1');
+                  if(ring) ring.classList.remove('ring-1', 'ring-amber-500/20');
+              });
+
+              // Set Active
+              el.className = "border-2 border-amber-500 bg-amber-50/10 rounded-2xl p-6 cursor-pointer relative shadow-xl shadow-amber-500/10 ring-1 ring-amber-500/20";
+              const dot = el.querySelector('.check-dot');
+              dot.classList.remove('bg-slate-900', 'opacity-0');
+              dot.classList.add('bg-amber-500');
+          }
+      </script>
+  </div>
+  <!-- Auth / Onboarding Page -->
+  <div id="auth-page" class="hidden fixed inset-0 z-50 bg-white flex flex-col animate-in fade-in duration-300">
+      
+      <!-- Auth Header -->
+      <div class="h-16 flex items-center justify-between px-8 border-b border-slate-100">
+           <div class="flex items-center gap-2 font-bold text-slate-800 text-xl">
+               <i class="fa-solid fa-feather text-primary-600"></i> Woodls
+           </div>
+           <div class="text-xs text-slate-400">Beta v1.0</div>
+      </div>
+
+      <div class="flex-1 flex overflow-hidden">
+          
+          <!-- Left Side: Hero / Test Drive -->
+          <div class="w-1/2 bg-slate-50 p-12 flex flex-col justify-center relative overflow-hidden">
+              <div class="absolute top-0 right-0 p-20 bg-blue-100 rounded-full blur-3xl opacity-50 -mr-20 -mt-20"></div>
+              <div class="absolute bottom-0 left-0 p-20 bg-purple-100 rounded-full blur-3xl opacity-50 -ml-20 -mb-20"></div>
+              
+              <div class="relative z-10 max-w-md mx-auto">
+                  <h1 class="text-4xl font-bold text-slate-900 mb-6 leading-tight">Your voice, empowered.</h1>
+                  <p class="text-slate-600 text-lg mb-8 leading-relaxed">Experience the future of voice dictation. Fast, accurate, and completely private on your device.</p>
+                  
+                  <!-- Test Drive Box -->
+                  <div class="bg-white rounded-2xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
+                       <div class="flex items-center gap-3 mb-4">
+                           <div class="w-10 h-10 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center">
+                               <i class="fa-solid fa-microphone"></i>
+                           </div>
+                           <div>
+                               <h3 class="font-bold text-slate-800">Try it out</h3>
+                               <p class="text-xs text-slate-500">Press and hold to dictate</p>
+                           </div>
+                       </div>
+                       
+                       <div id="onboarding-test-area" class="bg-slate-50 rounded-xl p-4 min-h-[100px] mb-4 text-slate-500 text-sm border border-slate-100 border-dashed flex items-center justify-center transition-all">
+                           <span class="italic">"Say something..."</span>
+                       </div>
+
+                       <button id="onboarding-mic-btn" class="w-full py-3 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors flex items-center justify-center gap-2">
+                           <i class="fa-solid fa-microphone"></i> Hold to Speak
+                       </button>
+                  </div>
+              </div>
+          </div>
+
+          <!-- Right Side: Login / Signup -->
+          <div class="w-1/2 bg-white p-12 flex flex-col justify-center items-center">
+              
+              <div class="w-full max-w-sm" id="auth-forms">
+                  
+                  <!-- Login Form -->
+                  <div id="login-form" class="animate-in slide-in-from-right-4 duration-300">
+                      <h2 class="text-2xl font-bold text-slate-900 mb-2">Welcome Back</h2>
+                      <p class="text-slate-500 mb-8">Sign in to continue to Woodls.</p>
+                      
+                      <form id="sign-in-form" class="space-y-4">
+                          <div>
+                              <label class="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                              <input type="email" id="login-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all">
+                          </div>
+                          <div>
+                              <label class="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+                              <input type="password" id="login-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all">
+                          </div>
+                          <div class="flex items-center justify-between text-sm">
+                              <a href="#" class="text-primary-600 hover:underline">Forgot password?</a>
+                          </div>
+                          <button type="submit" class="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20">Sign In</button>
+                          
+                          <div class="relative flex py-5 items-center">
+                              <div class="flex-grow border-t border-slate-200"></div>
+                              <span class="flex-shrink-0 mx-4 text-slate-400 text-xs">OR</span>
+                              <div class="flex-grow border-t border-slate-200"></div>
+                          </div>
+
+                          <button type="button" id="google-signin-btn" class="w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
+                              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5">
+                              Sign in with Google
+                          </button>
+                      </form>
+
+                      <div class="mt-6 text-center text-sm text-slate-500">
+                          Don't have an account? <button id="to-signup-btn" class="text-primary-600 font-medium hover:underline">Sign up</button>
+                      </div>
+                  </div>
+
+                  <!-- Signup Form -->
+                  <div id="signup-form" class="hidden animate-in slide-in-from-right-4 duration-300">
+                      <h2 class="text-2xl font-bold text-slate-900 mb-2">Create Account</h2>
+                      <p class="text-slate-500 mb-8">Get started with Woodls today.</p>
+                      
+                      <form id="sign-up-form" class="space-y-4">
+                          <div>
+                              <label class="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
+                              <input type="text" id="signup-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all">
+                          </div>
+                          <div>
+                              <label class="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                              <input type="email" id="signup-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all">
+                          </div>
+                          <div>
+                              <label class="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+                              <input type="password" id="signup-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all">
+                          </div>
+                          <button type="submit" class="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20">Create Account</button>
+                      </form>
+
+                      <div class="mt-6 text-center text-sm text-slate-500">
+                          Already have an account? <button id="to-login-btn" class="text-primary-600 font-medium hover:underline">Sign in</button>
+                      </div>
+                  </div>
+
+              </div>
           </div>
       </div>
   </div>

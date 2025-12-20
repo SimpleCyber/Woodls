@@ -41,6 +41,8 @@
     "active-win": "^8.2.1",
     "axios": "^1.13.2",
     "dotenv": "^17.2.3",
-    "node-global-key-listener": "^0.3.0"
+    "firebase": "^12.7.0",
+    "node-global-key-listener": "^0.3.0",
+    "serve-handler": "^6.1.6"
   }
 }

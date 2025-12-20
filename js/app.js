@@ -1,6 +1,8 @@
 // js/app.js
 import { addLog, $ } from './utils.js';
 import * as Notes from './notes.js';
+import { initAuth, logout } from './auth.js';
+import { initOnboarding } from './onboarding.js';
 
 // ---------- LLM UI / Settings References ----------
 const assistantName = document.getElementById("assistantName");
@@ -54,9 +56,40 @@ export function initApp() {
     setupHotkeyUI();
     setupRecordingEvents();
     setupHistory();
+    setupAccount();
+    setupUpgradeModal();
     
     // Init other modules
     Notes.initNotes();
+    initOnboarding();
+
+    // Auth Listener
+    initAuth((user) => {
+        const authPage = document.getElementById("auth-page");
+        const mainInterface = document.querySelector("main"); // Assuming main is inside the flex container
+        // actually index.html structure is: 
+        // body > title-bar
+        // body > div (sidebar + main)
+        // body > auth-page
+        
+        const contentContainer = document.getElementById("content-container");
+
+        if (user) {
+            // Logged In
+            if (authPage) authPage.classList.add("hidden");
+            if (contentContainer) contentContainer.classList.remove("hidden");
+            addLog(`Welcome back, ${user.displayName || user.email}`, "green");
+            
+            updateProfileUI(user);
+        } else {
+            // Logged Out
+            if (authPage) authPage.classList.remove("hidden");
+            if (contentContainer) contentContainer.classList.add("hidden");
+            addLog("Please sign in", "orange");
+        }
+    });
+    
+    // Tab Switching
     
     // Tab Switching
     document.querySelectorAll('.sidebar-item').forEach(item => {
@@ -323,4 +356,99 @@ function renderHistory(items) {
         }
         historyList.appendChild(div);
     });
+}
+
+function setupAccount() {
+    const logoutBtn = document.getElementById('logout-option'); // Changed ID in HTML
+    const oldLogoutBtn = document.getElementById('logout-btn'); // For About page
+    
+    if (logoutBtn) {
+        logoutBtn.onclick = async () => {
+             await logout();
+             window.location.reload();
+        };
+    }
+    if (oldLogoutBtn) oldLogoutBtn.onclick = async () => { await logout(); window.location.reload(); };
+
+    setupProfilePopup();
+}
+
+function setupProfilePopup() {
+    const btn = document.getElementById("user-profile-btn");
+    const popup = document.getElementById("user-menu-popup");
+
+    if (btn && popup) {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            popup.classList.toggle("hidden");
+        };
+
+        document.addEventListener("click", (e) => {
+            if (!popup.classList.contains("hidden") && !btn.contains(e.target) && !popup.contains(e.target)) {
+                popup.classList.add("hidden");
+            }
+        });
+    }
+}
+
+function updateProfileUI(user) {
+    const nameEl = document.getElementById("user-name-display");
+    const emailEl = document.getElementById("user-email-display");
+    const avatarEl = document.getElementById("user-avatar");
+
+    if (!user) {
+        if(nameEl) nameEl.textContent = "Guest";
+        if(emailEl) emailEl.textContent = "Sign In";
+        if(avatarEl) avatarEl.innerHTML = '<i class="fa-solid fa-user"></i>';
+        return;
+    }
+
+    if (nameEl) nameEl.textContent = user.displayName || "User";
+    if (emailEl) emailEl.textContent = user.email || "";
+
+    if (avatarEl) {
+        if (user.photoURL) {
+            avatarEl.innerHTML = `<img src="${user.photoURL}" class="w-full h-full object-cover">`;
+        } else {
+            // Initials
+            const name = user.displayName || user.email || "U";
+            const initial = name.charAt(0).toUpperCase();
+            // Random-ish color based on char code
+            const colors = ['bg-red-100 text-red-600', 'bg-blue-100 text-blue-600', 'bg-green-100 text-green-600', 'bg-amber-100 text-amber-600', 'bg-purple-100 text-purple-600'];
+            const colorClass = colors[name.charCodeAt(0) % colors.length];
+            
+            avatarEl.className = `w-9 h-9 rounded-full flex items-center justify-center font-bold overflow-hidden border border-slate-200 ${colorClass}`;
+            avatarEl.innerText = initial;
+        }
+    }
+}
+
+function setupUpgradeModal() {
+    const trigger = document.getElementById("upgrade-trigger-btn");
+    const modal = document.getElementById("upgrade-modal");
+    const closeBtn = document.getElementById("close-upgrade-btn");
+
+    if (trigger && modal) {
+        trigger.onclick = () => {
+            modal.classList.remove("hidden");
+            // Close the user menu popup
+            const userMenu = document.getElementById("user-menu-popup");
+            if(userMenu) userMenu.classList.add("hidden");
+        };
+    }
+
+    if (closeBtn && modal) {
+        closeBtn.onclick = () => {
+             modal.classList.add("hidden");
+        };
+    }
+    
+    // Close on click outside
+    if (modal) {
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                 modal.classList.add("hidden");
+            }
+        };
+    }
 }

@@ -7,13 +7,36 @@ const { GlobalKeyboardListener } = require("node-global-key-listener");
 const { GoogleGenerativeAI } = require("@google/generative-ai"); // keep as placeholder
 const { GoogleAIFileManager } = require("@google/generative-ai/server");
 const robot = require("@jitsi/robotjs");
+const { initializeApp } = require("firebase/app");
+const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } = require("firebase/auth");
+const { getFirestore } = require("firebase/firestore");
 
 
 
 // ---- CONFIG ----
 require('dotenv').config();
 const API_KEY = process.env.GEN_AI_API_KEY;
-const genAI = new GoogleGenerativeAI(API_KEY);
+let genAI;
+try {
+  genAI = new GoogleGenerativeAI(API_KEY);
+} catch (error) {
+  console.error("Failed to initialize Google Generative AI:", error);
+}
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAvKsK4Qot2xLzzuVO4bOaTJEKR6kUDlDE",
+  authDomain: "woodlsvoice.firebaseapp.com",
+  projectId: "woodlsvoice",
+  storageBucket: "woodlsvoice.firebasestorage.app",
+  messagingSenderId: "23072437848",
+  appId: "1:23072437848:web:4af878d59838d4e4863c2d",
+  measurementId: "G-GXX6NC69LL"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+
 
 const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
 const HISTORY_FILE = path.join(app.getPath("userData"), "history.json");
@@ -51,10 +74,22 @@ function saveSettings(newSettings) {
   }
 }
 
+// Data Isolation State
+let currentUser = null; // { uid, email, displayName, photoURL }
+
+function getUserPaths() {
+    const suffix = currentUser ? `_${currentUser.uid}` : "_guest";
+    return {
+        history: path.join(app.getPath("userData"), `history${suffix}.json`),
+        notes: path.join(app.getPath("userData"), `notes${suffix}.json`)
+    };
+}
+
 function readHistory() {
   try {
-    if (!fs.existsSync(HISTORY_FILE)) return [];
-    const raw = fs.readFileSync(HISTORY_FILE, "utf8");
+    const p = getUserPaths().history;
+    if (!fs.existsSync(p)) return [];
+    const raw = fs.readFileSync(p, "utf8");
     return JSON.parse(raw);
   } catch (e) {
     return [];
@@ -63,18 +98,18 @@ function readHistory() {
 
 function saveHistory(history) {
   try {
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+    const p = getUserPaths().history;
+    fs.writeFileSync(p, JSON.stringify(history, null, 2));
   } catch (e) {
     console.error("Failed to save history:", e);
   }
 }
 
-const NOTES_FILE = path.join(app.getPath("userData"), "notes.json");
-
 function readNotes() {
     try {
-        if (!fs.existsSync(NOTES_FILE)) return [];
-        const raw = fs.readFileSync(NOTES_FILE, "utf8");
+        const p = getUserPaths().notes;
+        if (!fs.existsSync(p)) return [];
+        const raw = fs.readFileSync(p, "utf8");
         return JSON.parse(raw);
     } catch (e) {
         return [];
@@ -83,14 +118,14 @@ function readNotes() {
 
 function saveNotes(notes) {
     try {
-        fs.writeFileSync(NOTES_FILE, JSON.stringify(notes, null, 2));
+        const p = getUserPaths().notes;
+        fs.writeFileSync(p, JSON.stringify(notes, null, 2));
     } catch (e) {
         console.error("Failed to save notes:", e);
     }
 }
 
 // Normalize key names to a stable canonical form.
-// Removes non-alphanumeric and uppercases. Matches renderer's normalization.
 function normalizeKeyName(raw) {
   if (!raw) return "";
   return String(raw).replace(/[^a-z0-9]/gi, "").toUpperCase();
@@ -98,7 +133,6 @@ function normalizeKeyName(raw) {
 
 let overlayWin;
 
-// ----------------- create window -----------------
 function createWindow() {
   win = new BrowserWindow({
     width: 1200,
@@ -123,8 +157,83 @@ function createWindow() {
   });
   ipcMain.on("window-close", () => win.close());
 
+  // Auth IPC
+  ipcMain.handle("auth-login", async (_, { email, password }) => {
+      try {
+          const cred = await signInWithEmailAndPassword(auth, email, password);
+          currentUser = { 
+              uid: cred.user.uid, 
+              email: cred.user.email, 
+              displayName: cred.user.displayName,
+              photoURL: cred.user.photoURL
+          };
+          // Notify renderer of state change
+          win.webContents.send("auth-state-changed", currentUser);
+          return { success: true, user: currentUser };
+      } catch (e) {
+          return { success: false, error: e.message };
+      }
+  });
+
+  ipcMain.handle("auth-signup", async (_, { email, password, name }) => {
+      try {
+          const cred = await createUserWithEmailAndPassword(auth, email, password);
+          if (name) await updateProfile(cred.user, { displayName: name });
+          
+          currentUser = { 
+              uid: cred.user.uid, 
+              email: cred.user.email, 
+              displayName: name,
+              photoURL: null
+          };
+          win.webContents.send("auth-state-changed", currentUser);
+          return { success: true, user: currentUser };
+      } catch (e) {
+          return { success: false, error: e.message };
+      }
+  });
+
+  ipcMain.handle("auth-sync-user", async (_, user) => {
+      // Generic Sync from Renderer (Google OR Email)
+      if (user) {
+          currentUser = {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL
+        };
+      } else {
+          currentUser = null;
+      }
+      // Notify other windows if needed (e.g. overlay)
+      // We do NOT need to send auth-state-changed back to main window since it initiated this.
+      return { success: true };
+  });
+
+  ipcMain.handle("auth-logout", async () => {
+      try {
+          await signOut(auth); // Sign out of Main process auth if any
+          currentUser = null;
+           win.webContents.send("auth-state-changed", null);
+          return { success: true };
+      } catch (e) {
+          return { success: false, error: e.message };
+      }
+  });
+
+  ipcMain.handle("auth-get-current", () => {
+      // Return our manual state which covers both flows
+      return currentUser;
+  });
+
   // Handle external links for new windows
   win.webContents.setWindowOpenHandler(({ url }) => {
+    // Allow Google/Firebase Auth flows to open as child windows
+    if (url.includes('accounts.google.com') || url.includes('firebaseapp.com') || url.includes('/auth/handler')) {
+        return { action: 'allow' };
+    }
+    
+    // Open other links in default browser
     if (url.startsWith('http')) {
         require('electron').shell.openExternal(url);
     }
@@ -153,6 +262,17 @@ function createWindow() {
 
   setupGlobalKeyboard();
   startActiveWindowMonitor();
+
+  // Auth State Listener
+  onAuthStateChanged(auth, (user) => {
+    if (win && !win.isDestroyed()) {
+        win.webContents.send("auth-state-changed", user ? { 
+            uid: user.uid, 
+            email: user.email, 
+            displayName: user.displayName 
+        } : null);
+    }
+  });
 }
 
 function createOverlayWindow() {

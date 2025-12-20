@@ -61,4 +61,12 @@ contextBridge.exposeInMainWorld("api", {
   showOverlay: () => ipcRenderer.send("show-overlay"),
   hideOverlay: () => ipcRenderer.send("hide-overlay"),
   sendMicVolume: (vol) => ipcRenderer.send("mic-volume", vol),
+
+  // Auth
+  login: (creds) => ipcRenderer.invoke("auth-login", creds),
+  authSync: (user) => ipcRenderer.invoke("auth-sync-user", user), // New Sync Method
+  signup: (creds) => ipcRenderer.invoke("auth-signup", creds),
+  logout: () => ipcRenderer.invoke("auth-logout"),
+  getCurrentUser: () => ipcRenderer.invoke("auth-get-current"),
+  onAuthStateChanged: (cb) => ipcRenderer.on("auth-state-changed", cb),
 });
