@@ -131,8 +131,11 @@
 
   <!-- Custom Title Bar -->
   <div id="title-bar">
-      <div class="flex items-center gap-2 font-semibold text-lg">
-         <img src="webp/woodls.png" class="w-7 h-7 object-contain"> Woodls
+      <div class="flex items-center gap-2 font-bold text-sm">
+         <img src="webp/woodls.png" class="w-7 h-7 object-contain"> 
+         <p class="text-slate-900 tracking-tight flex items-center gap-2">
+          Woodls 
+         </p>
       </div>
       <div id="title-bar-btns">
           <div class="window-btn" id="min-btn"><i class="fa-solid fa-minus"></i></div>
@@ -145,13 +148,10 @@
     <!-- SIDEBAR -->
     <aside class="w-64 bg-white flex flex-col z-10 border-r border-slate-100">
       <div class="p-6 flex items-center gap-2 mb-2">
-        <h1 class="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-          <!-- Logo could go here if needed, for now using icon -->
-          Woodls <span class="bg-slate-100 text-slate-500 text-[10px] px-1.5 py-0.5 rounded border border-slate-200 uppercase font-bold tracking-wide">Beta</span>
-        </h1>
+        
       </div>
 
-      <nav class="flex-1 px-4 space-y-1">
+      <nav class="flex-1 px-4 ">
         
         <div data-page="home"
           class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group transition-colors">

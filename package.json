@@ -17,16 +17,18 @@
   },
   "build": {
     "appId": "com.satyam.autovoicetyping",
-    "productName": "Auto Voice Typing",
+    "productName": "Woodls",
     "directories": {
       "output": "dist"
     },
     "files": [
-      "**/*"
-    ],
+  "**/*",
+  "!node_modules/**/*",
+  "!dist/**/*"
+],
     "win": {
       "target": "nsis",
-      "icon": "assets/image.ico"
+      "icon": "build/image.ico"
     },
     "nsis": {
       "oneClick": false,
