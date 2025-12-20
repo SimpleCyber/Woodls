@@ -75,10 +75,35 @@ function renderHistory(items) {
         const playBtn = div.querySelector(".play-btn");
         if (playBtn) {
             playBtn.onclick = async () => {
+                // If this is currently playing, pause it
+                if (currentAudio && currentAudio.src === "data:audio/webm;base64," + (await window.api.readAudioFile(item.audioPath))) {
+                     if (!currentAudio.paused) {
+                         currentAudio.pause();
+                         playBtn.innerHTML = '<i class="fa-solid fa-play text-[10px]"></i>';
+                         return;
+                     }
+                }
+
+                // Stop any other audio
+                if (currentAudio) {
+                   currentAudio.pause();
+                   currentAudio = null;
+                   // Reset all icons (brute force or track prev button)
+                   document.querySelectorAll('.play-btn i').forEach(i => i.className = "fa-solid fa-play text-[10px]");
+                }
+
                 const b64 = await window.api.readAudioFile(item.audioPath);
                 if (b64) {
                     const sound = new Audio("data:audio/webm;base64," + b64);
+                    currentAudio = sound;
+                    
                     sound.play();
+                    playBtn.innerHTML = '<i class="fa-solid fa-pause text-[10px]"></i>';
+                    
+                    sound.onended = () => {
+                        playBtn.innerHTML = '<i class="fa-solid fa-play text-[10px]"></i>';
+                        currentAudio = null;
+                    };
                 } else {
                     alert("Audio file not found.");
                 }
@@ -113,15 +138,40 @@ function updateHomeHotkeyDisplay(keys) {
 }
 let captured = new Set();   // captured codes while setting hotkey
 let currentHotkey = [];     // loaded/saved hotkey array (display)
+let currentAudio = null;
 let mediaRecorder = null;
 let mediaStream = null;
 let chunks = [];
 let lastArrayBuffer = null;
 
-// ---------- Normalization helper (same as main) ----------
-function normalizeCode(code) {
-  if (!code) return "";
-  return String(code).replace(/[^a-z0-9]/gi, "").toUpperCase();
+// Settings
+let useBackspace = true;
+let instantPaste = false;
+const backspaceToggle = document.getElementById("backspaceToggle");
+const pasteToggle = document.getElementById("pasteToggle");
+
+// Load settings
+window.api.onSettingsLoaded((_ , settings) => {
+    if (settings) {
+       if (typeof settings.useBackspace === 'boolean') useBackspace = settings.useBackspace;
+       if (typeof settings.instantPaste === 'boolean') instantPaste = settings.instantPaste;
+       
+       if (backspaceToggle) backspaceToggle.checked = useBackspace;
+       if (pasteToggle) pasteToggle.checked = instantPaste;
+    }
+});
+
+if (backspaceToggle) {
+    backspaceToggle.onchange = () => {
+        useBackspace = backspaceToggle.checked;
+        window.api.saveSetting('useBackspace', useBackspace);
+    };
+}
+if (pasteToggle) {
+    pasteToggle.onchange = () => {
+        instantPaste = pasteToggle.checked;
+        window.api.saveSetting('instantPaste', instantPaste);
+    };
 }
 
 // ---------------- LLM generation ----------------
@@ -328,11 +378,21 @@ window.api.onRecordStart(async () => {
       // Show refined output
       document.getElementById("finalOutput").textContent = refined;
 
-      // AUTO TYPE AT CURSOR
-      await window.api.autoType(refined);
-      addLog("Auto-typed generated output.", "green");
+      // AUTO TYPE / PASTE
+      if (useBackspace) {
+          await window.api.sendBackspace(); // Remove the hotkey char
+          await new Promise(r => setTimeout(r, 50));
+      }
 
-      addLog("Final output generated automatically.", "purple");
+      if (instantPaste) {
+          await window.api.pasteString(refined);
+          addLog("Pasted generated output.", "green");
+      } else {
+          await window.api.autoType(refined);
+          addLog("Auto-typed generated output.", "green");
+      }
+
+      addLog("Final output generated.", "purple");
     };
 
     mediaRecorder.start();

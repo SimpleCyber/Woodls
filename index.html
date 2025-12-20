@@ -225,30 +225,30 @@
            
            <div class="grid grid-cols-5 gap-6">
                <!-- Slack -->
-               <div class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-default border border-transparent hover:border-slate-100">
+               <a href="https://slack.com" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
                    <img src="webp/slack.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Slack">
                    <span class="text-xs font-medium text-slate-600">Slack</span>
-               </div>
+               </a>
                <!-- Gmail -->
-               <div class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-default border border-transparent hover:border-slate-100">
+               <a href="https://gmail.com" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
                    <img src="webp/gmail.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Gmail">
                    <span class="text-xs font-medium text-slate-600">Gmail</span>
-               </div>
+               </a>
                <!-- Chrome -->
-               <div class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-default border border-transparent hover:border-slate-100">
+               <a href="https://google.com/chrome" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
                    <img src="webp/chrome.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Chrome">
                    <span class="text-xs font-medium text-slate-600">Chrome</span>
-               </div>
+               </a>
                 <!-- Cursor -->
-               <div class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-default border border-transparent hover:border-slate-100">
+               <a href="https://cursor.sh" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
                    <img src="webp/cursor.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Cursor">
                    <span class="text-xs font-medium text-slate-600">Cursor</span>
-               </div>
+               </a>
                <!-- Notion -->
-               <div class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-default border border-transparent hover:border-slate-100">
+               <a href="https://notion.so" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
                    <img src="webp/notion.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Notion">
                    <span class="text-xs font-medium text-slate-600">Notion</span>
-               </div>
+               </a>
            </div>
         </div>
 
@@ -374,18 +374,41 @@
                     <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2">Input</h3>
                     
                     <div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
-                        <div class="p-4 flex items-center justify-between">
+                         <div class="p-4 flex items-center justify-between">
                             <div>
                                 <div class="text-sm font-medium text-slate-800">Dictation Hotkey</div>
                                 <div class="text-xs text-slate-500">Hold to speak.</div>
                             </div>
-                            
                             <div class="flex items-center gap-2">
                                 <button id="startCapture" class="group bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg text-sm font-mono text-slate-600 min-w-[100px] text-center hover:border-primary-500 hover:text-primary-600 transition-all focus:ring-2 focus:ring-primary-100 flex items-center justify-center gap-2">
                                     <i class="fa-regular fa-keyboard opacity-50 group-hover:opacity-100"></i> <span id="hotkeyDisplay">Set Hotkey</span>
                                 </button>
                                 <button id="clearHotkey" class="text-slate-400 hover:text-red-500 p-2 transition-colors relative" title="Clear"><i class="fa-solid fa-xmark"></i></button>
                             </div>
+                        </div>
+
+                        <!-- Instant Paste -->
+                        <div class="p-4 flex items-center justify-between">
+                             <div>
+                                <div class="text-sm font-medium text-slate-800">Instant Paste</div>
+                                <div class="text-xs text-slate-500">Paste text directly instead of typing.</div>
+                             </div>
+                             <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="pasteToggle" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
+                             </label>
+                        </div>
+
+                         <!-- Backspace before typing -->
+                        <div class="p-4 flex items-center justify-between">
+                             <div>
+                                <div class="text-sm font-medium text-slate-800">Backspace First</div>
+                                <div class="text-xs text-slate-500">Delete the hotkey character before typing (e.g. remove "0").</div>
+                             </div>
+                             <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="backspaceToggle" class="sr-only peer" checked>
+                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
+                             </label>
                         </div>
                     </div>
                 </div>

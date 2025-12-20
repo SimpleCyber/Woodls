@@ -32,17 +32,19 @@ let pressStart = null;
 // ----------------- helpers -----------------
 function readSettings() {
   try {
+    if (!fs.existsSync(SETTINGS_FILE)) return { hotkey: [] };
     const raw = fs.readFileSync(SETTINGS_FILE, "utf8");
-    const data = JSON.parse(raw);
-    return Array.isArray(data.hotkey) ? data.hotkey : [];
+    return JSON.parse(raw);
   } catch (e) {
-    return [];
+    return { hotkey: [] };
   }
 }
 
-function saveSettings(keys) {
+function saveSettings(newSettings) {
   try {
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ hotkey: keys }, null, 2));
+    const current = readSettings();
+    const updated = { ...current, ...newSettings };
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(updated, null, 2));
   } catch (e) {
     console.error("Failed to save settings:", e);
   }
@@ -104,10 +106,14 @@ function createWindow() {
   const indexPath = path.join(__dirname, "index.html");
   win.loadFile(indexPath).catch(e => console.error("Failed to load index.html:", e));
 
-  requiredKeys = readSettings();
+  win.loadFile(indexPath).catch(e => console.error("Failed to load index.html:", e));
+
+  const settings = readSettings();
+  requiredKeys = Array.isArray(settings.hotkey) ? settings.hotkey : [];
 
   win.webContents.on("did-finish-load", () => {
     win.webContents.send("hotkey-loaded", requiredKeys);
+    win.webContents.send("settings-loaded", settings);
   });
   
   // Close overlay when main window closes
@@ -125,11 +131,11 @@ function createWindow() {
 function createOverlayWindow() {
   const { width, height } = require("electron").screen.getPrimaryDisplay().workAreaSize;
   
-  // Pill size
-  const w = 140;
-  const h = 60;
+  // Pill size (Smaller)
+  const w = 120;
+  const h = 50;
   const x = Math.round((width - w) / 2);
-  const y = height - h - 50; // 50px from bottom
+  const y = height - h - 10; // 10px from bottom (Move down)
 
   overlayWin = new BrowserWindow({
     width: w,
@@ -221,18 +227,22 @@ function setupGlobalKeyboard() {
 }
 
 // ----------------- IPC: Hotkey management -----------------
+// ----------------- IPC: Hotkey & Settings management -----------------
 ipcMain.on("save-hotkey", (event, keys) => {
-  // keys expected like ["NUMPAD8"] (from renderer) - normalize before saving
   const normalized = (keys || []).map(k => normalizeKeyName(k));
   requiredKeys = normalized;
-  saveSettings(normalized);
+  saveSettings({ hotkey: normalized });
   event.reply("hotkey-saved", normalized);
 });
 
 ipcMain.on("clear-hotkey", (event) => {
   requiredKeys = [];
-  saveSettings([]);
+  saveSettings({ hotkey: [] });
   event.reply("hotkey-cleared");
+});
+
+ipcMain.on("save-setting", (event, { key, value }) => {
+    saveSettings({ [key]: value });
 });
 
 ipcMain.on("get-hotkey", (event) => {
@@ -264,19 +274,35 @@ ipcMain.on("save-audio", async (event, arrayBuffer) => {
 });
 
 
-// ----------------- Auto Type --------------------------
+// ----------------- Auto Type / Input --------------------------
 ipcMain.handle("auto-type", async (_, text) => {
   try {
     if (!text || typeof text !== "string") return "No text";
-
-    await new Promise(res => setTimeout(res, 1)); // ensure focus
-
+    await new Promise(res => setTimeout(res, 50)); // ensure focus
     robot.typeString(text);
     return "typed";
   } catch (e) {
-    console.error("Auto-type error:", e);
     return "error";
   }
+});
+
+ipcMain.handle("send-backspace", async () => {
+    try {
+        robot.keyTap("backspace");
+        return true;
+    } catch(e) { return false; }
+});
+
+ipcMain.handle("paste-string", async (_, text) => {
+    try {
+        const { clipboard } = require("electron");
+        clipboard.writeText(text);
+        await new Promise(res => setTimeout(res, 50));
+        // Ctrl+V or Cmd+V
+        const mod = process.platform === "darwin" ? "command" : "control";
+        robot.keyTap("v", mod);
+        return true;
+    } catch(e) { return false; }
 });
 
 // ----------------- IPC: History -----------------
@@ -379,21 +405,19 @@ ipcMain.handle("generate-text", async (_, { info, assistantName, appName }) => {
 You are my AI assistant.
 Your job is to rewrite the given input text with proper punctuation, grammar, formatting, and clarity.  
 Rewrite it as if I am describing something to you, and you are returning a refined version of what I should write.  
-Return **only the rewritten output**, nothing extra.
+Return **only the refined text**, no explanations, no quotes, no markdown unless necessary.
+**CRITICAL**: Do NOT include timestamps (e.g. (00:00), 01:23) or any video tracking metadata. Filter them out completely.
 
-Sometimes, I will also provide the context or platform where I am writing the message (e.g., Email, Slack, WhatsApp, Message, Notepad, Notes, Notion, VS Code, or when passing a prompt to another AI bot).  
-In such cases, rewrite the content in the style and tone appropriate for that platform.
-
-Occasionally, I may ask you to perform a task instead of rewriting.  
-In those cases, complete the task *if u feel I explicitly asked to write insted or rewrite*.
-Always return the content only
 App: ${appName}
 Text: "${info}"
 `;
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
     const result = await model.generateContent(prompt);
-    return result.response.text();
+    let txt = result.response.text();
+    // Extra safety cleanup for hallucinations
+    txt = txt.replace(/\(\d{2}:\d{2}\)/g, "").trim(); 
+    return txt;
   } catch (err) {
     return "Error: " + (err && err.message ? err.message : String(err));
   }

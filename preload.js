@@ -6,6 +6,15 @@ contextBridge.exposeInMainWorld("api", {
   deleteHistoryItem: (id) => ipcRenderer.invoke("delete-history-item", id),
   readAudioFile: (path) => ipcRenderer.invoke("read-audio-file", path),
 
+  // Input
+  sendBackspace: () => ipcRenderer.invoke("send-backspace"),
+  pasteString: (text) => ipcRenderer.invoke("paste-string", text),
+  autoType: (text) => ipcRenderer.invoke("auto-type", text),
+  
+  // Settings
+  saveSetting: (k, v) => ipcRenderer.send("save-setting", { key: k, value: v }),
+  onSettingsLoaded: (cb) => ipcRenderer.on("settings-loaded", cb),
+
   // LLM
   generateText: (data) => ipcRenderer.invoke("generate-text", data),
   onActiveWindow: (cb) => ipcRenderer.on("active-window", cb),
