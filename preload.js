@@ -11,6 +11,12 @@ contextBridge.exposeInMainWorld("api", {
   pasteString: (text) => ipcRenderer.invoke("paste-string", text),
   autoType: (text) => ipcRenderer.invoke("auto-type", text),
   
+  // Overlay Processing States
+  processingStart: () => ipcRenderer.send("processing-start"),
+  processingEnd: () => ipcRenderer.send("processing-end"),
+  showOverlay: () => ipcRenderer.send("show-overlay"),
+  hideOverlay: () => ipcRenderer.send("hide-overlay"),
+  
   // Settings
   saveSetting: (k, v) => ipcRenderer.send("save-setting", { key: k, value: v }),
   onSettingsLoaded: (cb) => ipcRenderer.on("settings-loaded", cb),

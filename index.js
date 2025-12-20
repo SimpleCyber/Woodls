@@ -11,7 +11,7 @@ const robot = require("@jitsi/robotjs");
 
 
 // ---- CONFIG ----
-const API_KEY = "AIzaSyDMeBypr5QwUdXAjVTRmfOmWnDXlcJNNK4"; // replace if you use GoogleGenerativeAI
+const API_KEY = "AIzaSyB9QlFycqbDz3vDaBeuPkaD7NByIVsgpqU"; // replace if you use GoogleGenerativeAI
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
@@ -131,11 +131,11 @@ function createWindow() {
 function createOverlayWindow() {
   const { width, height } = require("electron").screen.getPrimaryDisplay().workAreaSize;
   
-  // Pill size (Smaller)
-  const w = 120;
-  const h = 50;
+  // Pill size (Smaller & Narrower)
+  const w = 100;
+  const h = 40;
   const x = Math.round((width - w) / 2);
-  const y = height - h - 10; // 10px from bottom (Move down)
+  const y = height - h - 10; // 10px from bottom
 
   overlayWin = new BrowserWindow({
     width: w,
@@ -271,6 +271,14 @@ ipcMain.on("save-audio", async (event, arrayBuffer) => {
     console.error("Failed to save audio:", err);
     event.reply("save-complete", null);
   }
+});
+
+
+ipcMain.on("processing-start", () => {
+  if (overlayWin) overlayWin.webContents.send("processing-start");
+});
+ipcMain.on("processing-end", () => {
+  if (overlayWin) overlayWin.webContents.send("processing-end");
 });
 
 

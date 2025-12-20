@@ -22,37 +22,52 @@
 </head>
 <body>
   <!-- Pill Container -->
-  <div class="bg-black/90 backdrop-blur-md rounded-full px-5 py-3 flex items-center justify-center gap-1.5 shadow-2xl border border-white/10 transition-transform duration-100" id="pill">
+  <div class="bg-black rounded-full px-4 py-2 flex items-center justify-center gap-1 shadow-2xl transition-transform duration-100 h-full w-full" id="pill">
+     
      <!-- Waveform Bars -->
-     <div class="bar w-1.5 bg-white rounded-full h-3 transition-all duration-75"></div>
-     <div class="bar w-1.5 bg-white rounded-full h-5 transition-all duration-75"></div>
-     <div class="bar w-1.5 bg-white rounded-full h-8 transition-all duration-75"></div>
-     <div class="bar w-1.5 bg-white rounded-full h-5 transition-all duration-75"></div>
-     <div class="bar w-1.5 bg-white rounded-full h-3 transition-all duration-75"></div>
+     <div id="waveform" class="flex items-center gap-1 h-full">
+        <div class="bar w-1 bg-white rounded-full h-2 transition-all duration-75"></div>
+        <div class="bar w-1 bg-white rounded-full h-3 transition-all duration-75"></div>
+        <div class="bar w-1 bg-white rounded-full h-5 transition-all duration-75"></div>
+        <div class="bar w-1 bg-white rounded-full h-3 transition-all duration-75"></div>
+        <div class="bar w-1 bg-white rounded-full h-2 transition-all duration-75"></div>
+     </div>
+
+     <!-- Spinner (Hidden by default) -->
+     <div id="spinner" class="hidden">
+        <i class="fa-solid fa-circle-notch text-white/50 text-sm animate-spin"></i>
+     </div>
+
   </div>
 
   <script>
     const { ipcRenderer } = require('electron');
     const bars = document.querySelectorAll('.bar');
     const pill = document.getElementById('pill');
+    const waveform = document.getElementById('waveform');
+    const spinner = document.getElementById('spinner');
 
     ipcRenderer.on('mic-volume', (event, volume) => {
       // volume is 0.0 - 1.0
-      // Animate bars based on volume locally for smoothness
+      const v = Math.max(volume, 0.1); 
       
-      const v = Math.max(volume, 0.1); // min visual
-      
-      // Update bars heights with some randomness for wave effect
       bars.forEach((bar, i) => {
-          // Center bars (idx 2) get most amplitude
           const centerFactor = 1 - Math.abs(i - 2) * 0.2; 
-          const h = 8 + (v * 40 * centerFactor * (0.8 + Math.random() * 0.4));
+          // Max height constrained by container h=40
+          const h = 6 + (v * 25 * centerFactor * (0.8 + Math.random() * 0.4));
           bar.style.height = h + 'px';
       });
+    });
 
-      // Subtle pulse of the pill (Disabled per feedback)
-      // const scale = 1 + (v * 0.05);
-      // pill.style.transform = `scale(${scale})`;
+    // Processing states
+    ipcRenderer.on('processing-start', () => {
+        waveform.classList.add('hidden');
+        spinner.classList.remove('hidden');
+    });
+
+    ipcRenderer.on('processing-end', () => {
+        spinner.classList.add('hidden');
+        waveform.classList.remove('hidden');
     });
   </script>
 </body>

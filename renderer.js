@@ -63,6 +63,7 @@ function renderHistory(items) {
                 <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">${new Date(item.timestamp).toLocaleString()}</div>
                 <div class="flex gap-2 opacity-50 hover:opacity-100 transition-opacity">
                     ${item.audioPath ? `<button class="play-btn w-6 h-6 flex items-center justify-center rounded bg-slate-100 hover:bg-primary-50 text-slate-500 hover:text-primary-600 transition-colors" title="Play Recording"><i class="fa-solid fa-play text-[10px]"></i></button>` : ''}
+                     <button class="copy-btn w-6 h-6 flex items-center justify-center rounded bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors" title="Copy Text"><i class="fa-regular fa-copy text-[10px]"></i></button>
                     <button class="del-btn w-6 h-6 flex items-center justify-center rounded bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 transition-colors" title="Delete"><i class="fa-solid fa-trash text-[10px]"></i></button>
                 </div>
             </div>
@@ -109,6 +110,16 @@ function renderHistory(items) {
                 }
             };
         }
+
+        const copyBtn = div.querySelector(".copy-btn");
+        if (copyBtn) {
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(item.text);
+                const originalIcon = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fa-solid fa-check text-[10px]"></i>';
+                setTimeout(() => copyBtn.innerHTML = originalIcon, 1500);
+            };
+        }
         
         const delBtn = div.querySelector(".del-btn");
         if (delBtn) {
@@ -147,17 +158,22 @@ let lastArrayBuffer = null;
 // Settings
 let useBackspace = true;
 let instantPaste = false;
+let aiEnhanced = true;
+
 const backspaceToggle = document.getElementById("backspaceToggle");
 const pasteToggle = document.getElementById("pasteToggle");
+const aiToggle = document.getElementById("aiToggle");
 
 // Load settings
 window.api.onSettingsLoaded((_ , settings) => {
     if (settings) {
        if (typeof settings.useBackspace === 'boolean') useBackspace = settings.useBackspace;
        if (typeof settings.instantPaste === 'boolean') instantPaste = settings.instantPaste;
+       if (typeof settings.aiEnhanced === 'boolean') aiEnhanced = settings.aiEnhanced;
        
        if (backspaceToggle) backspaceToggle.checked = useBackspace;
        if (pasteToggle) pasteToggle.checked = instantPaste;
+       if (aiToggle) aiToggle.checked = aiEnhanced;
     }
 });
 
@@ -171,6 +187,12 @@ if (pasteToggle) {
     pasteToggle.onchange = () => {
         instantPaste = pasteToggle.checked;
         window.api.saveSetting('instantPaste', instantPaste);
+    };
+}
+if (aiToggle) {
+    aiToggle.onchange = () => {
+        aiEnhanced = aiToggle.checked;
+        window.api.saveSetting('aiEnhanced', aiEnhanced);
     };
 }
 
@@ -351,6 +373,11 @@ window.api.onRecordStart(async () => {
     };
 
     mediaRecorder.onstop = async () => {
+      // ------------------------------------
+      // Show spinner on overlay
+      window.api.processingStart();
+      // ------------------------------------
+      
       const blob = new Blob(chunks, { type: "audio/webm" });
       const url = URL.createObjectURL(blob);
       player.src = url;
@@ -406,8 +433,10 @@ window.api.onRecordStart(async () => {
 window.api.onRecordStop(() => {
   addLog("Hotkey released — stopping recording.", "orange");
   
-  // Hide Overlay
-  window.api.hideOverlay();
+  // DO NOT hide overlay here. It currently shows the spinner (processingStart called in onstop).
+  // We will hide it after text generation finishes.
+  // window.api.hideOverlay();
+  
   stopAudioAnalysis();
   
   if (micStatus) {

@@ -225,27 +225,27 @@
            
            <div class="grid grid-cols-5 gap-6">
                <!-- Slack -->
-               <a href="https://slack.com" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
+               <a href="https://slack.com" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
                    <img src="webp/slack.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Slack">
                    <span class="text-xs font-medium text-slate-600">Slack</span>
                </a>
                <!-- Gmail -->
-               <a href="https://gmail.com" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
+               <a href="https://gmail.com" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
                    <img src="webp/gmail.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Gmail">
                    <span class="text-xs font-medium text-slate-600">Gmail</span>
                </a>
                <!-- Chrome -->
-               <a href="https://google.com/chrome" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
+               <a href="https://google.com/chrome" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
                    <img src="webp/chrome.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Chrome">
                    <span class="text-xs font-medium text-slate-600">Chrome</span>
                </a>
                 <!-- Cursor -->
-               <a href="https://cursor.sh" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
+               <a href="https://cursor.sh" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
                    <img src="webp/cursor.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Cursor">
                    <span class="text-xs font-medium text-slate-600">Cursor</span>
                </a>
                <!-- Notion -->
-               <a href="https://notion.so" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
+               <a href="https://notion.so" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
                    <img src="webp/notion.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Notion">
                    <span class="text-xs font-medium text-slate-600">Notion</span>
                </a>
@@ -407,6 +407,18 @@
                              </div>
                              <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="backspaceToggle" class="sr-only peer" checked>
+                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
+                             </label>
+                        </div>
+
+                         <!-- AI Modification -->
+                        <div class="p-4 flex items-center justify-between">
+                             <div>
+                                <div class="text-sm font-medium text-slate-800">AI Enhancement</div>
+                                <div class="text-xs text-slate-500">Let AI fix grammar and punctuation. Turn off for raw transcript.</div>
+                             </div>
+                             <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="aiToggle" class="sr-only peer" checked>
                                 <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
                              </label>
                         </div>
