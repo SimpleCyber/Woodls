@@ -18,6 +18,11 @@ contextBridge.exposeInMainWorld("api", {
   // Settings
   saveSetting: (k, v) => ipcRenderer.send("save-setting", { key: k, value: v }),
   onSettingsLoaded: (cb) => ipcRenderer.on("settings-loaded", cb),
+  
+  // Startup
+  setStartupSettings: (settings) => ipcRenderer.send("set-startup-settings", settings),
+  getStartupSettings: () => ipcRenderer.send("get-startup-settings"),
+  onStartupSettingsLoaded: (cb) => ipcRenderer.on("startup-settings-loaded", cb),
 
   // LLM
   generateText: (data) => ipcRenderer.invoke("generate-text", data),

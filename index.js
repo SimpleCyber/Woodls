@@ -1,5 +1,5 @@
 // main.js
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const activeWin = require("active-win");
@@ -15,14 +15,34 @@ const { getFirestore } = require("firebase/firestore");
 
 // ---- CONFIG ----
 require('dotenv').config();
-const API_KEY = process.env.GEN_AI_API_KEY;
-const MODEL_NAME = process.env.GEN_AI_MODEL || "gemini-1.5-flash";
+// Default env values
+const ENV_API_KEY = process.env.GEN_AI_API_KEY;
+const ENV_MODEL_NAME = process.env.GEN_AI_MODEL || "gemini-2.5-flash-lite";
+
 let genAI;
-try {
-  genAI = new GoogleGenerativeAI(API_KEY);
-} catch (error) {
-  console.error("Failed to initialize Google Generative AI:", error);
+let currentModelName = ENV_MODEL_NAME;
+
+function initGenAI() {
+    const settings = readSettings();
+    const apiKey = (settings.apiKey && settings.apiKey.trim()) ? settings.apiKey.trim() : ENV_API_KEY;
+    currentModelName = (settings.modelName && settings.modelName.trim()) ? settings.modelName.trim() : ENV_MODEL_NAME;
+    
+    if (apiKey) {
+        try {
+            genAI = new GoogleGenerativeAI(apiKey);
+            console.log(`GenAI Initialized with model: ${currentModelName}`);
+        } catch (error) {
+            console.error("Failed to initialize Google Generative AI:", error);
+            genAI = null;
+        }
+    } else {
+        console.warn("No API Key found (settings or env). AI features will fail.");
+        genAI = null;
+    }
 }
+
+// Initialize on start
+initGenAI();
 
 const firebaseConfig = {
   apiKey: "AIzaSyAvKsK4Qot2xLzzuVO4bOaTJEKR6kUDlDE",
@@ -53,6 +73,9 @@ let keyboard;
 let requiredKeys = []; // single-key expected (array but we use index 0)
 let running = false;
 let pressStart = null;
+
+let tray = null;
+let isQuitting = false;
 
 // ----------------- helpers -----------------
 function readSettings() {
@@ -138,13 +161,65 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1200,
     height: 760,
+    icon: path.join(__dirname, 'webp/woodls.png'),
     frame: false, // Custom title bar
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      backgroundThrottling: false, // Keep running in background
     },
+    show: false, // Don't show initially, we'll decide later
+  });
+
+  // Check if we should start hidden
+  const startHidden = process.argv.includes('--hidden') || process.argv.includes('--start-hidden'); // Check args
+  // Also check settings for persistent "start hidden" preference if arg is missing? 
+  // actually args are safer for auto-launch.
+  
+  if (!startHidden) {
+      win.show();
+  }
+
+  // Tray Setup
+  const iconPath = path.join(__dirname, 'webp/woodls.png'); // Use woodls icon
+  // better to use a dedicated icon but user has webp files. 
+  // Let's try to load one. If not, maybe just use empty string which might fail or show generic.
+  // We'll use the one from webp folder for now.
+  try {
+      // Resize to 32x32 for better visibility on high DPI, or let OS handle it if we remove resize?
+      // Windows standard is 16x16 small, 32x32 large. Let's try 32 for "bigger".
+      const icon = nativeImage.createFromPath(iconPath).resize({ width: 32, height: 32 });
+      tray = new Tray(icon);
+      const contextMenu = Menu.buildFromTemplate([
+        { label: 'Open Woodls', click: () => win.show() },
+        { type: 'separator' },
+        { label: 'Quit', click: () => {
+            isQuitting = true;
+            app.quit();
+        }}
+      ]);
+      tray.setToolTip('Woodls');
+      tray.setContextMenu(contextMenu);
+      
+      tray.on('click', () => {
+          if (win.isVisible()) {
+              win.hide();
+          } else {
+              win.show();
+          }
+      });
+  } catch (e) {
+      console.error("Tray error:", e);
+  }
+
+  win.on('close', (event) => {
+      if (!isQuitting) {
+          event.preventDefault();
+          win.hide();
+          return false;
+      }
   });
 
   // Window Controls IPC
@@ -441,6 +516,31 @@ ipcMain.on("clear-hotkey", (event) => {
 
 ipcMain.on("save-setting", (event, { key, value }) => {
     saveSettings({ [key]: value });
+    // Re-init AI if relevant settings change
+    if (key === 'apiKey' || key === 'modelName') {
+        initGenAI();
+    }
+});
+
+ipcMain.on("set-startup-settings", (event, { openAtLogin, startHidden }) => {
+    app.setLoginItemSettings({
+        openAtLogin: openAtLogin,
+        path: app.getPath('exe'),
+        args: startHidden ? ['--hidden'] : []
+    });
+    // Save to local settings too so UI reflects it
+    saveSettings({ openAtLogin, startHidden });
+});
+
+ipcMain.on("get-startup-settings", (event) => {
+    const { openAtLogin } = app.getLoginItemSettings();
+    // We can't easily get 'startHidden' args back from Electron api perfectly across all OS 
+    // without parsing, better to rely on our saved settings for the UI state.
+    const settings = readSettings();
+    event.reply("startup-settings-loaded", { 
+        openAtLogin: settings.openAtLogin !== undefined ? settings.openAtLogin : openAtLogin,
+        startHidden: settings.startHidden || false 
+    });
 });
 
 ipcMain.on("get-hotkey", (event) => {
@@ -579,7 +679,16 @@ ipcMain.handle("delete-note", (_, id) => {
 
 ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
   try {
-    const fileManager = new GoogleAIFileManager(API_KEY);
+    if (!genAI) throw new Error("AI not initialized. Check API Key.");
+    
+    // For file manager, we need the API key again. 
+    // Since initGenAI handles the instance, let's just grab the key from the instance if possible or re-read settings.
+    // Actually GoogleAIFileManager needs the key string.
+    const settings = readSettings();
+    const apiKey = (settings.apiKey && settings.apiKey.trim()) ? settings.apiKey.trim() : ENV_API_KEY;
+    if (!apiKey) throw new Error("No API Key available.");
+
+    const fileManager = new GoogleAIFileManager(apiKey);
 
     // 1. Save to recordings folder for history
     const fileName = `rec_${Date.now()}.webm`;
@@ -597,7 +706,7 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
     });
 
     // now transcribe
-    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+    const model = genAI.getGenerativeModel({ model: currentModelName });
 
     const result = await model.generateContent([
       "Transcribe this audio to plain text only: ",
@@ -652,7 +761,8 @@ App: ${appName}
 Text: "${info}"
 `;
   try {
-    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+    if (!genAI) throw new Error("AI not initialized.");
+    const model = genAI.getGenerativeModel({ model: currentModelName });
     const result = await model.generateContent(prompt);
     let txt = result.response.text();
     // Extra safety cleanup for hallucinations
@@ -667,6 +777,20 @@ Text: "${info}"
 app.whenReady().then(createWindow);
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
+  if (process.platform !== "darwin") {
+      // app.quit(); // Keep running
+  }
+});
+
+app.on('before-quit', () => {
+    isQuitting = true;
+});
+
+app.on('activate', () => {
+    if (win === null) {
+        createWindow();
+    } else {
+        win.show();
+    }
 });
 

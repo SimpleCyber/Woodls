@@ -48,10 +48,17 @@ let lastArrayBuffer = null;
 let useBackspace = true;
 let instantPaste = false;
 let aiEnhanced = true;
+let runOnStartup = false;
+let startHidden = false;
 
 const backspaceToggle = document.getElementById("backspaceToggle");
 const pasteToggle = document.getElementById("pasteToggle");
 const aiToggle = document.getElementById("aiToggle");
+const startupToggle = document.getElementById("startupToggle");
+const hiddenToggle = document.getElementById("hiddenToggle");
+
+const apiKeyInput = document.getElementById("apiKeyInput");
+const modelNameInput = document.getElementById("modelNameInput");
 
 // ---------- Initialization ----------
 
@@ -125,6 +132,25 @@ function setupSettings() {
         }
     });
 
+    window.api.onStartupSettingsLoaded((_, settings) => {
+        if (settings) {
+            runOnStartup = settings.openAtLogin;
+            startHidden = settings.startHidden;
+
+            if (startupToggle) startupToggle.checked = runOnStartup;
+            if (hiddenToggle) hiddenToggle.checked = startHidden;
+        }
+        
+        // Load API Settings
+        if (settings) {
+            if (apiKeyInput) apiKeyInput.value = settings.apiKey || "";
+            if (modelNameInput) modelNameInput.value = settings.modelName || "";
+        }
+    });
+
+    // Request initial startup settings
+    window.api.getStartupSettings();
+
     if (backspaceToggle) {
         backspaceToggle.onchange = () => {
             useBackspace = backspaceToggle.checked;
@@ -139,8 +165,29 @@ function setupSettings() {
     }
     if (aiToggle) {
         aiToggle.onchange = () => {
-            aiEnhanced = aiToggle.checked;
+            aiEnhanced = aiEnhanced = aiToggle.checked;
             window.api.saveSetting('aiEnhanced', aiEnhanced);
+        };
+    }
+
+    const updateStartup = () => {
+        runOnStartup = startupToggle ? startupToggle.checked : false;
+        startHidden = hiddenToggle ? hiddenToggle.checked : false;
+        window.api.setStartupSettings({ openAtLogin: runOnStartup, startHidden });
+    };
+
+    if (startupToggle) startupToggle.onchange = updateStartup;
+    if (hiddenToggle) hiddenToggle.onchange = updateStartup;
+
+    // API Config Listeners
+    if (apiKeyInput) {
+        apiKeyInput.onchange = () => {
+            window.api.saveSetting('apiKey', apiKeyInput.value.trim());
+        };
+    }
+    if (modelNameInput) {
+        modelNameInput.onchange = () => {
+             window.api.saveSetting('modelName', modelNameInput.value.trim());
         };
     }
 
