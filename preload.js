@@ -45,7 +45,12 @@ contextBridge.exposeInMainWorld("api", {
   transcribeAudio: (buffer) => ipcRenderer.invoke("transcribe-audio", buffer),
   
   // Auto type
-  autoType: (text) => ipcRenderer.invoke("auto-type", text),
+
+
+  // Notes
+  getNotes: () => ipcRenderer.invoke("get-notes"),
+  saveNote: (note) => ipcRenderer.invoke("save-note", note),
+  deleteNote: (id) => ipcRenderer.invoke("delete-note", id),
 
   // Window Controls
   minimizeWindow: () => ipcRenderer.send("window-minimize"),

@@ -69,6 +69,26 @@ function saveHistory(history) {
   }
 }
 
+const NOTES_FILE = path.join(app.getPath("userData"), "notes.json");
+
+function readNotes() {
+    try {
+        if (!fs.existsSync(NOTES_FILE)) return [];
+        const raw = fs.readFileSync(NOTES_FILE, "utf8");
+        return JSON.parse(raw);
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveNotes(notes) {
+    try {
+        fs.writeFileSync(NOTES_FILE, JSON.stringify(notes, null, 2));
+    } catch (e) {
+        console.error("Failed to save notes:", e);
+    }
+}
+
 // Normalize key names to a stable canonical form.
 // Removes non-alphanumeric and uppercases. Matches renderer's normalization.
 function normalizeKeyName(raw) {
@@ -349,6 +369,40 @@ ipcMain.handle("read-audio-file", (_, p) => {
     return null;
 });
 
+// ----------------- IPC: Notes -----------------
+ipcMain.handle("get-notes", () => {
+    return readNotes().reverse();
+});
+
+ipcMain.handle("save-note", (_, note) => {
+    // note: { id (optional), title, content, color, pin }
+    let notes = readNotes();
+    if (note.id) {
+        const idx = notes.findIndex(n => n.id === note.id);
+        if (idx >= 0) {
+            notes[idx] = { ...notes[idx], ...note, timestamp: Date.now() };
+        } else {
+            notes.push({ ...note, timestamp: Date.now() });
+        }
+    } else {
+        const newNote = {
+            id: Date.now().toString(),
+            timestamp: Date.now(),
+            ...note
+        };
+        notes.push(newNote);
+    }
+    saveNotes(notes);
+    return true;
+});
+
+ipcMain.handle("delete-note", (_, id) => {
+    let notes = readNotes();
+    notes = notes.filter(n => n.id !== id);
+    saveNotes(notes);
+    return true;
+});
+
 
 
 // ----------------- IPC: speech to text -----------------
@@ -373,7 +427,7 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
     });
 
     // now transcribe
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const result = await model.generateContent([
       "Transcribe this audio to plain text only: ",
@@ -428,7 +482,7 @@ App: ${appName}
 Text: "${info}"
 `;
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent(prompt);
     let txt = result.response.text();
     // Extra safety cleanup for hallucinations
