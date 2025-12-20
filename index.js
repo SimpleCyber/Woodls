@@ -284,10 +284,11 @@ function createWindow() {
     });
   });
   
-  const PORT = 3456;
-  server.listen(PORT, () => {
-     console.log(`Server running at http://localhost:${PORT}/`);
-     win.loadURL(`http://localhost:${PORT}/index.html`);
+  /* const PORT = 3456; */
+  server.listen(0, '127.0.0.1', () => {
+     const port = server.address().port;
+     console.log(`Server running at http://localhost:${port}/`);
+     win.loadURL(`http://localhost:${port}/index.html`);
   });
 
   // win.loadFile(indexPath).catch(e => console.error("Failed to load index.html:", e));
