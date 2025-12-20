@@ -15,6 +15,13 @@ const API_KEY = "AIzaSyDMeBypr5QwUdXAjVTRmfOmWnDXlcJNNK4"; // replace if you use
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
+const HISTORY_FILE = path.join(app.getPath("userData"), "history.json");
+const RECORDINGS_DIR = path.join(app.getPath("userData"), "recordings");
+
+// Ensure directories exist
+if (!fs.existsSync(RECORDINGS_DIR)) {
+    fs.mkdirSync(RECORDINGS_DIR, { recursive: true });
+}
 
 let win;
 let keyboard;
@@ -38,6 +45,24 @@ function saveSettings(keys) {
     fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ hotkey: keys }, null, 2));
   } catch (e) {
     console.error("Failed to save settings:", e);
+  }
+}
+
+function readHistory() {
+  try {
+    if (!fs.existsSync(HISTORY_FILE)) return [];
+    const raw = fs.readFileSync(HISTORY_FILE, "utf8");
+    return JSON.parse(raw);
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveHistory(history) {
+  try {
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+  } catch (e) {
+    console.error("Failed to save history:", e);
   }
 }
 
@@ -242,6 +267,33 @@ ipcMain.handle("auto-type", async (_, text) => {
   }
 });
 
+// ----------------- IPC: History -----------------
+ipcMain.handle("get-history", () => {
+  return readHistory().reverse(); // Show newest first
+});
+
+ipcMain.handle("delete-history-item", (_, id) => {
+    let history = readHistory();
+    const item = history.find(i => i.id === id);
+    if (item && item.audioPath && fs.existsSync(item.audioPath)) {
+        try {
+            fs.unlinkSync(item.audioPath);
+        } catch(e) { console.error("Failed to delete audio file", e); }
+    }
+    history = history.filter(i => i.id !== id);
+    saveHistory(history);
+    return true;
+});
+
+ipcMain.handle("read-audio-file", (_, p) => {
+    try {
+        if (fs.existsSync(p)) {
+            const buffer = fs.readFileSync(p);
+            return buffer.toString("base64");
+        }
+    } catch(e) {}
+    return null;
+});
 
 
 
@@ -251,12 +303,17 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
   try {
     const fileManager = new GoogleAIFileManager(API_KEY);
 
-    // create a temp file
-    const tempPath = path.join(app.getPath("temp"), "recording.webm");
-    fs.writeFileSync(tempPath, Buffer.from(arrayBuffer));
+    // 1. Save to recordings folder for history
+    const fileName = `rec_${Date.now()}.webm`;
+    const savePath = path.join(RECORDINGS_DIR, fileName);
+    const buffer = Buffer.from(arrayBuffer);
+    fs.writeFileSync(savePath, buffer);
 
+    // 2. Temp file for upload (or just use savePath)
+    // We can use savePath directly since it's the same file
+    
     // upload the audio
-    const upload = await fileManager.uploadFile(tempPath, {
+    const upload = await fileManager.uploadFile(savePath, {
       mimeType: "audio/webm",
       displayName: "hotkey-recording",
     });
@@ -275,7 +332,28 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
       }
     ]);
 
-    return result.response.text();
+    const text = result.response.text();
+
+    // Save to history (we'll update the refined text later if needed, or just save the transcript now)
+    // Ideally we want the refined text too. The renderer calls generate-text separately.
+    // Let's modify this to just return text, and renderer calls another IPC to "save complete history item" 
+    // OR we save the transcript here, and update it later? 
+    // Simpler: Just save transcript here. If we want refined, we can add a new IPC "add-history-item" called by renderer.
+    // BUT user asked "Save audio and text to history".
+    // Let's just save the transcript item here.
+    
+    const historyItem = {
+        id: Date.now().toString(),
+        timestamp: Date.now(),
+        text: text, // Raw transcript
+        audioPath: savePath
+    };
+    
+    const history = readHistory();
+    history.push(historyItem);
+    saveHistory(history);
+
+    return text;
   } catch (err) {
     console.error("Transcription error:", err);
     return "Error: " + err.message;

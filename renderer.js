@@ -23,8 +23,94 @@ const logs = document.getElementById("logs");
 // ---------- Audio player & save ----------
 const player = document.getElementById("player");
 const saveRecordingBtn = document.getElementById("saveRecording");
+const homeHotkeyText = document.getElementById("home-hotkey-text");
+const visualizerBar = document.getElementById("visualizer-bar");
+const micStatus = document.getElementById("micStatus");
 
-let capturing = false;      // capturing a hotkey (setup) in UI
+// History
+const historyList = document.getElementById("history-list");
+const historyTabBtn = document.querySelector('[data-page="history"]');
+
+if (historyTabBtn) {
+    historyTabBtn.addEventListener("click", loadHistory);
+}
+
+async function loadHistory() {
+    if (!historyList) return;
+    historyList.innerHTML = '<div class="text-center text-slate-400 py-10">Loading...</div>';
+    
+    try {
+        const history = await window.api.getHistory();
+        renderHistory(history);
+    } catch (e) {
+        historyList.innerHTML = '<div class="text-center text-red-400 py-10">Failed to load history</div>';
+    }
+}
+
+function renderHistory(items) {
+    if (!items || items.length === 0) {
+        historyList.innerHTML = '<div class="text-center text-slate-400 py-10">No history yet.</div>';
+        return;
+    }
+
+    historyList.innerHTML = "";
+    items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "relative pl-6 border-l-2 border-slate-100 pb-8 last:pb-0";
+        div.innerHTML = `
+            <span class="absolute -left-[5px] top-1 w-2.5 h-2.5 bg-slate-200 rounded-full border-2 border-white"></span>
+            <div class="flex justify-between items-start mb-2">
+                <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">${new Date(item.timestamp).toLocaleString()}</div>
+                <div class="flex gap-2 opacity-50 hover:opacity-100 transition-opacity">
+                    ${item.audioPath ? `<button class="play-btn w-6 h-6 flex items-center justify-center rounded bg-slate-100 hover:bg-primary-50 text-slate-500 hover:text-primary-600 transition-colors" title="Play Recording"><i class="fa-solid fa-play text-[10px]"></i></button>` : ''}
+                    <button class="del-btn w-6 h-6 flex items-center justify-center rounded bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 transition-colors" title="Delete"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                </div>
+            </div>
+            <div class="bg-white border border-slate-100 rounded-xl p-4 shadow-sm text-sm text-slate-700 leading-relaxed font-medium">
+                ${item.text || "<span class='text-slate-300 italic'>No text content</span>"}
+            </div>
+        `;
+        
+        // Bind events
+        const playBtn = div.querySelector(".play-btn");
+        if (playBtn) {
+            playBtn.onclick = async () => {
+                const b64 = await window.api.readAudioFile(item.audioPath);
+                if (b64) {
+                    const sound = new Audio("data:audio/webm;base64," + b64);
+                    sound.play();
+                } else {
+                    alert("Audio file not found.");
+                }
+            };
+        }
+        
+        const delBtn = div.querySelector(".del-btn");
+        if (delBtn) {
+            delBtn.onclick = async () => {
+                if (confirm("Delete this item?")) {
+                    await window.api.deleteHistoryItem(item.id);
+                    loadHistory();
+                }
+            };
+        }
+
+        historyList.appendChild(div);
+    });
+}
+
+function updateHomeHotkeyDisplay(keys) {
+    if (!homeHotkeyText) return;
+    if (keys && keys.length > 0) {
+        homeHotkeyText.textContent = keys[0]; // e.g. "NUMPAD0"
+        homeHotkeyText.classList.remove("text-slate-400", "italic");
+        homeHotkeyText.classList.add("text-slate-800", "font-bold");
+    } else {
+        homeHotkeyText.textContent = "Set the key";
+        homeHotkeyText.classList.remove("text-slate-800", "font-bold");
+        homeHotkeyText.classList.add("text-slate-400", "italic"); // Styling for "Set the key"
+    }
+}
 let captured = new Set();   // captured codes while setting hotkey
 let currentHotkey = [];     // loaded/saved hotkey array (display)
 let mediaRecorder = null;
@@ -87,6 +173,11 @@ function startAudioAnalysis(stream) {
     
     // Send to overlay
     window.api.sendMicVolume(normalized);
+    
+    // Update local visualizer
+    if (visualizerBar) {
+        visualizerBar.style.width = (normalized * 100) + "%";
+    }
   }, 50);
 }
 
@@ -166,17 +257,20 @@ clearHotkeyBtn.onclick = () => {
 // ---------------- Hotkey events from main ----------------
 window.api.onHotkeyLoaded((_, keys) => {
   currentHotkey = keys || [];
+  updateHomeHotkeyDisplay(currentHotkey);
   hotkeyDisplay.textContent = currentHotkey.length ? ("Hotkey: " + currentHotkey.join(" + ")) : "No hotkey set";
 });
 
 window.api.onHotkeySaved((_, keys) => {
   currentHotkey = keys || [];
+  updateHomeHotkeyDisplay(currentHotkey);
   hotkeyDisplay.textContent = currentHotkey.length ? currentHotkey.join(" + ") : "Set Hotkey";
   addLog("Hotkey saved: " + currentHotkey.join(" + "), "blue");
 });
 
 window.api.onHotkeyCleared(() => {
   currentHotkey = [];
+  updateHomeHotkeyDisplay([]);
   hotkeyDisplay.textContent = "Set Hotkey";
   addLog("Hotkey cleared", "red");
 });
@@ -188,6 +282,11 @@ window.api.onRecordStart(async () => {
   // Show Overlay
   window.api.showOverlay();
   
+  if (micStatus) {
+      micStatus.innerHTML = `<div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div><span class="text-emerald-600">Mic Active</span>`;
+      micStatus.className = "flex items-center gap-2 px-4 py-2 bg-emerald-50/50 text-slate-600 rounded-full text-xs font-semibold border border-emerald-200 transition-all";
+  }
+
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     
@@ -250,6 +349,12 @@ window.api.onRecordStop(() => {
   // Hide Overlay
   window.api.hideOverlay();
   stopAudioAnalysis();
+  
+  if (micStatus) {
+       micStatus.innerHTML = `<div class="w-2 h-2 rounded-full bg-slate-400"></div><span>Mic Inactive</span>`;
+       micStatus.className = "flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-500 rounded-full text-xs font-semibold border border-slate-200 transition-all";
+  }
+  if (visualizerBar) visualizerBar.style.width = "0%";
   
   try {
     if (mediaRecorder && mediaRecorder.state !== "inactive") {

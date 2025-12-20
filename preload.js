@@ -1,7 +1,13 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {
-  generateText: (args) => ipcRenderer.invoke("generate-text", args),
+  // History
+  getHistory: () => ipcRenderer.invoke("get-history"),
+  deleteHistoryItem: (id) => ipcRenderer.invoke("delete-history-item", id),
+  readAudioFile: (path) => ipcRenderer.invoke("read-audio-file", path),
+
+  // LLM
+  generateText: (data) => ipcRenderer.invoke("generate-text", data),
   onActiveWindow: (cb) => ipcRenderer.on("active-window", cb),
 
   // Hotkeys
