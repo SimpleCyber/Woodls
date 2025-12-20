@@ -11,7 +11,8 @@ const robot = require("@jitsi/robotjs");
 
 
 // ---- CONFIG ----
-const API_KEY = "AIzaSyB9QlFycqbDz3vDaBeuPkaD7NByIVsgpqU"; // replace if you use GoogleGenerativeAI
+require('dotenv').config();
+const API_KEY = process.env.GEN_AI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
