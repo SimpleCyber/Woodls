@@ -68,9 +68,12 @@ const auth = getAuth(fbApp);
 const db = getFirestore(fbApp);
 
 
+
 const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json"); // Legacy, not used
 const HISTORY_FILE = path.join(app.getPath("userData"), "history.json"); // Legacy, not used
+const GLOBAL_SETTINGS_FILE = path.join(app.getPath("userData"), "global_settings.json"); // App-wide settings
 const RECORDINGS_DIR = path.join(app.getPath("userData"), "recordings");
+
 
 // Ensure directories exist
 if (!fs.existsSync(RECORDINGS_DIR)) {
@@ -127,6 +130,28 @@ function saveSettings(newSettings) {
     console.error("Failed to save settings:", e);
   }
 }
+
+// Global settings (app-wide, not user-specific)
+function readGlobalSettings() {
+  try {
+    if (!fs.existsSync(GLOBAL_SETTINGS_FILE)) return {};
+    const raw = fs.readFileSync(GLOBAL_SETTINGS_FILE, "utf8");
+    return JSON.parse(raw);
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveGlobalSettings(newSettings) {
+  try {
+    const current = readGlobalSettings();
+    const updated = { ...current, ...newSettings };
+    fs.writeFileSync(GLOBAL_SETTINGS_FILE, JSON.stringify(updated, null, 2));
+  } catch (e) {
+    console.error("Failed to save global settings:", e);
+  }
+}
+
 
 // Data Isolation State
 let currentUser = null; // { uid, email, displayName, photoURL }
@@ -216,9 +241,9 @@ function createWindow() {
   });
 
   // Check if we should start hidden
-  const startHidden = process.argv.includes('--hidden') || process.argv.includes('--start-hidden'); // Check args
-  // Also check settings for persistent "start hidden" preference if arg is missing? 
-  // actually args are safer for auto-launch.
+  const hasHiddenArg = process.argv.includes('--hidden') || process.argv.includes('--start-hidden');
+  const globalSettings = readGlobalSettings();
+  const startHidden = hasHiddenArg || globalSettings.startHidden;
   
   if (!startHidden) {
       win.show();
@@ -592,18 +617,17 @@ ipcMain.on("set-startup-settings", (event, { openAtLogin, startHidden }) => {
         path: app.getPath('exe'),
         args: startHidden ? ['--hidden'] : []
     });
-    // Save to local settings too so UI reflects it
-    saveSettings({ openAtLogin, startHidden });
+    // Save to global settings so it persists before user login
+    saveGlobalSettings({ openAtLogin, startHidden });
 });
 
 ipcMain.on("get-startup-settings", (event) => {
     const { openAtLogin } = app.getLoginItemSettings();
-    // We can't easily get 'startHidden' args back from Electron api perfectly across all OS 
-    // without parsing, better to rely on our saved settings for the UI state.
-    const settings = readSettings();
+    // Read from global settings for UI state
+    const globalSettings = readGlobalSettings();
     event.reply("startup-settings-loaded", { 
-        openAtLogin: settings.openAtLogin !== undefined ? settings.openAtLogin : openAtLogin,
-        startHidden: settings.startHidden || false 
+        openAtLogin: globalSettings.openAtLogin !== undefined ? globalSettings.openAtLogin : openAtLogin,
+        startHidden: globalSettings.startHidden || false 
     });
 });
 
