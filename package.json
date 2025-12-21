@@ -1,7 +1,7 @@
 {
   "name": "woodls",
   "version": "1.0.0",
-  "description": "Auto voice typing",
+  "description": "Woodls : Auto voice typing",
   "main": "index.js",
   "author": "Satyam Yadav",
   "license": "ISC",
