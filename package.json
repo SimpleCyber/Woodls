@@ -24,12 +24,16 @@
     },
     "files": [
       "**/*",
-      "!node_modules/**/*",
       "!dist/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/node-global-key-listener/**/*",
+      "node_modules/@jitsi/robotjs/**/*",
+      "node_modules/active-win/**/*"
     ],
     "win": {
       "target": "nsis",
-      "icon": "build/icon.ico"
+      "icon": "build/woodls.ico"
     },
     "nsis": {
       "oneClick": false,
