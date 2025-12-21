@@ -85,6 +85,25 @@ let pressStart = null;
 
 let tray = null;
 let isQuitting = false;
+let server = null; // Store server reference for cleanup
+
+// ----------------- Single Instance Lock -----------------
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  // Another instance is already running, quit this one
+  app.quit();
+} else {
+  // Handle second instance attempt - focus the existing window
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, we should focus our window.
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.show();
+      win.focus();
+    }
+  });
+}
 
 // ----------------- helpers -----------------
 function readSettings() {
@@ -349,7 +368,7 @@ function createWindow() {
 
   // Start Local Server to avoid file:// protocol issues with Firebase Auth
   const http = require('http');
-  const server = http.createServer((req, res) => {
+  server = http.createServer((req, res) => {
     // Basic static file server
     const fs = require('fs');
     const path = require('path');
@@ -827,6 +846,12 @@ app.on("window-all-closed", (e) => {
 
 app.on('before-quit', () => {
     isQuitting = true;
+    // Close the HTTP server to prevent port lingering
+    if (server) {
+        server.close(() => {
+            console.log('Server closed');
+        });
+    }
 });
 
 app.on('activate', () => {
