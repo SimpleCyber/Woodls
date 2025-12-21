@@ -63,6 +63,7 @@ const modelNameInput = document.getElementById("modelNameInput");
 // ---------- Initialization ----------
 
 export function initApp() {
+    setupTheme();
     setupSettings();
     setupHotkeyUI();
     setupRecordingEvents();
@@ -627,5 +628,94 @@ function setupUpgradeModal() {
                  modal.classList.add("hidden");
             }
         };
+    }
+}
+
+// ========== THEME MANAGEMENT ==========
+
+function setupTheme() {
+    const themeLightBtn = document.getElementById('theme-light');
+    const themeDarkBtn = document.getElementById('theme-dark');
+    const themeSystemBtn = document.getElementById('theme-system');
+    
+    // Load saved theme or default to 'system'
+    const savedTheme = localStorage.getItem('theme') || 'system';
+    applyTheme(savedTheme);
+    updateThemeButtons(savedTheme);
+    
+    // Event listeners
+    if (themeLightBtn) {
+        themeLightBtn.onclick = () => {
+            setTheme('light');
+        };
+    }
+    
+    if (themeDarkBtn) {
+        themeDarkBtn.onclick = () => {
+            setTheme('dark');
+        };
+    }
+    
+    if (themeSystemBtn) {
+        themeSystemBtn.onclick = () => {
+            setTheme('system');
+        };
+    }
+    
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', (e) => {
+        const currentTheme = localStorage.getItem('theme') || 'system';
+        if (currentTheme === 'system') {
+            applyTheme('system');
+        }
+    });
+}
+
+function setTheme(theme) {
+    localStorage.setItem('theme', theme);
+    applyTheme(theme);
+    updateThemeButtons(theme);
+    addLog(`Theme changed to ${theme}`, 'blue');
+}
+
+function applyTheme(theme) {
+    const html = document.documentElement;
+    
+    if (theme === 'system') {
+        // Detect system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+            html.setAttribute('data-theme', 'dark');
+        } else {
+            html.removeAttribute('data-theme');
+        }
+    } else if (theme === 'dark') {
+        html.setAttribute('data-theme', 'dark');
+    } else {
+        html.removeAttribute('data-theme');
+    }
+}
+
+function updateThemeButtons(theme) {
+    const buttons = {
+        light: document.getElementById('theme-light'),
+        dark: document.getElementById('theme-dark'),
+        system: document.getElementById('theme-system')
+    };
+    
+    // Remove active state from all
+    Object.values(buttons).forEach(btn => {
+        if (btn) {
+            btn.classList.remove('border-primary-500', 'bg-primary-50');
+            btn.classList.add('border-slate-200');
+        }
+    });
+    
+    // Add active state to selected
+    const activeBtn = buttons[theme];
+    if (activeBtn) {
+        activeBtn.classList.remove('border-slate-200');
+        activeBtn.classList.add('border-primary-500', 'bg-primary-50');
     }
 }

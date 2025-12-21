@@ -35,9 +35,85 @@
   </script>
 
   <style>
+    /* ========== THEME SYSTEM - CSS VARIABLES ========== */
+    :root {
+      /* Light Theme Colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-tertiary: #f1f5f9;
+      
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-tertiary: #94a3b8;
+      
+      --border-primary: #e2e8f0;
+      --border-secondary: #cbd5e1;
+      
+      --sidebar-bg: #ffffff;
+      --sidebar-active-bg: #eff6ff;
+      --sidebar-active-text: #2563eb;
+      --sidebar-hover-bg: #f8fafc;
+      
+      --titlebar-bg: #ffffff;
+      --titlebar-border: #f1f5f9;
+      --titlebar-text: #64748b;
+      
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --card-shadow: rgba(0, 0, 0, 0.05);
+      
+      --input-bg: #f8fafc;
+      --input-border: #e2e8f0;
+      
+      --scrollbar-thumb: #cbd5e1;
+      --scrollbar-thumb-hover: #94a3b8;
+      
+      --timeline-dot: #919295;
+      --timeline-dot-border: #ffffff;
+    }
+
+    [data-theme="dark"] {
+      /* Dark Theme Colors - Neutral Grays */
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #242424;
+      --bg-tertiary: #2e2e2e;
+      
+      --text-primary: #e5e5e5;
+      --text-secondary: #b3b3b3;
+      --text-tertiary: #737373;
+      
+      --border-primary: #3a3a3a;
+      --border-secondary: #4a4a4a;
+      
+      --sidebar-bg: #1f1f1f;
+      --sidebar-active-bg: #2a2a2a;
+      --sidebar-active-text: #60a5fa;
+      --sidebar-hover-bg: #2e2e2e;
+      
+      --titlebar-bg: #1a1a1a;
+      --titlebar-border: #2e2e2e;
+      --titlebar-text: #a3a3a3;
+      
+      --card-bg: #242424;
+      --card-border: #3a3a3a;
+      --card-shadow: rgba(0, 0, 0, 0.5);
+      
+      --input-bg: #2e2e2e;
+      --input-border: #4a4a4a;
+      
+      --scrollbar-thumb: #4a4a4a;
+      --scrollbar-thumb-hover: #5a5a5a;
+      
+      --timeline-dot: #737373;
+      --timeline-dot-border: #1a1a1a;
+    }
+
     body {
       font-family: 'Inter', sans-serif;
       -webkit-font-smoothing: antialiased;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     /* Custom Scrollbar */
@@ -49,11 +125,11 @@
       background: transparent;
     }
     ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
+      background: var(--scrollbar-thumb);
       border-radius: 3px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
+      background: var(--scrollbar-thumb-hover);
     }
 
     .glass-panel {
@@ -62,9 +138,14 @@
       border: 1px solid rgba(255, 255, 255, 0.5);
     }
 
+    [data-theme="dark"] .glass-panel {
+      background: rgba(36, 36, 36, 0.7);
+      border: 1px solid rgba(58, 58, 58, 0.5);
+    }
+
     .sidebar-item.active {
-      background-color: #eff6ff;
-      color: #2563eb;
+      background-color: var(--sidebar-active-bg);
+      color: var(--sidebar-active-text);
       font-weight: 500;
     }
     
@@ -78,7 +159,7 @@
     
     .card-hover:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 10px 15px -3px var(--card-shadow), 0 4px 6px -2px var(--card-shadow);
     }
 
     /* Title Bar */
@@ -89,10 +170,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      color: #64748b;
+      color: var(--titlebar-text);
       font-size: 12px;
-      background: #ffffff;
-      border-bottom: 1px solid #f1f5f9;
+      background: var(--titlebar-bg);
+      border-bottom: 1px solid var(--titlebar-border);
       position: absolute;
       top: 0;
       left: 0;
@@ -116,8 +197,8 @@
     }
 
     .window-btn:hover {
-      background-color: #e2e8f0;
-      color: #1e293b;
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
     }
 
     .window-btn.close:hover {
@@ -137,10 +218,103 @@
       top: 6px;
       width: 9px;
       height: 9px;
-      background-color: #919295;
+      background-color: var(--timeline-dot);
       border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 0 0 1px #e2e8f0;
+      border: 2px solid var(--timeline-dot-border);
+      box-shadow: 0 0 0 1px var(--border-primary);
+    }
+    
+    /* ========== DARK MODE OVERRIDES ========== */
+    [data-theme="dark"] .bg-white {
+      background-color: var(--bg-primary) !important;
+    }
+    
+    [data-theme="dark"] .bg-slate-50,
+    [data-theme="dark"] .bg-slate-100 {
+      background-color: var(--bg-secondary) !important;
+    }
+    
+    [data-theme="dark"] .bg-slate-200 {
+      background-color: var(--bg-tertiary) !important;
+    }
+    
+    [data-theme="dark"] .text-slate-800,
+    [data-theme="dark"] .text-slate-900 {
+      color: var(--text-primary) !important;
+    }
+    
+    [data-theme="dark"] .text-slate-600,
+    [data-theme="dark"] .text-slate-700 {
+      color: var(--text-secondary) !important;
+    }
+    
+    [data-theme="dark"] .text-slate-400,
+    [data-theme="dark"] .text-slate-500 {
+      color: var(--text-tertiary) !important;
+    }
+    
+    [data-theme="dark"] .border-slate-100,
+    [data-theme="dark"] .border-slate-200 {
+      border-color: var(--border-primary) !important;
+    }
+    
+    [data-theme="dark"] .border-slate-300 {
+      border-color: var(--border-secondary) !important;
+    }
+    
+    [data-theme="dark"] .divide-slate-100 > * + * {
+      border-color: var(--border-primary) !important;
+    }
+    
+    /* Cards and containers */
+    [data-theme="dark"] .shadow-sm {
+      box-shadow: 0 1px 2px 0 var(--card-shadow) !important;
+    }
+    
+    [data-theme="dark"] .shadow-md {
+      box-shadow: 0 4px 6px -1px var(--card-shadow), 0 2px 4px -1px var(--card-shadow) !important;
+    }
+    
+    [data-theme="dark"] .shadow-xl {
+      box-shadow: 0 20px 25px -5px var(--card-shadow), 0 10px 10px -5px var(--card-shadow) !important;
+    }
+    
+    [data-theme="dark"] .shadow-2xl {
+      box-shadow: 0 25px 50px -12px var(--card-shadow) !important;
+    }
+    
+    /* Specific fixes for dark mode bugs */
+    
+    /* 1. Getting Started box gradient */
+    [data-theme="dark"] .bg-gradient-to-r {
+      background: var(--bg-secondary) !important;
+    }
+    
+    /* 2. Privacy First alert box */
+    [data-theme="dark"] .bg-blue-50\/50 {
+      background-color: rgba(59, 130, 246, 0.1) !important;
+    }
+    
+    [data-theme="dark"] .bg-blue-100 {
+      background-color: rgba(59, 130, 246, 0.2) !important;
+    }
+    
+    [data-theme="dark"] .border-blue-100\/50 {
+      border-color: rgba(59, 130, 246, 0.2) !important;
+    }
+    
+    /* 3. Notes search bar */
+    [data-theme="dark"] .focus-within\:bg-white:focus-within {
+      background-color: var(--bg-tertiary) !important;
+    }
+    
+    [data-theme="dark"] .bg-white\/90 {
+      background-color: rgba(26, 26, 26, 0.9) !important;
+    }
+    
+    /* Notes page container */
+    [data-theme="dark"] #notes.bg-white {
+      background-color: var(--bg-primary) !important;
     }
   </style>
 </head>
@@ -512,6 +686,31 @@
                              </label>
                          </div>
                      </div>
+                </div>
+
+                <!-- Appearance -->
+                <div>
+                    <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2">Appearance</h3>
+                    <div class="bg-white border border-slate-200 rounded-xl p-6">
+                        <div class="mb-3">
+                            <div class="text-sm font-medium text-slate-800">Theme</div>
+                            <div class="text-xs text-slate-500">Choose your preferred color scheme</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3">
+                            <button id="theme-light" class="theme-option flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-slate-200 hover:border-primary-500 transition-all">
+                                <i class="fa-solid fa-sun text-2xl text-amber-500"></i>
+                                <span class="text-xs font-medium text-slate-700">Light</span>
+                            </button>
+                            <button id="theme-dark" class="theme-option flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-slate-200 hover:border-primary-500 transition-all">
+                                <i class="fa-solid fa-moon text-2xl text-indigo-500"></i>
+                                <span class="text-xs font-medium text-slate-700">Dark</span>
+                            </button>
+                            <button id="theme-system" class="theme-option flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-slate-200 hover:border-primary-500 transition-all">
+                                <i class="fa-solid fa-desktop text-2xl text-slate-500"></i>
+                                <span class="text-xs font-medium text-slate-700">System</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- AI Configuration -->
