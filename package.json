@@ -8,7 +8,8 @@
   "type": "commonjs",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "postinstall": "electron-rebuild"
   },
   "devDependencies": {
     "electron": "^33.2.0",

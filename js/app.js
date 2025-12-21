@@ -130,6 +130,10 @@ function setupSettings() {
            if (backspaceToggle) backspaceToggle.checked = useBackspace;
            if (pasteToggle) pasteToggle.checked = instantPaste;
            if (aiToggle) aiToggle.checked = aiEnhanced;
+           
+           // Load API Settings
+           if (apiKeyInput) apiKeyInput.value = settings.apiKey || "";
+           if (modelNameInput) modelNameInput.value = settings.modelName || "";
         }
     });
 

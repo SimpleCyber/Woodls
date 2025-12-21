@@ -2,7 +2,11 @@
 const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage } = require("electron");
 const path = require("path");
 const fs = require("fs");
-const activeWin = require("active-win");
+// ESM-only module - must be dynamically imported for production
+let activeWin;
+(async () => {
+  activeWin = (await import("active-win")).default;
+})();
 const { GlobalKeyboardListener } = require("node-global-key-listener");
 const { GoogleGenerativeAI } = require("@google/generative-ai"); // keep as placeholder
 const { GoogleAIFileManager } = require("@google/generative-ai/server");
@@ -15,6 +19,11 @@ const { getFirestore } = require("firebase/firestore");
 
 // ---- CONFIG ----
 require('dotenv').config();
+
+// Asset Path Helper for Production (app.asar support)
+const getAssetPath = (...paths) => {
+  return path.join(app.isPackaged ? process.resourcesPath : __dirname, ...paths);
+};
 // Default env values
 const ENV_API_KEY = process.env.GEN_AI_API_KEY;
 const ENV_MODEL_NAME = process.env.GEN_AI_MODEL || "gemini-2.5-flash-lite";
@@ -59,8 +68,8 @@ const auth = getAuth(fbApp);
 const db = getFirestore(fbApp);
 
 
-const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
-const HISTORY_FILE = path.join(app.getPath("userData"), "history.json");
+const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json"); // Legacy, not used
+const HISTORY_FILE = path.join(app.getPath("userData"), "history.json"); // Legacy, not used
 const RECORDINGS_DIR = path.join(app.getPath("userData"), "recordings");
 
 // Ensure directories exist
@@ -80,8 +89,9 @@ let isQuitting = false;
 // ----------------- helpers -----------------
 function readSettings() {
   try {
-    if (!fs.existsSync(SETTINGS_FILE)) return { hotkey: [] };
-    const raw = fs.readFileSync(SETTINGS_FILE, "utf8");
+    const p = getUserPaths().settings;
+    if (!fs.existsSync(p)) return { hotkey: [] };
+    const raw = fs.readFileSync(p, "utf8");
     return JSON.parse(raw);
   } catch (e) {
     return { hotkey: [] };
@@ -92,7 +102,8 @@ function saveSettings(newSettings) {
   try {
     const current = readSettings();
     const updated = { ...current, ...newSettings };
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(updated, null, 2));
+    const p = getUserPaths().settings;
+    fs.writeFileSync(p, JSON.stringify(updated, null, 2));
   } catch (e) {
     console.error("Failed to save settings:", e);
   }
@@ -101,11 +112,23 @@ function saveSettings(newSettings) {
 // Data Isolation State
 let currentUser = null; // { uid, email, displayName, photoURL }
 
+// Helper to reload settings when user changes
+function onUserChanged() {
+    initGenAI(); // Reload with current user's settings
+    const settings = readSettings();
+    requiredKeys = Array.isArray(settings.hotkey) ? settings.hotkey : [];
+    if (win && !win.isDestroyed()) {
+        win.webContents.send("settings-loaded", settings);
+        win.webContents.send("hotkey-loaded", requiredKeys);
+    }
+}
+
 function getUserPaths() {
     const suffix = currentUser ? `_${currentUser.uid}` : "_guest";
     return {
         history: path.join(app.getPath("userData"), `history${suffix}.json`),
-        notes: path.join(app.getPath("userData"), `notes${suffix}.json`)
+        notes: path.join(app.getPath("userData"), `notes${suffix}.json`),
+        settings: path.join(app.getPath("userData"), `settings${suffix}.json`)
     };
 }
 
@@ -161,7 +184,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1200,
     height: 760,
-    icon: path.join(__dirname, 'webp/woodls.png'),
+    icon: getAssetPath("webp", "woodls.png"),
     frame: false, // Custom title bar
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -183,7 +206,7 @@ function createWindow() {
   }
 
   // Tray Setup
-  const iconPath = path.join(__dirname, 'webp/woodls.png'); // Use woodls icon
+  const iconPath = getAssetPath("webp", "woodls.png"); // Use woodls icon
   // better to use a dedicated icon but user has webp files. 
   // Let's try to load one. If not, maybe just use empty string which might fail or show generic.
   // We'll use the one from webp folder for now.
@@ -243,6 +266,8 @@ function createWindow() {
               displayName: cred.user.displayName,
               photoURL: cred.user.photoURL
           };
+          // Reload settings for this user
+          onUserChanged();
           // Notify renderer of state change
           win.webContents.send("auth-state-changed", currentUser);
           return { success: true, user: currentUser };
@@ -262,6 +287,8 @@ function createWindow() {
               displayName: name,
               photoURL: null
           };
+          // Reload settings for this user
+          onUserChanged();
           win.webContents.send("auth-state-changed", currentUser);
           return { success: true, user: currentUser };
       } catch (e) {
@@ -281,6 +308,8 @@ function createWindow() {
       } else {
           currentUser = null;
       }
+      // Reload settings for this user
+      onUserChanged();
       // Notify other windows if needed (e.g. overlay)
       // We do NOT need to send auth-state-changed back to main window since it initiated this.
       return { success: true };
@@ -290,6 +319,8 @@ function createWindow() {
       try {
           await signOut(auth); // Sign out of Main process auth if any
           currentUser = null;
+          // Reload settings for guest user
+          onUserChanged();
            win.webContents.send("auth-state-changed", null);
           return { success: true };
       } catch (e) {
@@ -361,7 +392,7 @@ function createWindow() {
   });
   
   const PORT = 3456;
-  server.listen(PORT, '127.0.0.1', () => {
+  server.listen(PORT, 'localhost', () => {
      const port = server.address().port;
      console.log(`Server running at http://localhost:${port}/`);
      win.loadURL(`http://localhost:${port}/index.html`);
@@ -391,6 +422,19 @@ function createWindow() {
   // Auth State Listener
   onAuthStateChanged(auth, (user) => {
     if (win && !win.isDestroyed()) {
+        // Update currentUser for Firebase auth flow
+        if (user) {
+            currentUser = { 
+                uid: user.uid, 
+                email: user.email, 
+                displayName: user.displayName,
+                photoURL: user.photoURL
+            };
+        } else {
+            currentUser = null;
+        }
+        // Reload settings for this user
+        onUserChanged();
         win.webContents.send("auth-state-changed", user ? { 
             uid: user.uid, 
             email: user.email, 
@@ -438,6 +482,7 @@ function createOverlayWindow() {
 function startActiveWindowMonitor() {
   setInterval(async () => {
     try {
+      if (!activeWin) return; // Guard against uninitialized ESM module
       const info = await activeWin();
       if (win && !win.isDestroyed()) win.webContents.send("active-window", info);
     } catch (e) {
@@ -776,10 +821,8 @@ Text: "${info}"
 // ----------------- app lifecycle -----------------
 app.whenReady().then(createWindow);
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-      // app.quit(); // Keep running
-  }
+app.on("window-all-closed", (e) => {
+  if (!isQuitting) e.preventDefault();
 });
 
 app.on('before-quit', () => {
