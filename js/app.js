@@ -417,7 +417,7 @@ function renderHistory(items) {
     historyList.innerHTML = "";
     items.forEach(item => {
         const div = document.createElement("div");
-        div.className = "relative pl-6 border-l-2 border-slate-100 pb-8 last:pb-0";
+        div.className = "timeline-item relative pl-6 border-l-2 border-slate-100 pb-8 last:pb-0";
         div.innerHTML = `
             <div class="flex justify-between items-start mb-2">
                 <div class="text-[10px] uppercase font-bold text-slate-400">${new Date(item.timestamp).toLocaleString()}</div>
@@ -436,21 +436,88 @@ function renderHistory(items) {
         const copyBtn = div.querySelector(".copy-btn");
 
         if (delBtn) {
-            delBtn.onclick = async () => {
-                if (confirm("Delete?")) {
+            delBtn.onclick = () => {
+                const modal = document.getElementById('history-delete-modal');
+                const confirmBtn = document.getElementById('confirm-history-delete-btn');
+                const cancelBtn = document.getElementById('cancel-history-delete-btn');
+                
+                // Show modal
+                if (modal) modal.classList.remove('hidden');
+                
+                // Handle confirm
+                const handleConfirm = async () => {
                     await window.api.deleteHistoryItem(item.id);
                     loadHistory();
-                }
+                    if (modal) modal.classList.add('hidden');
+                    cleanup();
+                };
+                
+                // Handle cancel
+                const handleCancel = () => {
+                    if (modal) modal.classList.add('hidden');
+                    cleanup();
+                };
+                
+                // Cleanup listeners
+                const cleanup = () => {
+                    if (confirmBtn) confirmBtn.removeEventListener('click', handleConfirm);
+                    if (cancelBtn) cancelBtn.removeEventListener('click', handleCancel);
+                    if (modal) modal.removeEventListener('click', handleModalClick);
+                };
+                
+                // Close on backdrop click
+                const handleModalClick = (e) => {
+                    if (e.target === modal) handleCancel();
+                };
+                
+                // Attach listeners
+                if (confirmBtn) confirmBtn.addEventListener('click', handleConfirm);
+                if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
+                if (modal) modal.addEventListener('click', handleModalClick);
             };
         }
         if (playBtn) {
+            let currentAudio = null;
+            let isPlaying = false;
+            
             playBtn.onclick = async () => {
                 if (!item.audioPath) return alert("No audio file found.");
+                
+                // If audio is currently playing, pause it
+                if (isPlaying && currentAudio) {
+                    currentAudio.pause();
+                    isPlaying = false;
+                    playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                    playBtn.title = "Play Recording";
+                    return;
+                }
+                
+                // If audio exists but is paused, resume it
+                if (currentAudio && !isPlaying) {
+                    currentAudio.play();
+                    isPlaying = true;
+                    playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                    playBtn.title = "Pause Recording";
+                    return;
+                }
+                
+                // Load and play new audio
                 try {
                     const b64 = await window.api.readAudioFile(item.audioPath);
                     if (b64) {
-                        const snd = new Audio("data:audio/webm;base64," + b64);
-                        snd.play();
+                        currentAudio = new Audio("data:audio/webm;base64," + b64);
+                        
+                        // Update button when audio ends
+                        currentAudio.onended = () => {
+                            isPlaying = false;
+                            playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                            playBtn.title = "Play Recording";
+                        };
+                        
+                        currentAudio.play();
+                        isPlaying = true;
+                        playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                        playBtn.title = "Pause Recording";
                     } else {
                         alert("Audio file missing on disk.");
                     }

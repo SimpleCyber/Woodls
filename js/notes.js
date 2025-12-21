@@ -316,11 +316,24 @@ function renderNotes(notes) {
     notesEmptyState.classList.add("hidden");
     notesGrid.innerHTML = "";
     
-    notes.forEach(note => {
+    // Sort: Pinned first, then by order (or timestamp)
+    const sortedNotes = [...notes].sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        // Within same pin status, sort by order
+        const orderA = a.order !== undefined ? a.order : a.timestamp || 0;
+        const orderB = b.order !== undefined ? b.order : b.timestamp || 0;
+        return orderA - orderB;
+    });
+    
+    sortedNotes.forEach((note, index) => {
         const colorObj = getNoteColor(note.color || 'default');
         
         const el = document.createElement("div");
-        el.className = `break-inside-avoid ${colorObj.bg} border ${colorObj.border} rounded-xl shadow-sm hover:shadow-md mb-4 relative group transition-all duration-200 overflow-hidden`;
+        el.className = `break-inside-avoid ${colorObj.bg} border ${colorObj.border} rounded-xl shadow-sm hover:shadow-md mb-4 relative group transition-all duration-200 overflow-hidden cursor-move`;
+        el.draggable = true;
+        el.dataset.noteId = note.id;
+        el.dataset.noteIndex = index;
         el.style.pageBreakInside = "avoid";
 
         // Render Images
@@ -365,7 +378,11 @@ function renderNotes(notes) {
 
         el.innerHTML = `
             ${imagesHtml}
+            ${note.pinned ? '<div class="absolute top-2 left-2 z-10"><i class="fa-solid fa-thumbtack text-amber-500 text-sm drop-shadow"></i></div>' : ''}
             <div class="note-actions absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                 <button class="pin-btn w-6 h-6 rounded-full bg-white/50 hover:bg-white ${note.pinned ? 'text-amber-500' : 'text-slate-500'} hover:text-amber-600 flex items-center justify-center transition-colors shadow-sm" title="${note.pinned ? 'Unpin' : 'Pin'}">
+                    <i class="fa-solid fa-thumbtack text-xs"></i>
+                </button>
                  <button class="edit-btn w-6 h-6 rounded-full bg-white/50 hover:bg-white text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors shadow-sm">
                     <i class="fa-solid fa-pen text-xs"></i>
                 </button>
@@ -395,8 +412,17 @@ function renderNotes(notes) {
             if (e.target.closest('button') || e.target.closest('.checklist-item-render')) return;
             openEditModal(note);
         };
+        
+        // Button handlers
+        el.querySelector(".pin-btn").onclick = (e) => { e.stopPropagation(); togglePin(note.id); };
         el.querySelector(".del-btn").onclick = (e) => { e.stopPropagation(); openDeleteModal(note.id); };
         el.querySelector(".edit-btn").onclick = (e) => { e.stopPropagation(); openEditModal(note); };
+        
+        // Drag and Drop handlers
+        el.addEventListener('dragstart', handleDragStart);
+        el.addEventListener('dragover', handleDragOver);
+        el.addEventListener('drop', handleDrop);
+        el.addEventListener('dragend', handleDragEnd);
 
         notesGrid.appendChild(el);
     });
@@ -663,3 +689,81 @@ export function handleVoiceInput(text) {
 // Modal delete handlers
 function openDeleteModal(id) { noteToDeleteId = id; deleteModal.classList.remove("hidden"); deleteModal.classList.add("flex"); }
 function closeDeleteModal() { noteToDeleteId = null; deleteModal.classList.add("hidden"); deleteModal.classList.remove("flex"); }
+
+// Pin/Unpin functionality
+async function togglePin(noteId) {
+    const note = allNotes.find(n => n.id === noteId);
+    if (!note) return;
+    
+    note.pinned = !note.pinned;
+    await window.api.saveNote(note);
+    await loadNotes();
+}
+
+// Drag and Drop State
+let draggedElement = null;
+let draggedNoteId = null;
+
+function handleDragStart(e) {
+    draggedElement = e.currentTarget;
+    draggedNoteId = e.currentTarget.dataset.noteId;
+    e.currentTarget.style.opacity = '0.5';
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    const afterElement = getDragAfterElement(notesGrid, e.clientY);
+    if (afterElement == null) {
+        notesGrid.appendChild(draggedElement);
+    } else {
+        notesGrid.insertBefore(draggedElement, afterElement);
+    }
+    
+    return false;
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) e.stopPropagation();
+    return false;
+}
+
+async function handleDragEnd(e) {
+    e.currentTarget.style.opacity = '';
+    
+    // Update order based on new DOM position
+    const noteElements = Array.from(notesGrid.querySelectorAll('[data-note-id]'));
+    const newOrder = noteElements.map((el, index) => ({
+        id: el.dataset.noteId,
+        order: index
+    }));
+    
+    // Update all notes with new order
+    for (const { id, order } of newOrder) {
+        const note = allNotes.find(n => n.id === id);
+        if (note) {
+            note.order = order;
+            await window.api.saveNote(note);
+        }
+    }
+    
+    await loadNotes();
+}
+
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('[draggable="true"]:not(.opacity-50)')];
+    
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}

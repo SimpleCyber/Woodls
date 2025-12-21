@@ -124,6 +124,24 @@
       background-color: #ef4444;
       color: white;
     }
+
+    /* Timeline Circle */
+    .timeline-item {
+      position: relative;
+    }
+    
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -5px;
+      top: 6px;
+      width: 9px;
+      height: 9px;
+      background-color: #919295;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 0 0 1px #e2e8f0;
+    }
   </style>
 </head>
 
@@ -446,6 +464,7 @@
         </div>
 
         <!-- Hidden Elements -->
+        <input type="file" id="image-input" accept="image/*" multiple class="hidden">
         <div id="activeInfo" class="hidden"></div>
         <div id="output" class="hidden"></div>
 
@@ -636,6 +655,21 @@
           <div class="grid grid-cols-2 gap-3">
               <button id="cancel-delete-btn" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl py-2 text-sm font-medium transition-colors">Cancel</button>
               <button id="confirm-delete-btn" class="bg-red-500 hover:bg-red-600 text-white rounded-xl py-2 text-sm font-medium transition-colors shadow-lg shadow-red-500/20">Delete</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- History Delete Modal -->
+  <div id="history-delete-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center scale-100 animate-in zoom-in-95 duration-200">
+          <div class="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i class="fa-solid fa-trash-can text-lg"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Delete Recording?</h3>
+          <p class="text-sm text-slate-500 mb-6">This action cannot be undone.</p>
+          <div class="grid grid-cols-2 gap-3">
+              <button id="cancel-history-delete-btn" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl py-2 text-sm font-medium transition-colors">Cancel</button>
+              <button id="confirm-history-delete-btn" class="bg-red-500 hover:bg-red-600 text-white rounded-xl py-2 text-sm font-medium transition-colors shadow-lg shadow-red-500/20">Delete</button>
           </div>
       </div>
   </div>
