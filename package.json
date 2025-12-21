@@ -24,9 +24,11 @@
     },
     "files": [
       "**/*",
-      "!dist/**/*"
+      "!dist/**/*",
+      "!node_modules/node-global-key-listener/bin/MacKeyServer"
     ],
     "asarUnpack": [
+      "**/*.dll",
       "node_modules/node-global-key-listener/**/*",
       "node_modules/@jitsi/robotjs/**/*",
       "node_modules/active-win/**/*"
