@@ -94,8 +94,9 @@ let server = null; // Store server reference for cleanup
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
-  // Another instance is already running, quit this one
+  // Another instance is already running, quit this one immediately
   app.quit();
+  process.exit(0); // Force exit to prevent further execution
 } else {
   // Handle second instance attempt - focus the existing window
   app.on('second-instance', (event, commandLine, workingDirectory) => {
@@ -436,10 +437,24 @@ function createWindow() {
   });
   
   const PORT = 3456;
+  
+  server.on('error', (e) => {
+    if (e.code === 'EADDRINUSE') {
+      console.warn(`Port ${PORT} in use, trying another...`);
+      setTimeout(() => {
+        server.listen(0, 'localhost'); // Listen on any available port
+      }, 1000);
+    } else {
+      console.error("Local server error:", e);
+    }
+  });
+
   server.listen(PORT, 'localhost', () => {
      const port = server.address().port;
      console.log(`Server running at http://localhost:${port}/`);
-     win.loadURL(`http://localhost:${port}/index.html`);
+     if (win && !win.isDestroyed()) {
+         win.loadURL(`http://localhost:${port}/index.html`);
+     }
   });
 
   // win.loadFile(indexPath).catch(e => console.error("Failed to load index.html:", e));
