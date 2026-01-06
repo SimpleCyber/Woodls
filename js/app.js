@@ -107,13 +107,22 @@ export function initApp() {
     // Tab Switching
     
     // Tab Switching
-    document.querySelectorAll('.sidebar-item').forEach(item => {
-        item.onclick = () => {
+    document.querySelectorAll('.sidebar-item, .sidebar-item-link').forEach(item => {
+        item.onclick = (e) => {
+          if (e.currentTarget.tagName === 'A' && e.currentTarget.href !== '#') return;
+          
           document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
           document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
   
-          item.classList.add('active');
+          // Find the related sidebar item if this is a link
           const page = item.dataset.page;
+          const sidebarItem = document.querySelector(`.sidebar-item[data-page="${page}"]`);
+          if (sidebarItem) {
+              sidebarItem.classList.add('active');
+          } else if (item.classList.contains('sidebar-item')) {
+              item.classList.add('active');
+          }
+          
           const pEl = document.getElementById(page);
           if (pEl) pEl.classList.remove('hidden');
         };

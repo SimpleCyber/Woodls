@@ -836,17 +836,79 @@
                  <p class="text-slate-500 text-sm mb-6">Version 1.0.0 (Beta)</p>
                  
                  <div class="flex justify-center gap-4 text-sm">
-                     <a href="#" class="text-primary-600 hover:text-primary-700 font-medium">Website</a>
+                  <div class="flex justify-center gap-4 text-sm">
+                     <a href="https://woodls.vercel.app/" target="_blank" class="text-primary-600 hover:text-primary-700 font-medium">Website</a>
                      <span class="text-slate-300">|</span>
-                     <a href="#" class="text-primary-600 hover:text-primary-700 font-medium">Privacy Policy</a>
+                     <div data-page="privacy-page" class="text-primary-600 hover:text-primary-700 font-medium cursor-pointer sidebar-item-link">Privacy Policy</div>
                      <span class="text-slate-300">|</span>
-                     <a href="#" class="text-primary-600 hover:text-primary-700 font-medium">Terms</a>
+                     <div data-page="terms-page" class="text-primary-600 hover:text-primary-700 font-medium cursor-pointer sidebar-item-link">Terms</div>
+                 </div>
                  </div>
                  
                  <div class="mt-8 pt-8 text-xs text-slate-400">
                      © 2026 Woodls AI. All rights reserved.
                  </div>
                  
+            </div>
+        </div>
+        
+        <!-- PRIVACY POLICY -->
+        <div id="privacy-page" class="page hidden flex-1 overflow-y-auto p-10 max-w-3xl mx-auto w-full">
+            <div class="flex items-center gap-4 mb-8">
+                <button data-page="account" class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 sidebar-item-link">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <h2 class="text-2xl font-medium text-slate-800">Privacy Policy</h2>
+            </div>
+            
+            <div class="bg-white border border-slate-200 rounded-2xl p-8 prose prose-slate max-w-none">
+                <p class="text-slate-600 mb-4 italic text-sm">Last updated: January 6, 2026</p>
+                <div class="space-y-6 text-slate-700 leading-relaxed text-sm">
+                    <section>
+                        <h4 class="font-bold text-slate-900 mb-2">1. Overview</h4>
+                        <p>Woodls is designed with a "Local First" approach. We believe your voice and your data belong to you.</p>
+                    </section>
+                    <section>
+                        <h4 class="font-bold text-slate-900 mb-2">2. Data Collection</h4>
+                        <p>We do not collect or store your audio recordings or transcripts on our servers. All processing happens locally on your device or directly through the Gemini API using your own keys.</p>
+                    </section>
+                    <section>
+                        <h4 class="font-bold text-slate-900 mb-2">3. Third-Party Services</h4>
+                        <p>Our app uses the Google Gemini API for transcription and AI enhancement. Use of this service is subject to Google's Privacy Policy. Your API keys are stored securely on your local machine.</p>
+                    </section>
+                    <section>
+                        <h4 class="font-bold text-slate-900 mb-2">4. Local Storage</h4>
+                        <p>Your history, notes, and settings are saved locally in your application data folder. This data never leaves your computer unless you explicitly choose to export or sync it.</p>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- TERMS OF SERVICE -->
+        <div id="terms-page" class="page hidden flex-1 overflow-y-auto p-10 max-w-3xl mx-auto w-full">
+            <div class="flex items-center gap-4 mb-8">
+                <button data-page="account" class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 sidebar-item-link">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <h2 class="text-2xl font-medium text-slate-800">Terms of Service</h2>
+            </div>
+            
+            <div class="bg-white border border-slate-200 rounded-2xl p-8 prose prose-slate max-w-none">
+                <p class="text-slate-600 mb-4 italic text-sm">Last updated: January 6, 2026</p>
+                <div class="space-y-6 text-slate-700 leading-relaxed text-sm">
+                    <section>
+                        <h4 class="font-bold text-slate-900 mb-2">1. Use of Service</h4>
+                        <p>Woodls is provided as-is. By using this application, you agree to take full responsibility for the content you dictate and the use of your API keys.</p>
+                    </section>
+                    <section>
+                        <h4 class="font-bold text-slate-900 mb-2">2. Liability</h4>
+                        <p>We are not responsible for any inaccuracies in transcription or AI-enhanced text. Always verify critical information before use.</p>
+                    </section>
+                    <section>
+                        <h4 class="font-bold text-slate-900 mb-2">3. API Usage</h4>
+                        <p>Excessive use of the API may result in costs or rate limiting from Google. You are responsible for any charges incurred on your Gemini API account.</p>
+                    </section>
+                </div>
             </div>
         </div>
         
