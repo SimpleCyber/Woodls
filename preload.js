@@ -56,6 +56,7 @@ contextBridge.exposeInMainWorld("api", {
   getNotes: () => ipcRenderer.invoke("get-notes"),
   saveNote: (note) => ipcRenderer.invoke("save-note", note),
   deleteNote: (id) => ipcRenderer.invoke("delete-note", id),
+  getAIInfo: () => ipcRenderer.invoke("get-ai-info"),
 
   // Window Controls
   minimizeWindow: () => ipcRenderer.send("window-minimize"),

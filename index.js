@@ -24,34 +24,149 @@ require('dotenv').config();
 const getAssetPath = (...paths) => {
   return path.join(app.isPackaged ? process.resourcesPath : __dirname, ...paths);
 };
+
+let win; // Moved to top to avoid TDZ issues
+// ----------------- AI ROTATION -----------------
+const DEFAULT_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+const AI_USAGE_FILE = path.join(app.getPath("userData"), "ai_usage.json");
+
+function readAIUsage() {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        if (!fs.existsSync(AI_USAGE_FILE)) return { date: today, keys: {} };
+        const raw = fs.readFileSync(AI_USAGE_FILE, "utf8");
+        const data = JSON.parse(raw);
+        if (data.date !== today || !data.keys) {
+            return { date: today, keys: {} };
+        }
+        return data; // { date, keys: { "0": { "model": count } } }
+    } catch (e) {
+        return { date: new Date().toISOString().split('T')[0], keys: {} };
+    }
+}
+
+function saveAIUsage(data) {
+    try {
+        fs.writeFileSync(AI_USAGE_FILE, JSON.stringify(data, null, 2));
+    } catch (e) {
+        console.error("Failed to save AI usage:", e);
+    }
+}
+
+function updateAIUsage(keyIndex, modelName) {
+    const data = readAIUsage();
+    if (!data.keys[keyIndex]) data.keys[keyIndex] = {};
+    data.keys[keyIndex][modelName] = (data.keys[keyIndex][modelName] || 0) + 1;
+    saveAIUsage(data);
+    console.log(`[AI] Usage updated for Key #${keyIndex} (${modelName}): ${data.keys[keyIndex][modelName]} calls today`);
+    sendAIInfoToRenderer();
+}
+
+function getBestModelAndKey(apiKeys, preferredModel) {
+    if (!apiKeys || apiKeys.length === 0) return null;
+    const data = readAIUsage();
+    
+    // Rotation Strategy:
+    // 1. Iterate through each Key
+    // 2. For each Key, try the Preferred Model first (if any)
+    // 3. Then try the Default Models (Flash Lite, then Flash)
+    
+    for (let i = 0; i < apiKeys.length; i++) {
+        const keyUsage = (data.keys && data.keys[i]) ? data.keys[i] : {};
+
+        // Try preferred if user set one
+        if (preferredModel && preferredModel.trim()) {
+            const count = keyUsage[preferredModel] || 0;
+            if (count < 20) return { key: apiKeys[i], keyIndex: i, model: preferredModel };
+        }
+
+        // Try defaults
+        for (const m of DEFAULT_MODELS) {
+            const count = keyUsage[m] || 0;
+            if (count < 20) return { key: apiKeys[i], keyIndex: i, model: m };
+        }
+    }
+
+    // If all exhausted, return the first one as last resort
+    return { key: apiKeys[0], keyIndex: 0, model: preferredModel || DEFAULT_MODELS[0] };
+}
+
+function sendAIInfoToRenderer() {
+    if (win && !win.isDestroyed()) {
+        const usageData = readAIUsage();
+        const keyUsage = usageData.keys[currentKeyIndex] || {};
+        win.webContents.send("ai-info-update", {
+            currentModel: currentModelName,
+            usage: keyUsage[currentModelName] || 0,
+            keyIndex: currentKeyIndex,
+            totalKeys: totalKeysAvailable
+        });
+    }
+}
+
+ipcMain.handle('get-ai-info', () => {
+    const usageData = readAIUsage();
+    const keyUsage = usageData.keys[currentKeyIndex] || {};
+    return {
+        currentModel: currentModelName,
+        usage: keyUsage[currentModelName] || 0,
+        keyIndex: currentKeyIndex,
+        totalKeys: totalKeysAvailable
+    };
+});
+
 // Default env values
-const ENV_API_KEY = process.env.GEN_AI_API_KEY;
+const ENV_API_KEY = process.env.GEN_AI_API_KEY; // Can be "key1,key2"
 const ENV_MODEL_NAME = process.env.GEN_AI_MODEL || "gemini-2.5-flash-lite";
 
 let genAI;
 let currentModelName = ENV_MODEL_NAME;
+let currentApiKey = null;
+let currentKeyIndex = 0;
+let totalKeysAvailable = 0;
 
 function initGenAI() {
     const settings = readSettings();
-    const apiKey = (settings.apiKey && settings.apiKey.trim()) ? settings.apiKey.trim() : ENV_API_KEY;
-    currentModelName = (settings.modelName && settings.modelName.trim()) ? settings.modelName.trim() : ENV_MODEL_NAME;
+    let apiKeys = [];
     
-    if (apiKey) {
-        try {
-            genAI = new GoogleGenerativeAI(apiKey);
-            console.log(`GenAI Initialized with model: ${currentModelName}`);
-        } catch (error) {
-            console.error("Failed to initialize Google Generative AI:", error);
-            genAI = null;
-        }
-    } else {
-        console.warn("No API Key found (settings or env). AI features will fail.");
+    // Handle both new array format and legacy string format
+    if (Array.isArray(settings.apiKey)) {
+        apiKeys = settings.apiKey.map(k => k.trim()).filter(k => k.length > 0);
+    } else if (typeof settings.apiKey === 'string' && settings.apiKey.trim()) {
+        apiKeys = settings.apiKey.split(',').map(k => k.trim()).filter(k => k.length > 0);
+    }
+
+    // Fallback to Env if no settings keys
+    if (apiKeys.length === 0 && ENV_API_KEY) {
+        apiKeys = ENV_API_KEY.split(',').map(k => k.trim()).filter(k => k.length > 0);
+    }
+
+    const preferredModel = (settings.modelName && settings.modelName.trim()) ? settings.modelName.trim() : ENV_MODEL_NAME;
+    totalKeysAvailable = apiKeys.length;
+
+    if (apiKeys.length === 0) {
+        console.warn("No API Keys found (settings or env). AI features will fail.");
+        genAI = null;
+        return;
+    }
+
+    // Determine the actual model and key based on usage
+    const selection = getBestModelAndKey(apiKeys, preferredModel);
+    currentApiKey = selection.key;
+    currentKeyIndex = selection.keyIndex;
+    currentModelName = selection.model;
+    
+    try {
+        genAI = new GoogleGenerativeAI(currentApiKey);
+        console.log(`GenAI Initialized with Key #${currentKeyIndex} and model: ${currentModelName}`);
+        sendAIInfoToRenderer();
+    } catch (error) {
+        console.error("Failed to initialize Google Generative AI:", error);
         genAI = null;
     }
 }
 
-// Initialize on start
-initGenAI();
+// Initialize on start will happen when app is ready
 
 const firebaseConfig = {
   apiKey: "AIzaSyAvKsK4Qot2xLzzuVO4bOaTJEKR6kUDlDE",
@@ -80,7 +195,7 @@ if (!fs.existsSync(RECORDINGS_DIR)) {
     fs.mkdirSync(RECORDINGS_DIR, { recursive: true });
 }
 
-let win;
+
 let keyboard;
 let requiredKeys = []; // single-key expected (array but we use index 0)
 let running = false;
@@ -650,6 +765,8 @@ ipcMain.on("get-hotkey", (event) => {
   event.reply("hotkey-loaded", requiredKeys);
 });
 
+
+
 // ----------------- IPC: Save recorded audio -----------------
 ipcMain.on("save-audio", async (event, arrayBuffer) => {
   try {
@@ -781,79 +898,93 @@ ipcMain.handle("delete-note", (_, id) => {
 // ----------------- IPC: speech to text -----------------
 
 ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
-  try {
-    if (!genAI) throw new Error("AI not initialized. Check API Key.");
-    
-    // For file manager, we need the API key again. 
-    // Since initGenAI handles the instance, let's just grab the key from the instance if possible or re-read settings.
-    // Actually GoogleAIFileManager needs the key string.
-    const settings = readSettings();
-    const apiKey = (settings.apiKey && settings.apiKey.trim()) ? settings.apiKey.trim() : ENV_API_KEY;
-    if (!apiKey) throw new Error("No API Key available.");
+  const maxRetries = 3; // Allow more retries for multi-key
+  let attempt = 0;
+  let savePath;
 
-    const fileManager = new GoogleAIFileManager(apiKey);
+  while (attempt < maxRetries) {
+    try {
+      if (!genAI) throw new Error("AI not initialized. Check API Key.");
+      
+      const settings = readSettings();
+      // fileManager needs a valid key. Use currentApiKey.
+      const fileManager = new GoogleAIFileManager(currentApiKey);
 
-    // 1. Save to recordings folder for history
-    const fileName = `rec_${Date.now()}.webm`;
-    const savePath = path.join(RECORDINGS_DIR, fileName);
-    const buffer = Buffer.from(arrayBuffer);
-    fs.writeFileSync(savePath, buffer);
-
-    // 2. Temp file for upload (or just use savePath)
-    // We can use savePath directly since it's the same file
-    
-    // upload the audio
-    const upload = await fileManager.uploadFile(savePath, {
-      mimeType: "audio/webm",
-      displayName: "hotkey-recording",
-    });
-
-    // now transcribe
-    const model = genAI.getGenerativeModel({ model: currentModelName });
-
-    const result = await model.generateContent([
-      "Transcribe this audio to plain text only: ",
-
-      {
-        fileData: {
-          mimeType: upload.file.mimeType,
-          fileUri: upload.file.uri,
-        }
+      // 1. Save to recordings folder for history (only once)
+      if (attempt === 0) {
+        savePath = path.join(RECORDINGS_DIR, `rec_${Date.now()}.webm`);
+        const buffer = Buffer.from(arrayBuffer);
+        fs.writeFileSync(savePath, buffer);
       }
-    ]);
 
-    const text = result.response.text();
+      // upload the audio
+      const upload = await fileManager.uploadFile(savePath, {
+        mimeType: "audio/webm",
+        displayName: "hotkey-recording",
+      });
 
-    // Save to history (we'll update the refined text later if needed, or just save the transcript now)
-    // Ideally we want the refined text too. The renderer calls generate-text separately.
-    // Let's modify this to just return text, and renderer calls another IPC to "save complete history item" 
-    // OR we save the transcript here, and update it later? 
-    // Simpler: Just save transcript here. If we want refined, we can add a new IPC "add-history-item" called by renderer.
-    // BUT user asked "Save audio and text to history".
-    // Let's just save the transcript item here.
-    
-    const historyItem = {
-        id: Date.now().toString(),
-        timestamp: Date.now(),
-        text: text, // Raw transcript
-        audioPath: savePath
-    };
-    
-    const history = readHistory();
-    history.push(historyItem);
-    saveHistory(history);
+      // now transcribe
+      const model = genAI.getGenerativeModel({ model: currentModelName });
 
-    return text;
-  } catch (err) {
-    console.error("Transcription error:", err);
-    return "Error: " + err.message;
+      const result = await model.generateContent([
+        "Transcribe this audio to plain text only: ",
+        {
+          fileData: {
+            mimeType: upload.file.mimeType,
+            fileUri: upload.file.uri,
+          }
+        }
+      ]);
+
+      const text = result.response.text();
+      
+      // SUCCESS: Update usage for this specific Key + Model
+      updateAIUsage(currentKeyIndex, currentModelName);
+
+      const historyItem = {
+          id: Date.now().toString(),
+          timestamp: Date.now(),
+          text: text, // Raw transcript
+          audioPath: savePath
+      };
+      
+      const history = readHistory();
+      history.push(historyItem);
+      saveHistory(history);
+
+      return text;
+    } catch (err) {
+      console.error(`Transcription error (Attempt ${attempt + 1}/${maxRetries}):`, err);
+      
+      const isRateLimit = err && (err.status === 429 || (err.message && err.message.includes("quota")));
+      
+      if (isRateLimit && attempt < maxRetries - 1) {
+          console.warn(`[AI] Rate limit hit for Key #${currentKeyIndex} (${currentModelName}). Rotating...`);
+          // Mark this pair as exhausted
+          const usageData = readAIUsage();
+          if (!usageData.keys[currentKeyIndex]) usageData.keys[currentKeyIndex] = {};
+          usageData.keys[currentKeyIndex][currentModelName] = 20;
+          saveAIUsage(usageData);
+          
+          // Re-init with next best key/model pair
+          initGenAI();
+          attempt++;
+          continue;
+      }
+      
+      return "Error: " + err.message;
+    }
   }
 });
 
 
 // ----------------- IPC: LLM generation (placeholder) -----------------
 ipcMain.handle("generate-text", async (_, { info, assistantName, appName }) => {
-  const prompt = `
+  const maxRetries = 3;
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    const prompt = `
 You are my AI assistant.
 Your job is to rewrite the given input text with proper punctuation, grammar, formatting, and clarity.  
 Rewrite it as if I am describing something to you, and you are returning a refined version of what I should write.  
@@ -863,21 +994,47 @@ Return **only the refined text**, no explanations, no quotes, no markdown unless
 App: ${appName}
 Text: "${info}"
 `;
-  try {
-    if (!genAI) throw new Error("AI not initialized.");
-    const model = genAI.getGenerativeModel({ model: currentModelName });
-    const result = await model.generateContent(prompt);
-    let txt = result.response.text();
-    // Extra safety cleanup for hallucinations
-    txt = txt.replace(/\(\d{2}:\d{2}\)/g, "").trim(); 
-    return txt;
-  } catch (err) {
-    return "Error: " + (err && err.message ? err.message : String(err));
+    try {
+      if (!genAI) throw new Error("AI not initialized.");
+      const model = genAI.getGenerativeModel({ model: currentModelName });
+      const result = await model.generateContent(prompt);
+      let txt = result.response.text();
+      
+      // SUCCESS: Update usage for this specific Key + Model
+      updateAIUsage(currentKeyIndex, currentModelName);
+
+      // Extra safety cleanup for hallucinations
+      txt = txt.replace(/\(\d{2}:\d{2}\)/g, "").trim(); 
+      return txt;
+    } catch (err) {
+      console.error(`Generation error (Attempt ${attempt + 1}/${maxRetries}):`, err);
+      
+      const isRateLimit = err && (err.status === 429 || (err.message && err.message.includes("quota")));
+      
+      if (isRateLimit && attempt < maxRetries - 1) {
+          console.warn(`[AI] Rate limit hit for Key #${currentKeyIndex} (${currentModelName}). Rotating...`);
+          // Mark as exhausted
+          const usageData = readAIUsage();
+          if (!usageData.keys[currentKeyIndex]) usageData.keys[currentKeyIndex] = {};
+          usageData.keys[currentKeyIndex][currentModelName] = 20;
+          saveAIUsage(usageData);
+          
+          // Re-init with next best key/model pair
+          initGenAI();
+          attempt++;
+          continue;
+      }
+      
+      return "Error: " + (err && err.message ? err.message : String(err));
+    }
   }
 });
 
 // ----------------- app lifecycle -----------------
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+    initGenAI();
+    createWindow();
+});
 
 app.on("window-all-closed", (e) => {
   if (!isQuitting) e.preventDefault();

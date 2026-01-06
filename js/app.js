@@ -57,8 +57,10 @@ const aiToggle = document.getElementById("aiToggle");
 const startupToggle = document.getElementById("startupToggle");
 const hiddenToggle = document.getElementById("hiddenToggle");
 
-const apiKeyInput = document.getElementById("apiKeyInput");
-const modelNameInput = document.getElementById("modelNameInput");
+const newKeyInput = document.getElementById("newKeyInput");
+const addKeyBtn = document.getElementById("addKeyBtn");
+const keyListContainer = document.getElementById("key-list-container");
+let currentKeys = []; // Array of API keys
 
 // ---------- Initialization ----------
 
@@ -125,15 +127,23 @@ function setupSettings() {
         if (settings) {
            if (typeof settings.useBackspace === 'boolean') useBackspace = settings.useBackspace;
            if (typeof settings.instantPaste === 'boolean') instantPaste = settings.instantPaste;
-           if (typeof settings.aiEnhanced === 'boolean') aiEnhanced = settings.aiEnhanced;
-           
-           if (backspaceToggle) backspaceToggle.checked = useBackspace;
-           if (pasteToggle) pasteToggle.checked = instantPaste;
-           if (aiToggle) aiToggle.checked = aiEnhanced;
-           
-           // Load API Settings
-           if (apiKeyInput) apiKeyInput.value = settings.apiKey || "";
-           if (modelNameInput) modelNameInput.value = settings.modelName || "";
+            if (typeof settings.aiEnhanced === 'boolean') aiEnhanced = settings.aiEnhanced;
+            
+            if (backspaceToggle) backspaceToggle.checked = useBackspace;
+            if (pasteToggle) pasteToggle.checked = instantPaste;
+            if (aiToggle) aiToggle.checked = aiEnhanced;
+            
+            // Load API Settings
+            if (Array.isArray(settings.apiKey)) {
+                currentKeys = settings.apiKey;
+            } else if (typeof settings.apiKey === 'string' && settings.apiKey.trim()) {
+                currentKeys = settings.apiKey.split(',').map(k => k.trim()).filter(k => k.length > 0);
+            } else {
+                currentKeys = [];
+            }
+            renderKeyList();
+
+            if (modelNameInput) modelNameInput.value = settings.modelName || "";
         }
     });
 
@@ -148,7 +158,12 @@ function setupSettings() {
         
         // Load API Settings
         if (settings) {
-            if (apiKeyInput) apiKeyInput.value = settings.apiKey || "";
+            if (Array.isArray(settings.apiKey)) {
+                currentKeys = settings.apiKey;
+            } else if (typeof settings.apiKey === 'string' && settings.apiKey.trim()) {
+                currentKeys = settings.apiKey.split(',').map(k => k.trim()).filter(k => k.length > 0);
+            }
+            renderKeyList();
             if (modelNameInput) modelNameInput.value = settings.modelName || "";
         }
     });
@@ -184,12 +199,107 @@ function setupSettings() {
     if (startupToggle) startupToggle.onchange = updateStartup;
     if (hiddenToggle) hiddenToggle.onchange = updateStartup;
 
+    const aiUsageBadge = document.getElementById('ai-usage-badge');
+    const aiUsageCount = document.getElementById('ai-usage-count');
+    const aiKeyIndex = document.getElementById('ai-key-index');
+
+    function updateAIUI(data) {
+        if (!data) return;
+        if (modelNameInput) {
+            modelNameInput.value = data.currentModel || "";
+            modelNameInput.placeholder = data.currentModel || "gemini-2.5-flash-lite";
+        }
+        if (aiUsageBadge && aiUsageCount) {
+            aiUsageCount.textContent = data.usage || 0;
+            if (aiKeyIndex && data.totalKeys > 1) {
+                aiKeyIndex.textContent = `K${(data.keyIndex || 0) + 1}`;
+                aiKeyIndex.classList.remove('hidden');
+            } else if (aiKeyIndex) {
+                aiKeyIndex.classList.add('hidden');
+            }
+            aiUsageBadge.classList.remove('hidden');
+        }
+    }
+
+    // AI Info Updates from Main
+    if (window.ipcRenderer) {
+        window.ipcRenderer.on('ai-info-update', (event, data) => {
+            updateAIUI(data);
+        });
+    }
+
+    // Initial load
+    window.api.getAIInfo().then(updateAIUI);
+    
     // API Config Listeners
-    if (apiKeyInput) {
-        apiKeyInput.onchange = () => {
-            window.api.saveSetting('apiKey', apiKeyInput.value.trim());
+    if (addKeyBtn) {
+        addKeyBtn.onclick = () => {
+            const val = newKeyInput.value.trim();
+            if (!val) return;
+            currentKeys.push(val);
+            newKeyInput.value = "";
+            window.api.saveSetting('apiKey', currentKeys);
+            renderKeyList();
         };
     }
+    // Enter key to add
+    if (newKeyInput) {
+        newKeyInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                addKeyBtn.click();
+            }
+        };
+    }
+
+    function renderKeyList() {
+        if (!keyListContainer) return;
+        keyListContainer.innerHTML = "";
+
+        if (currentKeys.length === 0) {
+            keyListContainer.innerHTML = `<div class="text-xs text-slate-400 italic py-2">No API keys added yet.</div>`;
+            return;
+        }
+
+        currentKeys.forEach((key, index) => {
+            const masked = key.length > 6 
+                ? `${key.slice(0, 2)}****************${key.slice(-4)}`
+                : "****************";
+            
+            const div = document.createElement("div");
+            div.className = "flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5 group";
+            div.innerHTML = `
+                <div class="flex-1 font-mono text-[10px] text-slate-600 truncate key-display" data-full="${key}" data-masked="${masked}">
+                    ${masked}
+                </div>
+                <button class="toggle-visibility text-slate-400 hover:text-primary-500 transition-colors px-1" title="Show/Hide">
+                    <i class="fa-solid fa-eye text-xs"></i>
+                </button>
+                <button class="remove-key text-slate-400 hover:text-red-500 transition-colors px-1" title="Remove">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
+            `;
+
+            const toggleBtn = div.querySelector(".toggle-visibility");
+            const keyEl = div.querySelector(".key-display");
+            toggleBtn.onclick = () => {
+                const isMasked = keyEl.textContent.trim() === masked;
+                keyEl.textContent = isMasked ? key : masked;
+                toggleBtn.innerHTML = isMasked 
+                    ? `<i class="fa-solid fa-eye-slash text-xs"></i>`
+                    : `<i class="fa-solid fa-eye text-xs"></i>`;
+            };
+
+            const removeBtn = div.querySelector(".remove-key");
+            removeBtn.onclick = () => {
+                currentKeys.splice(index, 1);
+                window.api.saveSetting('apiKey', currentKeys);
+                renderKeyList();
+            };
+
+            keyListContainer.appendChild(div);
+        });
+    }
+
     if (modelNameInput) {
         modelNameInput.onchange = () => {
              window.api.saveSetting('modelName', modelNameInput.value.trim());
@@ -346,20 +456,26 @@ function setupRecordingEvents() {
             
             addLog("Transcribing...", "purple");
             const text = await window.api.transcribeAudio(lastArrayBuffer);
-            addLog("Generating refined text...", "green");
-      
-            const refined = await window.api.generateText({
-              info: text,
-              assistantName: assistantName ? assistantName.value : "Assistant",
-              appName: appName ? appName.value : "Desktop App",
-            });
+            
+            let finalOutput = text;
+
+            if (aiEnhanced) {
+              addLog("Generating refined text...", "green");
+              finalOutput = await window.api.generateText({
+                info: text,
+                assistantName: assistantName ? assistantName.value : "Assistant",
+                appName: appName ? appName.value : "Desktop App",
+              });
+            } else {
+              addLog("Refinement disabled, using raw transcript", "gray");
+            }
       
             // Check if Notes is active
             const isNotesActive = document.querySelector('[data-page="notes"].active');
             
             if (isNotesActive) {
                 // Delegate to Notes module
-                Notes.handleVoiceInput(refined);
+                Notes.handleVoiceInput(finalOutput);
             } else {
                 // Default: Auto-type
                  if (useBackspace) {
@@ -367,10 +483,10 @@ function setupRecordingEvents() {
                     await new Promise(r => setTimeout(r, 50));
                 }
                 if (instantPaste) {
-                    await window.api.pasteString(refined);
+                    await window.api.pasteString(finalOutput);
                     addLog("Pasted", "green");
                 } else {
-                    await window.api.autoType(refined);
+                    await window.api.autoType(finalOutput);
                     addLog("Auto-typed", "green");
                 }
             }
