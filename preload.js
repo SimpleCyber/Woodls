@@ -75,4 +75,5 @@ contextBridge.exposeInMainWorld("api", {
   logout: () => ipcRenderer.invoke("auth-logout"),
   getCurrentUser: () => ipcRenderer.invoke("auth-get-current"),
   onAuthStateChanged: (cb) => ipcRenderer.on("auth-state-changed", cb),
+  onAIInfoUpdate: (cb) => ipcRenderer.on("ai-info-update", (event, ...args) => cb(...args)),
 });

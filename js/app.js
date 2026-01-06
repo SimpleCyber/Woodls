@@ -61,6 +61,7 @@ const newKeyInput = document.getElementById("newKeyInput");
 const addKeyBtn = document.getElementById("addKeyBtn");
 const keyListContainer = document.getElementById("key-list-container");
 let currentKeys = []; // Array of API keys
+let activeKeyIndex = 0; // The key currently used by rotation logic
 
 // ---------- Initialization ----------
 
@@ -205,6 +206,8 @@ function setupSettings() {
 
     function updateAIUI(data) {
         if (!data) return;
+        activeKeyIndex = data.keyIndex || 0;
+        
         if (modelNameInput) {
             modelNameInput.value = data.currentModel || "";
             modelNameInput.placeholder = data.currentModel || "gemini-2.5-flash-lite";
@@ -219,6 +222,7 @@ function setupSettings() {
             }
             aiUsageBadge.classList.remove('hidden');
         }
+        renderKeyList(); // Re-render to show active highlight
     }
 
     // AI Info Updates from Main
@@ -261,16 +265,20 @@ function setupSettings() {
         }
 
         currentKeys.forEach((key, index) => {
+            const isActive = index === activeKeyIndex;
             const masked = key.length > 6 
                 ? `${key.slice(0, 2)}****************${key.slice(-4)}`
                 : "****************";
             
             const div = document.createElement("div");
-            div.className = "flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5 group";
+            const borderClass = isActive ? "border-primary-500 bg-primary-50/30" : "border-slate-200 bg-slate-50";
+            div.className = `flex items-center gap-2 border rounded-lg p-2.5 group transition-all ${borderClass}`;
+            
             div.innerHTML = `
                 <div class="flex-1 font-mono text-[10px] text-slate-600 truncate key-display" data-full="${key}" data-masked="${masked}">
                     ${masked}
                 </div>
+                ${isActive ? '<span class="text-[9px] bg-primary-500 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter">Active</span>' : ''}
                 <button class="toggle-visibility text-slate-400 hover:text-primary-500 transition-colors px-1" title="Show/Hide">
                     <i class="fa-solid fa-eye text-xs"></i>
                 </button>

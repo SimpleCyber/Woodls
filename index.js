@@ -28,6 +28,7 @@ const getAssetPath = (...paths) => {
 let win; // Moved to top to avoid TDZ issues
 // ----------------- AI ROTATION -----------------
 const DEFAULT_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+const MAX_DAILY_CALLS = 20;
 const AI_USAGE_FILE = path.join(app.getPath("userData"), "ai_usage.json");
 
 function readAIUsage() {
@@ -77,13 +78,13 @@ function getBestModelAndKey(apiKeys, preferredModel) {
         // Try preferred if user set one
         if (preferredModel && preferredModel.trim()) {
             const count = keyUsage[preferredModel] || 0;
-            if (count < 20) return { key: apiKeys[i], keyIndex: i, model: preferredModel };
+            if (count < MAX_DAILY_CALLS) return { key: apiKeys[i], keyIndex: i, model: preferredModel };
         }
 
         // Try defaults
         for (const m of DEFAULT_MODELS) {
             const count = keyUsage[m] || 0;
-            if (count < 20) return { key: apiKeys[i], keyIndex: i, model: m };
+            if (count < MAX_DAILY_CALLS) return { key: apiKeys[i], keyIndex: i, model: m };
         }
     }
 
@@ -956,14 +957,13 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
     } catch (err) {
       console.error(`Transcription error (Attempt ${attempt + 1}/${maxRetries}):`, err);
       
-      const isRateLimit = err && (err.status === 429 || (err.message && err.message.includes("quota")));
-      
-      if (isRateLimit && attempt < maxRetries - 1) {
-          console.warn(`[AI] Rate limit hit for Key #${currentKeyIndex} (${currentModelName}). Rotating...`);
-          // Mark this pair as exhausted
+      if (attempt < maxRetries - 1) {
+          console.warn(`[AI] Error encountered. Rotating key/model for robust retry...`);
+          // Mark this pair as exhausted for the current session to force rotation
           const usageData = readAIUsage();
           if (!usageData.keys[currentKeyIndex]) usageData.keys[currentKeyIndex] = {};
-          usageData.keys[currentKeyIndex][currentModelName] = 20;
+          // Temporarily set to max to push rotation
+          usageData.keys[currentKeyIndex][currentModelName] = MAX_DAILY_CALLS;
           saveAIUsage(usageData);
           
           // Re-init with next best key/model pair
@@ -1009,14 +1009,12 @@ Text: "${info}"
     } catch (err) {
       console.error(`Generation error (Attempt ${attempt + 1}/${maxRetries}):`, err);
       
-      const isRateLimit = err && (err.status === 429 || (err.message && err.message.includes("quota")));
-      
-      if (isRateLimit && attempt < maxRetries - 1) {
-          console.warn(`[AI] Rate limit hit for Key #${currentKeyIndex} (${currentModelName}). Rotating...`);
-          // Mark as exhausted
+      if (attempt < maxRetries - 1) {
+          console.warn(`[AI] Error encountered in enhancement. Rotating...`);
+          // Mark as exhausted for session
           const usageData = readAIUsage();
           if (!usageData.keys[currentKeyIndex]) usageData.keys[currentKeyIndex] = {};
-          usageData.keys[currentKeyIndex][currentModelName] = 20;
+          usageData.keys[currentKeyIndex][currentModelName] = MAX_DAILY_CALLS;
           saveAIUsage(usageData);
           
           // Re-init with next best key/model pair
