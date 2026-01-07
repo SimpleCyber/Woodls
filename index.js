@@ -40,7 +40,7 @@ function readAIUsage() {
         if (data.date !== today || !data.keys) {
             return { date: today, keys: {} };
         }
-        return data; // { date, keys: { "0": { "model": count } } }
+        return data; // { date, keys: { "0": { "model": count } } } yes
     } catch (e) {
         return { date: new Date().toISOString().split('T')[0], keys: {} };
     }
