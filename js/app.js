@@ -235,11 +235,9 @@ function setupSettings() {
     }
 
     // AI Info Updates from Main
-    if (window.ipcRenderer) {
-        window.ipcRenderer.on('ai-info-update', (event, data) => {
-            updateAIUI(data);
-        });
-    }
+    window.api.onAIInfoUpdate((data) => {
+        updateAIUI(data);
+    });
 
     // Initial load
     window.api.getAIInfo().then(updateAIUI);
@@ -472,7 +470,9 @@ function setupRecordingEvents() {
             lastArrayBuffer = await blob.arrayBuffer();
             
             addLog("Transcribing...", "purple");
-            const text = await window.api.transcribeAudio(lastArrayBuffer);
+            const result = await window.api.transcribeAudio(lastArrayBuffer);
+            const text = result.text;
+            const historyId = result.id;
             
             let finalOutput = text;
 
@@ -483,6 +483,9 @@ function setupRecordingEvents() {
                 assistantName: assistantName ? assistantName.value : "Assistant",
                 appName: appName ? appName.value : "Desktop App",
               });
+              
+              // Update history with enhanced text
+              await window.api.updateHistoryItem({ id: historyId, text: finalOutput, isAI: true });
             } else {
               addLog("Refinement disabled, using raw transcript", "gray");
             }
@@ -558,7 +561,10 @@ function renderHistory(items) {
         div.className = "timeline-item relative pl-6 border-l-2 border-slate-100 pb-8 last:pb-0";
         div.innerHTML = `
             <div class="flex justify-between items-start mb-2">
-                <div class="text-[10px] uppercase font-bold text-slate-400">${new Date(item.timestamp).toLocaleString()}</div>
+                <div class="flex items-center gap-2">
+                    <div class="text-[10px] uppercase font-bold text-slate-400">${new Date(item.timestamp).toLocaleString()}</div>
+                    ${item.isAI ? '<span class="text-xs" title="Processed by AI Assistant">🤖</span>' : ''}
+                </div>
                 <div class="flex gap-2">
                     <button class="play-btn text-slate-300 hover:text-slate-700 transition-colors" title="Play Recording"><i class="fa-solid fa-play"></i></button>
                     <button class="copy-btn text-slate-300 hover:text-slate-700 transition-colors" title="Copy Text"><i class="fa-solid fa-copy"></i></button>

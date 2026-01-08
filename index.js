@@ -581,6 +581,7 @@ function createWindow() {
   win.webContents.on("did-finish-load", () => {
     win.webContents.send("hotkey-loaded", requiredKeys);
     win.webContents.send("settings-loaded", settings);
+    sendAIInfoToRenderer();
   });
   
   // Close overlay when main window closes
@@ -849,6 +850,18 @@ ipcMain.handle("delete-history-item", (_, id) => {
     return true;
 });
 
+ipcMain.handle("update-history-item", (_, { id, text, isAI }) => {
+    let history = readHistory();
+    const idx = history.findIndex(i => i.id === id);
+    if (idx >= 0) {
+        history[idx].text = text;
+        if (isAI !== undefined) history[idx].isAI = isAI;
+        saveHistory(history);
+        return true;
+    }
+    return false;
+});
+
 ipcMain.handle("read-audio-file", (_, p) => {
     try {
         if (fs.existsSync(p)) {
@@ -952,7 +965,7 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
       history.push(historyItem);
       saveHistory(history);
 
-      return text;
+      return { text: text, id: historyItem.id };
     } catch (err) {
       console.error(`Transcription error (Attempt ${attempt + 1}/${maxRetries}):`, err);
       
@@ -985,13 +998,17 @@ ipcMain.handle("generate-text", async (_, { info, assistantName, appName }) => {
   while (attempt < maxRetries) {
     const prompt = `
 You are a versatile AI Assistant. 
-Your primary goal is to help me with the task I dictate or refine the text I provide.
+Your primary goal is to help me with the task I dictate or refine the text I provide, tailored to the platform I am currently using.
 
-1. If the input is a specific request or command (e.g., "write an email to...", "write a javascript function for...", "draft a blog post about...", "write a prompt for..."), execute that task as requested.
+1. If the input is a specific request or command (e.g., "write an email to...", "write a javascript function for..."), execute that task as requested.
 2. If the input is just conversational or descriptive text, rewrite it with proper punctuation, grammar, formatting, and clarity.
-3. Return **ONLY the final result**. No conversational filler, no "Here is your text...", no explanations, no quotes. 
-4. Use Markdown ONLY if it improves structural clarity (e.g., for code blocks, headers, or bullet points).
-5. **CRITICAL**: Do NOT include any timestamps (e.g., (00:00)) or video tracking metadata.
+3. **Platform Context**:
+   - If the platform is an **Email Client** (e.g., Gmail, Outlook), use formal or professional email formatting (Subject, Salutation) if it seems like a new message.
+   - If the platform is **Notion**, **Slack**, or **Discord**, use appropriate formatting (bullet points, bolding) to make the text scannable.
+   - If the platform is a **Code Editor** (e.g., VS Code, Cursor), provide clean code blocks or technical descriptions.
+4. Return **ONLY the final result**. No conversational filler, no "Here is your text...", no explanations, no quotes. 
+5. Use Markdown ONLY if it improves structural clarity (e.g., for code blocks, headers, or bullet points).
+6. **CRITICAL**: Do NOT include any timestamps (e.g., (00:00)) or video tracking metadata.
 
 Context:
 App: ${appName}

@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld("api", {
   // History
   getHistory: () => ipcRenderer.invoke("get-history"),
   deleteHistoryItem: (id) => ipcRenderer.invoke("delete-history-item", id),
+  updateHistoryItem: (data) => ipcRenderer.invoke("update-history-item", data),
   readAudioFile: (path) => ipcRenderer.invoke("read-audio-file", path),
 
   // Input
