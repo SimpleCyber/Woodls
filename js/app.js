@@ -424,7 +424,7 @@ function updateHotkeyDisplay(keys) {
 function setupRecordingEvents() {
     window.api.onRecordStart(async () => {
         addLog("Recording started", "green");
-        window.api.showOverlay();
+        window.api.showOverlay(aiEnhanced);
       
         try {
           mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });

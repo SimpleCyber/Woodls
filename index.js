@@ -667,12 +667,11 @@ function startActiveWindowMonitor() {
 }
 
 // ----------------- Overlay IPC -----------------
-ipcMain.on('show-overlay', () => {
+ipcMain.on('show-overlay', (event, aiEnabled) => {
   if (overlayWin && !overlayWin.isDestroyed()) {
-      // Center on screen or specific position? 
-      // For now, let's just show it. Default center is fine for the small 200x200 window.
       overlayWin.showInactive();
       overlayWin.setAlwaysOnTop(true, "screen-saver");
+      overlayWin.webContents.send('set-ai-status', !!aiEnabled);
   }
 });
 

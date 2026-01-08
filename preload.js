@@ -64,7 +64,7 @@ contextBridge.exposeInMainWorld("api", {
   closeWindow: () => ipcRenderer.send("window-close"),
 
   // Overlay Controls
-  showOverlay: () => ipcRenderer.send("show-overlay"),
+  showOverlay: (...args) => ipcRenderer.send("show-overlay", ...args),
   hideOverlay: () => ipcRenderer.send("hide-overlay"),
   sendMicVolume: (vol) => ipcRenderer.send("mic-volume", vol),
 

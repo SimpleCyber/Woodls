@@ -38,6 +38,11 @@
         <i class="fa-solid fa-circle-notch text-white/50 text-sm animate-spin"></i>
      </div>
 
+     <!-- AI Status Icon (🤖) -->
+     <div id="ai-icon" class="hidden ml-1">
+        <span class="text-xs">🤖</span>
+     </div>
+
   </div>
 
   <script>
@@ -68,6 +73,15 @@
     ipcRenderer.on('processing-end', () => {
         spinner.classList.add('hidden');
         waveform.classList.remove('hidden');
+    });
+
+    ipcRenderer.on('set-ai-status', (event, enabled) => {
+        const aiIcon = document.getElementById('ai-icon');
+        if (enabled) {
+            aiIcon.classList.remove('hidden');
+        } else {
+            aiIcon.classList.add('hidden');
+        }
     });
   </script>
 </body>
