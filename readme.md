@@ -17,6 +17,10 @@
 
 ## 🛠️ Installation
 
+> [!IMPORTANT]
+> **Windows SmartScreen Notice**: Since Woodls is currently an unsigned application, Windows may show a "Windows protected your PC" warning during installation. 
+> To proceed: Click **"More info"** and then select **"Run anyway"**.
+
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v16 or higher)
 - A Google Gemini API Key (Get one from [Google AI Studio](https://aistudio.google.com/))

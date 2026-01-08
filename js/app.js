@@ -477,7 +477,7 @@ function setupRecordingEvents() {
             let finalOutput = text;
 
             if (aiEnhanced) {
-              addLog("Generating refined text...", "green");
+              addLog("Processing AI task...", "green");
               finalOutput = await window.api.generateText({
                 info: text,
                 assistantName: assistantName ? assistantName.value : "Assistant",

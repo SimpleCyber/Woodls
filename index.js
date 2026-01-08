@@ -985,14 +985,18 @@ ipcMain.handle("generate-text", async (_, { info, assistantName, appName }) => {
 
   while (attempt < maxRetries) {
     const prompt = `
-You are my AI assistant.
-Your job is to rewrite the given input text with proper punctuation, grammar, formatting, and clarity.  
-Rewrite it as if I am describing something to you, and you are returning a refined version of what I should write.  
-Return **only the refined text**, no explanations, no quotes, no markdown unless necessary.
-**CRITICAL**: Do NOT include timestamps (e.g. (00:00), 01:23) or any video tracking metadata. Filter them out completely.
+You are a versatile AI Assistant. 
+Your primary goal is to help me with the task I dictate or refine the text I provide.
 
+1. If the input is a specific request or command (e.g., "write an email to...", "write a javascript function for...", "draft a blog post about...", "write a prompt for..."), execute that task as requested.
+2. If the input is just conversational or descriptive text, rewrite it with proper punctuation, grammar, formatting, and clarity.
+3. Return **ONLY the final result**. No conversational filler, no "Here is your text...", no explanations, no quotes. 
+4. Use Markdown ONLY if it improves structural clarity (e.g., for code blocks, headers, or bullet points).
+5. **CRITICAL**: Do NOT include any timestamps (e.g., (00:00)) or video tracking metadata.
+
+Context:
 App: ${appName}
-Text: "${info}"
+Input: "${info}"
 `;
     try {
       if (!genAI) throw new Error("AI not initialized.");
