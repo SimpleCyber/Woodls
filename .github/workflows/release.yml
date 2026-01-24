@@ -21,15 +21,19 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Python 3.10 (IMPORTANT)
+      - name: Install Python 3.9 (node-gyp safe)
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.9"
+
+      - name: Force npm to use correct Python
+        run: |
+          npm config set python "${{ env.pythonLocation }}\\python.exe"
+          python --version
+          npm config get python
 
       - name: Install dependencies
         run: npm install
-        env:
-          npm_config_python: python
 
       - name: Build and Publish Electron App
         run: npm run build -- --publish always
