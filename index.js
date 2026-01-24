@@ -1147,8 +1147,24 @@ app.whenReady().then(() => {
   initGenAI();
   createWindow();
 
-  // Check for updates
-  autoUpdater.checkForUpdatesAndNotify();
+  // Check for updates after a short delay to ensure windows are ready
+  setTimeout(() => {
+    autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+      console.error("[Updater] Initial check failed:", err);
+    });
+  }, 5000);
+});
+
+// Manual Update Check
+ipcMain.handle("check-for-updates", async () => {
+  console.log("[Updater] Manual check requested");
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { success: true, result };
+  } catch (err) {
+    console.error("[Updater] Manual check failed:", err);
+    return { success: false, error: err.message };
+  }
 });
 
 // Helper to send update status to all windows
@@ -1158,7 +1174,17 @@ function sendUpdateStatus(status, details = null) {
   }
 }
 
-// Auto-Update Events
+// Auto-Update Events and Configuration
+autoUpdater.autoDownload = true;
+autoUpdater.allowPrerelease = false;
+
+// Set up logger
+autoUpdater.logger = {
+  info: (msg) => console.log(`[Updater INFO] ${msg}`),
+  warn: (msg) => console.warn(`[Updater WARN] ${msg}`),
+  error: (msg) => console.error(`[Updater ERROR] ${msg}`),
+};
+
 autoUpdater.on("checking-for-update", () => {
   console.log("[Updater] Checking for update...");
   sendUpdateStatus("checking");
@@ -1172,21 +1198,39 @@ autoUpdater.on("update-available", (info) => {
 autoUpdater.on("update-not-available", (info) => {
   console.log(
     "[Updater] App is up to date (Current version:",
-    info.version,
+    app.getVersion(),
     ")",
   );
-  sendUpdateStatus("up-to-date", info.version);
+  sendUpdateStatus("up-to-date", app.getVersion());
+});
+
+autoUpdater.on("download-progress", (progressObj) => {
+  let log_message = "Download speed: " + progressObj.bytesPerSecond;
+  log_message = log_message + " - Downloaded " + progressObj.percent + "%";
+  log_message =
+    log_message +
+    " (" +
+    progressObj.transferred +
+    "/" +
+    progressObj.total +
+    ")";
+  console.log("[Updater] " + log_message);
+  sendUpdateStatus("downloading", Math.round(progressObj.percent));
 });
 
 autoUpdater.on("update-downloaded", (info) => {
   console.log("[Updater] Update downloaded:", info.version);
   sendUpdateStatus("downloaded", info.version);
+
+  // Also show a dialog as backup
   dialog
     .showMessageBox({
       type: "info",
       title: "Update Ready",
       message: `Version ${info.version} of Woodls is ready. Restart the app to apply the updates?`,
-      buttons: ["Restart", "Later"],
+      buttons: ["Restart Now", "Later"],
+      defaultId: 0,
+      cancelId: 1,
     })
     .then((result) => {
       if (result.response === 0) {
@@ -1197,7 +1241,7 @@ autoUpdater.on("update-downloaded", (info) => {
 
 autoUpdater.on("error", (err) => {
   console.error("[Updater] Error in auto-updater: ", err);
-  sendUpdateStatus("error", err.message);
+  sendUpdateStatus("error", err.message || "Unknown error");
 });
 
 app.on("window-all-closed", (e) => {

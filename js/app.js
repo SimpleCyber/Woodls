@@ -110,20 +110,67 @@ export function initApp() {
 
   // Auto-Update Feedback
   const updateStats = document.getElementById("update-status-text");
+  const checkUpdatesBtn = document.getElementById("check-updates-btn");
+  const updateDot = document.getElementById("update-dot");
+
   if (updateStats) {
     window.api.onUpdateStatus((data) => {
       const { status, details } = data;
-      if (status === "checking")
+      if (status === "checking") {
         updateStats.textContent = "Checking for updates...";
-      else if (status === "available")
+        updateStats.className =
+          "text-[10px] text-primary-500 font-bold uppercase tracking-wider mb-2";
+      } else if (status === "available") {
         updateStats.textContent = `Update available: v${details}`;
-      else if (status === "up-to-date")
-        updateStats.textContent = "App is up to date";
-      else if (status === "downloaded")
-        updateStats.textContent = `Update v${details} ready!`;
-      else if (status === "error")
+        updateStats.className =
+          "text-[10px] text-amber-500 font-bold uppercase tracking-wider mb-2 animate-pulse";
+        if (updateDot) updateDot.classList.remove("hidden");
+      } else if (status === "up-to-date") {
+        updateStats.textContent = `Woodls is up to date (v${details})`;
+        updateStats.className =
+          "text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2";
+        if (updateDot) updateDot.classList.add("hidden");
+      } else if (status === "downloading") {
+        updateStats.textContent = `Downloading update: ${details}%`;
+        updateStats.className =
+          "text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-2";
+        if (updateDot) updateDot.classList.remove("hidden");
+      } else if (status === "downloaded") {
+        updateStats.textContent = `Version ${details} ready to install!`;
+        updateStats.className =
+          "text-[10px] text-green-600 font-bold uppercase tracking-wider mb-2";
+        if (updateDot) updateDot.classList.remove("hidden");
+        if (checkUpdatesBtn) {
+          checkUpdatesBtn.innerHTML =
+            '<i class="fa-solid fa-circle-check"></i> <span>Restart to Update</span>';
+          checkUpdatesBtn.classList.replace("bg-slate-50", "bg-green-50");
+          checkUpdatesBtn.classList.replace("text-slate-600", "text-green-600");
+          checkUpdatesBtn.classList.replace(
+            "border-slate-200",
+            "border-green-200",
+          );
+          checkUpdatesBtn.onclick = () => window.api.closeWindow(); // This will trigger the quitAndInstall dialog if it popped up, or just close and let main handle it
+        }
+      } else if (status === "error") {
         updateStats.textContent = "Update check failed";
+        updateStats.className =
+          "text-[10px] text-red-500 font-bold uppercase tracking-wider mb-2";
+      }
     });
+
+    if (checkUpdatesBtn) {
+      checkUpdatesBtn.onclick = async () => {
+        const originalHtml = checkUpdatesBtn.innerHTML;
+        checkUpdatesBtn.disabled = true;
+        checkUpdatesBtn.innerHTML =
+          '<i class="fa-solid fa-spinner fa-spin"></i> <span>Checking...</span>';
+        await window.api.checkForUpdates();
+        setTimeout(() => {
+          checkUpdatesBtn.disabled = false;
+          checkUpdatesBtn.innerHTML = originalHtml;
+        }, 3000);
+      };
+    }
   }
 
   // Tab Switching

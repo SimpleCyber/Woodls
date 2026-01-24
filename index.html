@@ -158,6 +158,7 @@
 
       .sidebar-item {
         transition: all 0.2s ease-in-out;
+        position: relative;
       }
 
       .smooth-transition {
@@ -398,7 +399,6 @@
             <span class="text-sm font-medium">Settings</span>
           </div>
 
-          <!-- Account (Simplified) -->
           <div
             data-page="account"
             class="sidebar-item px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group transition-colors"
@@ -407,6 +407,10 @@
               class="fa-solid fa-circle-info w-5 text-center transition-colors"
             ></i>
             <span class="text-sm font-medium">About</span>
+            <span
+              id="update-dot"
+              class="hidden absolute right-3 w-2 h-2 bg-amber-500 rounded-full animate-pulse"
+            ></span>
           </div>
         </nav>
 
@@ -1337,9 +1341,19 @@
               <h3 class="text-xl font-bold text-slate-900">Woodls</h3>
               <p class="text-slate-500 text-sm mb-2">Version 1.0.5</p>
               <div
-                class="text-[10px] text-primary-500 font-bold uppercase tracking-wider mb-6"
+                class="text-[10px] text-primary-500 font-bold uppercase tracking-wider mb-2"
                 id="update-status-text"
               ></div>
+
+              <div class="mb-6">
+                <button
+                  id="check-updates-btn"
+                  class="bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 px-4 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-2 mx-auto"
+                >
+                  <i class="fa-solid fa-arrows-rotate"></i>
+                  <span>Check for Updates</span>
+                </button>
+              </div>
 
               <div class="flex justify-center gap-4 text-sm">
                 <div class="flex justify-center gap-4 text-sm">

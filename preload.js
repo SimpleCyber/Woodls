@@ -81,4 +81,6 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.on("ai-info-update", (event, ...args) => cb(...args)),
   onUpdateStatus: (cb) =>
     ipcRenderer.on("update-status", (event, ...args) => cb(...args)),
+  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
+  quitAndInstall: () => ipcRenderer.send("window-close"), // We'll handle this differently if needed, but for now we'll use the main process dialog
 });
