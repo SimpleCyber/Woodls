@@ -26,6 +26,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install setuptools
+        run: pip install setuptools
+
       - name: Install dependencies
         run: npm install
         env:
@@ -35,4 +38,4 @@ jobs:
         run: npm run build -- --publish always
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # If you need to sign your app, add CSC_LINK and CSC_KEY_PASSWORD ere
+          # If you need to sign your app, add CSC_LINK and CSC_KEY_PASSWORD here
