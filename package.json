@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "postinstall": "node -e \"if (!process.env.CI) require('child_process').execSync('npx electron-rebuild', { stdio: 'inherit' })\""
+    "postinstall": "electron-rebuild"
   },
   "devDependencies": {
     "electron": "^33.2.0",

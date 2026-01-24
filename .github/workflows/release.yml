@@ -21,12 +21,20 @@ jobs:
         with:
           node-version: 20
 
+      - name: Install Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install setuptools
+        run: pip install setuptools
+
       - name: Install dependencies
         run: npm install
-        env:
-          CI: true
 
       - name: Build and Publish Electron App
         run: npm run build -- --publish always
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PYTHON: python
+          npm_config_python: python
