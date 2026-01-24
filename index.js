@@ -1,5 +1,14 @@
 // main.js
-const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  dialog,
+  Tray,
+  Menu,
+  nativeImage,
+} = require("electron");
+const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const fs = require("fs");
 // ESM-only module - must be dynamically imported for production
@@ -12,17 +21,25 @@ const { GoogleGenerativeAI } = require("@google/generative-ai"); // keep as plac
 const { GoogleAIFileManager } = require("@google/generative-ai/server");
 const robot = require("@jitsi/robotjs");
 const { initializeApp } = require("firebase/app");
-const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } = require("firebase/auth");
+const {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+} = require("firebase/auth");
 const { getFirestore } = require("firebase/firestore");
 
-
-
 // ---- CONFIG ----
-require('dotenv').config();
+require("dotenv").config();
 
 // Asset Path Helper for Production (app.asar support)
 const getAssetPath = (...paths) => {
-  return path.join(app.isPackaged ? process.resourcesPath : __dirname, ...paths);
+  return path.join(
+    app.isPackaged ? process.resourcesPath : __dirname,
+    ...paths,
+  );
 };
 
 let win; // Moved to top to avoid TDZ issues
@@ -32,88 +49,96 @@ const MAX_DAILY_CALLS = 20;
 const AI_USAGE_FILE = path.join(app.getPath("userData"), "ai_usage.json");
 
 function readAIUsage() {
-    try {
-        const today = new Date().toISOString().split('T')[0];
-        if (!fs.existsSync(AI_USAGE_FILE)) return { date: today, keys: {} };
-        const raw = fs.readFileSync(AI_USAGE_FILE, "utf8");
-        const data = JSON.parse(raw);
-        if (data.date !== today || !data.keys) {
-            return { date: today, keys: {} };
-        }
-        return data; // { date, keys: { "0": { "model": count } } } yes
-    } catch (e) {
-        return { date: new Date().toISOString().split('T')[0], keys: {} };
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    if (!fs.existsSync(AI_USAGE_FILE)) return { date: today, keys: {} };
+    const raw = fs.readFileSync(AI_USAGE_FILE, "utf8");
+    const data = JSON.parse(raw);
+    if (data.date !== today || !data.keys) {
+      return { date: today, keys: {} };
     }
+    return data; // { date, keys: { "0": { "model": count } } } yes
+  } catch (e) {
+    return { date: new Date().toISOString().split("T")[0], keys: {} };
+  }
 }
 
 function saveAIUsage(data) {
-    try {
-        fs.writeFileSync(AI_USAGE_FILE, JSON.stringify(data, null, 2));
-    } catch (e) {
-        console.error("Failed to save AI usage:", e);
-    }
+  try {
+    fs.writeFileSync(AI_USAGE_FILE, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error("Failed to save AI usage:", e);
+  }
 }
 
 function updateAIUsage(keyIndex, modelName) {
-    const data = readAIUsage();
-    if (!data.keys[keyIndex]) data.keys[keyIndex] = {};
-    data.keys[keyIndex][modelName] = (data.keys[keyIndex][modelName] || 0) + 1;
-    saveAIUsage(data);
-    console.log(`[AI] Usage updated for Key #${keyIndex} (${modelName}): ${data.keys[keyIndex][modelName]} calls today`);
-    sendAIInfoToRenderer();
+  const data = readAIUsage();
+  if (!data.keys[keyIndex]) data.keys[keyIndex] = {};
+  data.keys[keyIndex][modelName] = (data.keys[keyIndex][modelName] || 0) + 1;
+  saveAIUsage(data);
+  console.log(
+    `[AI] Usage updated for Key #${keyIndex} (${modelName}): ${data.keys[keyIndex][modelName]} calls today`,
+  );
+  sendAIInfoToRenderer();
 }
 
 function getBestModelAndKey(apiKeys, preferredModel) {
-    if (!apiKeys || apiKeys.length === 0) return null;
-    const data = readAIUsage();
-    
-    // Rotation Strategy:
-    // 1. Iterate through each Key
-    // 2. For each Key, try the Preferred Model first (if any)
-    // 3. Then try the Default Models (Flash Lite, then Flash)
-    
-    for (let i = 0; i < apiKeys.length; i++) {
-        const keyUsage = (data.keys && data.keys[i]) ? data.keys[i] : {};
+  if (!apiKeys || apiKeys.length === 0) return null;
+  const data = readAIUsage();
 
-        // Try preferred if user set one
-        if (preferredModel && preferredModel.trim()) {
-            const count = keyUsage[preferredModel] || 0;
-            if (count < MAX_DAILY_CALLS) return { key: apiKeys[i], keyIndex: i, model: preferredModel };
-        }
+  // Rotation Strategy:
+  // 1. Iterate through each Key
+  // 2. For each Key, try the Preferred Model first (if any)
+  // 3. Then try the Default Models (Flash Lite, then Flash)
 
-        // Try defaults
-        for (const m of DEFAULT_MODELS) {
-            const count = keyUsage[m] || 0;
-            if (count < MAX_DAILY_CALLS) return { key: apiKeys[i], keyIndex: i, model: m };
-        }
+  for (let i = 0; i < apiKeys.length; i++) {
+    const keyUsage = data.keys && data.keys[i] ? data.keys[i] : {};
+
+    // Try preferred if user set one
+    if (preferredModel && preferredModel.trim()) {
+      const count = keyUsage[preferredModel] || 0;
+      if (count < MAX_DAILY_CALLS)
+        return { key: apiKeys[i], keyIndex: i, model: preferredModel };
     }
 
-    // If all exhausted, return the first one as last resort
-    return { key: apiKeys[0], keyIndex: 0, model: preferredModel || DEFAULT_MODELS[0] };
+    // Try defaults
+    for (const m of DEFAULT_MODELS) {
+      const count = keyUsage[m] || 0;
+      if (count < MAX_DAILY_CALLS)
+        return { key: apiKeys[i], keyIndex: i, model: m };
+    }
+  }
+
+  // If all exhausted, return the first one as last resort
+  return {
+    key: apiKeys[0],
+    keyIndex: 0,
+    model: preferredModel || DEFAULT_MODELS[0],
+  };
 }
 
 function sendAIInfoToRenderer() {
-    if (win && !win.isDestroyed()) {
-        const usageData = readAIUsage();
-        const keyUsage = usageData.keys[currentKeyIndex] || {};
-        win.webContents.send("ai-info-update", {
-            currentModel: currentModelName,
-            usage: keyUsage[currentModelName] || 0,
-            keyIndex: currentKeyIndex,
-            totalKeys: totalKeysAvailable
-        });
-    }
-}
-
-ipcMain.handle('get-ai-info', () => {
+  if (win && !win.isDestroyed()) {
     const usageData = readAIUsage();
     const keyUsage = usageData.keys[currentKeyIndex] || {};
-    return {
-        currentModel: currentModelName,
-        usage: keyUsage[currentModelName] || 0,
-        keyIndex: currentKeyIndex,
-        totalKeys: totalKeysAvailable
-    };
+    win.webContents.send("ai-info-update", {
+      currentModel: currentModelName,
+      usage: keyUsage[currentModelName] || 0,
+      keyIndex: currentKeyIndex,
+      totalKeys: totalKeysAvailable,
+    });
+  }
+}
+
+ipcMain.handle("get-ai-info", () => {
+  const usageData = readAIUsage();
+  const keyUsage = usageData.keys[currentKeyIndex] || {};
+  return {
+    currentModel: currentModelName,
+    usage: keyUsage[currentModelName] || 0,
+    keyIndex: currentKeyIndex,
+    totalKeys: totalKeysAvailable,
+  };
 });
 
 // Default env values
@@ -127,44 +152,54 @@ let currentKeyIndex = 0;
 let totalKeysAvailable = 0;
 
 function initGenAI() {
-    const settings = readSettings();
-    let apiKeys = [];
-    
-    // Handle both new array format and legacy string format
-    if (Array.isArray(settings.apiKey)) {
-        apiKeys = settings.apiKey.map(k => k.trim()).filter(k => k.length > 0);
-    } else if (typeof settings.apiKey === 'string' && settings.apiKey.trim()) {
-        apiKeys = settings.apiKey.split(',').map(k => k.trim()).filter(k => k.length > 0);
-    }
+  const settings = readSettings();
+  let apiKeys = [];
 
-    // Fallback to Env if no settings keys
-    if (apiKeys.length === 0 && ENV_API_KEY) {
-        apiKeys = ENV_API_KEY.split(',').map(k => k.trim()).filter(k => k.length > 0);
-    }
+  // Handle both new array format and legacy string format
+  if (Array.isArray(settings.apiKey)) {
+    apiKeys = settings.apiKey.map((k) => k.trim()).filter((k) => k.length > 0);
+  } else if (typeof settings.apiKey === "string" && settings.apiKey.trim()) {
+    apiKeys = settings.apiKey
+      .split(",")
+      .map((k) => k.trim())
+      .filter((k) => k.length > 0);
+  }
 
-    const preferredModel = (settings.modelName && settings.modelName.trim()) ? settings.modelName.trim() : ENV_MODEL_NAME;
-    totalKeysAvailable = apiKeys.length;
+  // Fallback to Env if no settings keys
+  if (apiKeys.length === 0 && ENV_API_KEY) {
+    apiKeys = ENV_API_KEY.split(",")
+      .map((k) => k.trim())
+      .filter((k) => k.length > 0);
+  }
 
-    if (apiKeys.length === 0) {
-        console.warn("No API Keys found (settings or env). AI features will fail.");
-        genAI = null;
-        return;
-    }
+  const preferredModel =
+    settings.modelName && settings.modelName.trim()
+      ? settings.modelName.trim()
+      : ENV_MODEL_NAME;
+  totalKeysAvailable = apiKeys.length;
 
-    // Determine the actual model and key based on usage
-    const selection = getBestModelAndKey(apiKeys, preferredModel);
-    currentApiKey = selection.key;
-    currentKeyIndex = selection.keyIndex;
-    currentModelName = selection.model;
-    
-    try {
-        genAI = new GoogleGenerativeAI(currentApiKey);
-        console.log(`GenAI Initialized with Key #${currentKeyIndex} and model: ${currentModelName}`);
-        sendAIInfoToRenderer();
-    } catch (error) {
-        console.error("Failed to initialize Google Generative AI:", error);
-        genAI = null;
-    }
+  if (apiKeys.length === 0) {
+    console.warn("No API Keys found (settings or env). AI features will fail.");
+    genAI = null;
+    return;
+  }
+
+  // Determine the actual model and key based on usage
+  const selection = getBestModelAndKey(apiKeys, preferredModel);
+  currentApiKey = selection.key;
+  currentKeyIndex = selection.keyIndex;
+  currentModelName = selection.model;
+
+  try {
+    genAI = new GoogleGenerativeAI(currentApiKey);
+    console.log(
+      `GenAI Initialized with Key #${currentKeyIndex} and model: ${currentModelName}`,
+    );
+    sendAIInfoToRenderer();
+  } catch (error) {
+    console.error("Failed to initialize Google Generative AI:", error);
+    genAI = null;
+  }
 }
 
 // Initialize on start will happen when app is ready
@@ -176,26 +211,25 @@ const firebaseConfig = {
   storageBucket: "woodlsvoice.firebasestorage.app",
   messagingSenderId: "23072437848",
   appId: "1:23072437848:web:4af878d59838d4e4863c2d",
-  measurementId: "G-GXX6NC69LL"
+  measurementId: "G-GXX6NC69LL",
 };
 
 const fbApp = initializeApp(firebaseConfig);
 const auth = getAuth(fbApp);
 const db = getFirestore(fbApp);
 
-
-
 const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json"); // Legacy, not used
 const HISTORY_FILE = path.join(app.getPath("userData"), "history.json"); // Legacy, not used
-const GLOBAL_SETTINGS_FILE = path.join(app.getPath("userData"), "global_settings.json"); // App-wide settings
+const GLOBAL_SETTINGS_FILE = path.join(
+  app.getPath("userData"),
+  "global_settings.json",
+); // App-wide settings
 const RECORDINGS_DIR = path.join(app.getPath("userData"), "recordings");
-
 
 // Ensure directories exist
 if (!fs.existsSync(RECORDINGS_DIR)) {
-    fs.mkdirSync(RECORDINGS_DIR, { recursive: true });
+  fs.mkdirSync(RECORDINGS_DIR, { recursive: true });
 }
-
 
 let keyboard;
 let requiredKeys = []; // single-key expected (array but we use index 0)
@@ -215,7 +249,7 @@ if (!gotTheLock) {
   process.exit(0); // Force exit to prevent further execution
 } else {
   // Handle second instance attempt - focus the existing window
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
+  app.on("second-instance", (event, commandLine, workingDirectory) => {
     // Someone tried to run a second instance, we should focus our window.
     if (win) {
       if (win.isMinimized()) win.restore();
@@ -269,28 +303,27 @@ function saveGlobalSettings(newSettings) {
   }
 }
 
-
 // Data Isolation State
 let currentUser = null; // { uid, email, displayName, photoURL }
 
 // Helper to reload settings when user changes
 function onUserChanged() {
-    initGenAI(); // Reload with current user's settings
-    const settings = readSettings();
-    requiredKeys = Array.isArray(settings.hotkey) ? settings.hotkey : [];
-    if (win && !win.isDestroyed()) {
-        win.webContents.send("settings-loaded", settings);
-        win.webContents.send("hotkey-loaded", requiredKeys);
-    }
+  initGenAI(); // Reload with current user's settings
+  const settings = readSettings();
+  requiredKeys = Array.isArray(settings.hotkey) ? settings.hotkey : [];
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("settings-loaded", settings);
+    win.webContents.send("hotkey-loaded", requiredKeys);
+  }
 }
 
 function getUserPaths() {
-    const suffix = currentUser ? `_${currentUser.uid}` : "_guest";
-    return {
-        history: path.join(app.getPath("userData"), `history${suffix}.json`),
-        notes: path.join(app.getPath("userData"), `notes${suffix}.json`),
-        settings: path.join(app.getPath("userData"), `settings${suffix}.json`)
-    };
+  const suffix = currentUser ? `_${currentUser.uid}` : "_guest";
+  return {
+    history: path.join(app.getPath("userData"), `history${suffix}.json`),
+    notes: path.join(app.getPath("userData"), `notes${suffix}.json`),
+    settings: path.join(app.getPath("userData"), `settings${suffix}.json`),
+  };
 }
 
 function readHistory() {
@@ -314,29 +347,31 @@ function saveHistory(history) {
 }
 
 function readNotes() {
-    try {
-        const p = getUserPaths().notes;
-        if (!fs.existsSync(p)) return [];
-        const raw = fs.readFileSync(p, "utf8");
-        return JSON.parse(raw);
-    } catch (e) {
-        return [];
-    }
+  try {
+    const p = getUserPaths().notes;
+    if (!fs.existsSync(p)) return [];
+    const raw = fs.readFileSync(p, "utf8");
+    return JSON.parse(raw);
+  } catch (e) {
+    return [];
+  }
 }
 
 function saveNotes(notes) {
-    try {
-        const p = getUserPaths().notes;
-        fs.writeFileSync(p, JSON.stringify(notes, null, 2));
-    } catch (e) {
-        console.error("Failed to save notes:", e);
-    }
+  try {
+    const p = getUserPaths().notes;
+    fs.writeFileSync(p, JSON.stringify(notes, null, 2));
+  } catch (e) {
+    console.error("Failed to save notes:", e);
+  }
 }
 
 // Normalize key names to a stable canonical form.
 function normalizeKeyName(raw) {
   if (!raw) return "";
-  return String(raw).replace(/[^a-z0-9]/gi, "").toUpperCase();
+  return String(raw)
+    .replace(/[^a-z0-9]/gi, "")
+    .toUpperCase();
 }
 
 let overlayWin;
@@ -358,52 +393,59 @@ function createWindow() {
   });
 
   // Check if we should start hidden
-  const hasHiddenArg = process.argv.includes('--hidden') || process.argv.includes('--start-hidden');
+  const hasHiddenArg =
+    process.argv.includes("--hidden") ||
+    process.argv.includes("--start-hidden");
   const globalSettings = readGlobalSettings();
   const startHidden = hasHiddenArg || globalSettings.startHidden;
-  
+
   if (!startHidden) {
-      win.show();
+    win.show();
   }
 
   // Tray Setup
   const iconPath = getAssetPath("webp", "woodls.png"); // Use woodls icon
-  // better to use a dedicated icon but user has webp files. 
+  // better to use a dedicated icon but user has webp files.
   // Let's try to load one. If not, maybe just use empty string which might fail or show generic.
   // We'll use the one from webp folder for now.
   try {
-      // Resize to 32x32 for better visibility on high DPI, or let OS handle it if we remove resize?
-      // Windows standard is 16x16 small, 32x32 large. Let's try 32 for "bigger".
-      const icon = nativeImage.createFromPath(iconPath).resize({ width: 32, height: 32 });
-      tray = new Tray(icon);
-      const contextMenu = Menu.buildFromTemplate([
-        { label: 'Open Woodls', click: () => win.show() },
-        { type: 'separator' },
-        { label: 'Quit', click: () => {
-            isQuitting = true;
-            app.quit();
-        }}
-      ]);
-      tray.setToolTip('Woodls');
-      tray.setContextMenu(contextMenu);
-      
-      tray.on('click', () => {
-          if (win.isVisible()) {
-              win.hide();
-          } else {
-              win.show();
-          }
-      });
+    // Resize to 32x32 for better visibility on high DPI, or let OS handle it if we remove resize?
+    // Windows standard is 16x16 small, 32x32 large. Let's try 32 for "bigger".
+    const icon = nativeImage
+      .createFromPath(iconPath)
+      .resize({ width: 32, height: 32 });
+    tray = new Tray(icon);
+    const contextMenu = Menu.buildFromTemplate([
+      { label: "Open Woodls", click: () => win.show() },
+      { type: "separator" },
+      {
+        label: "Quit",
+        click: () => {
+          isQuitting = true;
+          app.quit();
+        },
+      },
+    ]);
+    tray.setToolTip("Woodls");
+    tray.setContextMenu(contextMenu);
+
+    tray.on("click", () => {
+      if (win.isVisible()) {
+        win.hide();
+      } else {
+        win.show();
+      }
+    });
   } catch (e) {
-      console.error("Tray error:", e);
+    console.error("Tray error:", e);
   }
 
-  win.on('close', (event) => {
-      if (!isQuitting) {
-          event.preventDefault();
-          win.hide();
-          return false;
-      }
+  win.on("close", (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      win.hide();
+      return false;
+    }
   });
 
   // Window Controls IPC
@@ -419,158 +461,181 @@ function createWindow() {
 
   // Auth IPC
   ipcMain.handle("auth-login", async (_, { email, password }) => {
-      try {
-          const cred = await signInWithEmailAndPassword(auth, email, password);
-          currentUser = { 
-              uid: cred.user.uid, 
-              email: cred.user.email, 
-              displayName: cred.user.displayName,
-              photoURL: cred.user.photoURL
-          };
-          // Reload settings for this user
-          onUserChanged();
-          // Notify renderer of state change
-          win.webContents.send("auth-state-changed", currentUser);
-          return { success: true, user: currentUser };
-      } catch (e) {
-          return { success: false, error: e.message };
-      }
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      currentUser = {
+        uid: cred.user.uid,
+        email: cred.user.email,
+        displayName: cred.user.displayName,
+        photoURL: cred.user.photoURL,
+      };
+      // Reload settings for this user
+      onUserChanged();
+      // Notify renderer of state change
+      win.webContents.send("auth-state-changed", currentUser);
+      return { success: true, user: currentUser };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
   });
 
   ipcMain.handle("auth-signup", async (_, { email, password, name }) => {
-      try {
-          const cred = await createUserWithEmailAndPassword(auth, email, password);
-          if (name) await updateProfile(cred.user, { displayName: name });
-          
-          currentUser = { 
-              uid: cred.user.uid, 
-              email: cred.user.email, 
-              displayName: name,
-              photoURL: null
-          };
-          // Reload settings for this user
-          onUserChanged();
-          win.webContents.send("auth-state-changed", currentUser);
-          return { success: true, user: currentUser };
-      } catch (e) {
-          return { success: false, error: e.message };
-      }
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      if (name) await updateProfile(cred.user, { displayName: name });
+
+      currentUser = {
+        uid: cred.user.uid,
+        email: cred.user.email,
+        displayName: name,
+        photoURL: null,
+      };
+      // Reload settings for this user
+      onUserChanged();
+      win.webContents.send("auth-state-changed", currentUser);
+      return { success: true, user: currentUser };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
   });
 
   ipcMain.handle("auth-sync-user", async (_, user) => {
-      // Generic Sync from Renderer (Google OR Email)
-      if (user) {
-          currentUser = {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL
-        };
-      } else {
-          currentUser = null;
-      }
-      // Reload settings for this user
-      onUserChanged();
-      // Notify other windows if needed (e.g. overlay)
-      // We do NOT need to send auth-state-changed back to main window since it initiated this.
-      return { success: true };
+    // Generic Sync from Renderer (Google OR Email)
+    if (user) {
+      currentUser = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+      };
+    } else {
+      currentUser = null;
+    }
+    // Reload settings for this user
+    onUserChanged();
+    // Notify other windows if needed (e.g. overlay)
+    // We do NOT need to send auth-state-changed back to main window since it initiated this.
+    return { success: true };
   });
 
   ipcMain.handle("auth-logout", async () => {
-      try {
-          await signOut(auth); // Sign out of Main process auth if any
-          currentUser = null;
-          // Reload settings for guest user
-          onUserChanged();
-           win.webContents.send("auth-state-changed", null);
-          return { success: true };
-      } catch (e) {
-          return { success: false, error: e.message };
-      }
+    try {
+      await signOut(auth); // Sign out of Main process auth if any
+      currentUser = null;
+      // Reload settings for guest user
+      onUserChanged();
+      win.webContents.send("auth-state-changed", null);
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
   });
 
   ipcMain.handle("auth-get-current", () => {
-      // Return our manual state which covers both flows
-      return currentUser;
+    // Return our manual state which covers both flows
+    return currentUser;
   });
 
   // Handle external links for new windows
   win.webContents.setWindowOpenHandler(({ url }) => {
     // Allow Google/Firebase Auth flows to open as child windows
-    if (url.includes('accounts.google.com') || url.includes('firebaseapp.com') || url.includes('/auth/handler')) {
-        return { action: 'allow' };
+    if (
+      url.includes("accounts.google.com") ||
+      url.includes("firebaseapp.com") ||
+      url.includes("/auth/handler")
+    ) {
+      return { action: "allow" };
     }
-    
+
     // Open other links in default browser
-    if (url.startsWith('http')) {
-        require('electron').shell.openExternal(url);
+    if (url.startsWith("http")) {
+      require("electron").shell.openExternal(url);
     }
-    return { action: 'deny' };
+    return { action: "deny" };
   });
 
   // Start Local Server to avoid file:// protocol issues with Firebase Auth
-  const http = require('http');
+  const http = require("http");
   server = http.createServer((req, res) => {
     // Basic static file server
-    const fs = require('fs');
-    const path = require('path');
-    
-    let filePath = path.join(__dirname, req.url === '/' ? 'index.html' : req.url);
-    
+    const fs = require("fs");
+    const path = require("path");
+
+    let filePath = path.join(
+      __dirname,
+      req.url === "/" ? "index.html" : req.url,
+    );
+
     // Prevent directory traversal
     if (!filePath.startsWith(__dirname)) {
-        res.writeHead(403);
-        res.end('Forbidden');
-        return;
+      res.writeHead(403);
+      res.end("Forbidden");
+      return;
     }
 
     const extname = path.extname(filePath);
-    let contentType = 'text/html';
+    let contentType = "text/html";
     switch (extname) {
-        case '.js': contentType = 'text/javascript'; break;
-        case '.css': contentType = 'text/css'; break;
-        case '.json': contentType = 'application/json'; break;
-        case '.png': contentType = 'image/png'; break;
-        case '.jpg': contentType = 'image/jpg'; break;
-        case '.webp': contentType = 'image/webp'; break;
+      case ".js":
+        contentType = "text/javascript";
+        break;
+      case ".css":
+        contentType = "text/css";
+        break;
+      case ".json":
+        contentType = "application/json";
+        break;
+      case ".png":
+        contentType = "image/png";
+        break;
+      case ".jpg":
+        contentType = "image/jpg";
+        break;
+      case ".webp":
+        contentType = "image/webp";
+        break;
     }
 
     fs.readFile(filePath, (error, content) => {
-        if (error) {
-            if(error.code == 'ENOENT'){
-                // Try index.html or 404
-                res.writeHead(404);
-                res.end('Not Found');
-            } else {
-                res.writeHead(500);
-                res.end('Sorry, check with the site admin for error: '+error.code+' ..\n');
-            }
+      if (error) {
+        if (error.code == "ENOENT") {
+          // Try index.html or 404
+          res.writeHead(404);
+          res.end("Not Found");
         } else {
-            res.writeHead(200, { 'Content-Type': contentType });
-            res.end(content, 'utf-8');
+          res.writeHead(500);
+          res.end(
+            "Sorry, check with the site admin for error: " +
+              error.code +
+              " ..\n",
+          );
         }
+      } else {
+        res.writeHead(200, { "Content-Type": contentType });
+        res.end(content, "utf-8");
+      }
     });
   });
-  
+
   const PORT = 3456;
-  
-  server.on('error', (e) => {
-    if (e.code === 'EADDRINUSE') {
+
+  server.on("error", (e) => {
+    if (e.code === "EADDRINUSE") {
       console.warn(`Port ${PORT} in use, trying another...`);
       setTimeout(() => {
-        server.listen(0, 'localhost'); // Listen on any available port
+        server.listen(0, "localhost"); // Listen on any available port
       }, 1000);
     } else {
       console.error("Local server error:", e);
     }
   });
 
-  server.listen(PORT, 'localhost', () => {
-     const port = server.address().port;
-     console.log(`Server running at http://localhost:${port}/`);
-     if (win && !win.isDestroyed()) {
-         win.loadURL(`http://localhost:${port}/index.html`);
-     }
+  server.listen(PORT, "localhost", () => {
+    const port = server.address().port;
+    console.log(`Server running at http://localhost:${port}/`);
+    if (win && !win.isDestroyed()) {
+      win.loadURL(`http://localhost:${port}/index.html`);
+    }
   });
 
   // win.loadFile(indexPath).catch(e => console.error("Failed to load index.html:", e));
@@ -583,9 +648,9 @@ function createWindow() {
     win.webContents.send("settings-loaded", settings);
     sendAIInfoToRenderer();
   });
-  
+
   // Close overlay when main window closes
-  win.on('closed', () => {
+  win.on("closed", () => {
     if (overlayWin) overlayWin.destroy();
     win = null;
   });
@@ -598,31 +663,37 @@ function createWindow() {
   // Auth State Listener
   onAuthStateChanged(auth, (user) => {
     if (win && !win.isDestroyed()) {
-        // Update currentUser for Firebase auth flow
-        if (user) {
-            currentUser = { 
-                uid: user.uid, 
-                email: user.email, 
-                displayName: user.displayName,
-                photoURL: user.photoURL
-            };
-        } else {
-            currentUser = null;
-        }
-        // Reload settings for this user
-        onUserChanged();
-        win.webContents.send("auth-state-changed", user ? { 
-            uid: user.uid, 
-            email: user.email, 
-            displayName: user.displayName 
-        } : null);
+      // Update currentUser for Firebase auth flow
+      if (user) {
+        currentUser = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+        };
+      } else {
+        currentUser = null;
+      }
+      // Reload settings for this user
+      onUserChanged();
+      win.webContents.send(
+        "auth-state-changed",
+        user
+          ? {
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+            }
+          : null,
+      );
     }
   });
 }
 
 function createOverlayWindow() {
-  const { width, height } = require("electron").screen.getPrimaryDisplay().workAreaSize;
-  
+  const { width, height } =
+    require("electron").screen.getPrimaryDisplay().workAreaSize;
+
   // Pill size (Smaller & Narrower)
   const w = 100;
   const h = 40;
@@ -642,13 +713,13 @@ function createOverlayWindow() {
     show: false, // hidden by default
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false, 
+      contextIsolation: false,
     },
-    focusable: false, 
+    focusable: false,
     hasShadow: false,
     type: "toolbar", // Helps with staying on top on Windows
   });
-  
+
   overlayWin.setIgnoreMouseEvents(true);
   overlayWin.loadFile("overlay.html");
   overlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -660,7 +731,8 @@ function startActiveWindowMonitor() {
     try {
       if (!activeWin) return; // Guard against uninitialized ESM module
       const info = await activeWin();
-      if (win && !win.isDestroyed()) win.webContents.send("active-window", info);
+      if (win && !win.isDestroyed())
+        win.webContents.send("active-window", info);
     } catch (e) {
       // ignore
     }
@@ -668,24 +740,24 @@ function startActiveWindowMonitor() {
 }
 
 // ----------------- Overlay IPC -----------------
-ipcMain.on('show-overlay', (event, aiEnabled) => {
+ipcMain.on("show-overlay", (event, aiEnabled) => {
   if (overlayWin && !overlayWin.isDestroyed()) {
-      overlayWin.showInactive();
-      overlayWin.setAlwaysOnTop(true, "screen-saver");
-      overlayWin.webContents.send('set-ai-status', !!aiEnabled);
+    overlayWin.showInactive();
+    overlayWin.setAlwaysOnTop(true, "screen-saver");
+    overlayWin.webContents.send("set-ai-status", !!aiEnabled);
   }
 });
 
-ipcMain.on('hide-overlay', () => {
+ipcMain.on("hide-overlay", () => {
   if (overlayWin && !overlayWin.isDestroyed()) {
-      overlayWin.hide();
+    overlayWin.hide();
   }
 });
 
-ipcMain.on('mic-volume', (event, volume) => {
-    if (overlayWin && !overlayWin.isDestroyed()) {
-        overlayWin.webContents.send('mic-volume', volume);
-    }
+ipcMain.on("mic-volume", (event, volume) => {
+  if (overlayWin && !overlayWin.isDestroyed()) {
+    overlayWin.webContents.send("mic-volume", volume);
+  }
 });
 
 // ----------------- global keyboard listener -----------------
@@ -697,7 +769,10 @@ function setupGlobalKeyboard() {
     // event: { state: "DOWN"|"UP", name: "A"|"NUMPAD8"|... }
     const rawName = event && event.name ? String(event.name) : "";
     const key = normalizeKeyName(rawName); // e.g. NUMPAD8 -> "NUMPAD8"
-    const HOTKEY = (requiredKeys && requiredKeys[0]) ? normalizeKeyName(requiredKeys[0]) : null;
+    const HOTKEY =
+      requiredKeys && requiredKeys[0]
+        ? normalizeKeyName(requiredKeys[0])
+        : null;
 
     if (!HOTKEY) return;
 
@@ -714,7 +789,11 @@ function setupGlobalKeyboard() {
       const duration = releaseTime - (pressStart || releaseTime);
       pressStart = null;
       win.webContents.send("record-stop");
-      win.webContents.send("hotkey-released", { key: HOTKEY, releaseTime, duration });
+      win.webContents.send("hotkey-released", {
+        key: HOTKEY,
+        releaseTime,
+        duration,
+      });
     }
   });
 }
@@ -722,7 +801,7 @@ function setupGlobalKeyboard() {
 // ----------------- IPC: Hotkey management -----------------
 // ----------------- IPC: Hotkey & Settings management -----------------
 ipcMain.on("save-hotkey", (event, keys) => {
-  const normalized = (keys || []).map(k => normalizeKeyName(k));
+  const normalized = (keys || []).map((k) => normalizeKeyName(k));
   requiredKeys = normalized;
   saveSettings({ hotkey: normalized });
   event.reply("hotkey-saved", normalized);
@@ -735,38 +814,39 @@ ipcMain.on("clear-hotkey", (event) => {
 });
 
 ipcMain.on("save-setting", (event, { key, value }) => {
-    saveSettings({ [key]: value });
-    // Re-init AI if relevant settings change
-    if (key === 'apiKey' || key === 'modelName') {
-        initGenAI();
-    }
+  saveSettings({ [key]: value });
+  // Re-init AI if relevant settings change
+  if (key === "apiKey" || key === "modelName") {
+    initGenAI();
+  }
 });
 
 ipcMain.on("set-startup-settings", (event, { openAtLogin, startHidden }) => {
-    app.setLoginItemSettings({
-        openAtLogin: openAtLogin,
-        path: app.getPath('exe'),
-        args: startHidden ? ['--hidden'] : []
-    });
-    // Save to global settings so it persists before user login
-    saveGlobalSettings({ openAtLogin, startHidden });
+  app.setLoginItemSettings({
+    openAtLogin: openAtLogin,
+    path: app.getPath("exe"),
+    args: startHidden ? ["--hidden"] : [],
+  });
+  // Save to global settings so it persists before user login
+  saveGlobalSettings({ openAtLogin, startHidden });
 });
 
 ipcMain.on("get-startup-settings", (event) => {
-    const { openAtLogin } = app.getLoginItemSettings();
-    // Read from global settings for UI state
-    const globalSettings = readGlobalSettings();
-    event.reply("startup-settings-loaded", { 
-        openAtLogin: globalSettings.openAtLogin !== undefined ? globalSettings.openAtLogin : openAtLogin,
-        startHidden: globalSettings.startHidden || false 
-    });
+  const { openAtLogin } = app.getLoginItemSettings();
+  // Read from global settings for UI state
+  const globalSettings = readGlobalSettings();
+  event.reply("startup-settings-loaded", {
+    openAtLogin:
+      globalSettings.openAtLogin !== undefined
+        ? globalSettings.openAtLogin
+        : openAtLogin,
+    startHidden: globalSettings.startHidden || false,
+  });
 });
 
 ipcMain.on("get-hotkey", (event) => {
   event.reply("hotkey-loaded", requiredKeys);
 });
-
-
 
 // ----------------- IPC: Save recorded audio -----------------
 ipcMain.on("save-audio", async (event, arrayBuffer) => {
@@ -774,7 +854,10 @@ ipcMain.on("save-audio", async (event, arrayBuffer) => {
     const { filePath } = await dialog.showSaveDialog({
       title: "Save Recording",
       defaultPath: "recording.webm",
-      filters: [{ name: "WebM Audio", extensions: ["webm"] }, { name: "All Files", extensions: ["*"] }],
+      filters: [
+        { name: "WebM Audio", extensions: ["webm"] },
+        { name: "All Files", extensions: ["*"] },
+      ],
     });
 
     if (!filePath) {
@@ -792,7 +875,6 @@ ipcMain.on("save-audio", async (event, arrayBuffer) => {
   }
 });
 
-
 ipcMain.on("processing-start", () => {
   if (overlayWin) overlayWin.webContents.send("processing-start");
 });
@@ -800,12 +882,11 @@ ipcMain.on("processing-end", () => {
   if (overlayWin) overlayWin.webContents.send("processing-end");
 });
 
-
 // ----------------- Auto Type / Input --------------------------
 ipcMain.handle("auto-type", async (_, text) => {
   try {
     if (!text || typeof text !== "string") return "No text";
-    await new Promise(res => setTimeout(res, 50)); // ensure focus
+    await new Promise((res) => setTimeout(res, 50)); // ensure focus
     robot.typeString(text);
     return "typed";
   } catch (e) {
@@ -814,22 +895,26 @@ ipcMain.handle("auto-type", async (_, text) => {
 });
 
 ipcMain.handle("send-backspace", async () => {
-    try {
-        robot.keyTap("backspace");
-        return true;
-    } catch(e) { return false; }
+  try {
+    robot.keyTap("backspace");
+    return true;
+  } catch (e) {
+    return false;
+  }
 });
 
 ipcMain.handle("paste-string", async (_, text) => {
-    try {
-        const { clipboard } = require("electron");
-        clipboard.writeText(text);
-        await new Promise(res => setTimeout(res, 50));
-        // Ctrl+V or Cmd+V
-        const mod = process.platform === "darwin" ? "command" : "control";
-        robot.keyTap("v", mod);
-        return true;
-    } catch(e) { return false; }
+  try {
+    const { clipboard } = require("electron");
+    clipboard.writeText(text);
+    await new Promise((res) => setTimeout(res, 50));
+    // Ctrl+V or Cmd+V
+    const mod = process.platform === "darwin" ? "command" : "control";
+    robot.keyTap("v", mod);
+    return true;
+  } catch (e) {
+    return false;
+  }
 });
 
 // ----------------- IPC: History -----------------
@@ -838,75 +923,75 @@ ipcMain.handle("get-history", () => {
 });
 
 ipcMain.handle("delete-history-item", (_, id) => {
-    let history = readHistory();
-    const item = history.find(i => i.id === id);
-    if (item && item.audioPath && fs.existsSync(item.audioPath)) {
-        try {
-            fs.unlinkSync(item.audioPath);
-        } catch(e) { console.error("Failed to delete audio file", e); }
+  let history = readHistory();
+  const item = history.find((i) => i.id === id);
+  if (item && item.audioPath && fs.existsSync(item.audioPath)) {
+    try {
+      fs.unlinkSync(item.audioPath);
+    } catch (e) {
+      console.error("Failed to delete audio file", e);
     }
-    history = history.filter(i => i.id !== id);
-    saveHistory(history);
-    return true;
+  }
+  history = history.filter((i) => i.id !== id);
+  saveHistory(history);
+  return true;
 });
 
 ipcMain.handle("update-history-item", (_, { id, text, isAI }) => {
-    let history = readHistory();
-    const idx = history.findIndex(i => i.id === id);
-    if (idx >= 0) {
-        history[idx].text = text;
-        if (isAI !== undefined) history[idx].isAI = isAI;
-        saveHistory(history);
-        return true;
-    }
-    return false;
+  let history = readHistory();
+  const idx = history.findIndex((i) => i.id === id);
+  if (idx >= 0) {
+    history[idx].text = text;
+    if (isAI !== undefined) history[idx].isAI = isAI;
+    saveHistory(history);
+    return true;
+  }
+  return false;
 });
 
 ipcMain.handle("read-audio-file", (_, p) => {
-    try {
-        if (fs.existsSync(p)) {
-            const buffer = fs.readFileSync(p);
-            return buffer.toString("base64");
-        }
-    } catch(e) {}
-    return null;
+  try {
+    if (fs.existsSync(p)) {
+      const buffer = fs.readFileSync(p);
+      return buffer.toString("base64");
+    }
+  } catch (e) {}
+  return null;
 });
 
 // ----------------- IPC: Notes -----------------
 ipcMain.handle("get-notes", () => {
-    return readNotes().reverse();
+  return readNotes().reverse();
 });
 
 ipcMain.handle("save-note", (_, note) => {
-    // note: { id (optional), title, content, color, pin }
-    let notes = readNotes();
-    if (note.id) {
-        const idx = notes.findIndex(n => n.id === note.id);
-        if (idx >= 0) {
-            notes[idx] = { ...notes[idx], ...note, timestamp: Date.now() };
-        } else {
-            notes.push({ ...note, timestamp: Date.now() });
-        }
+  // note: { id (optional), title, content, color, pin }
+  let notes = readNotes();
+  if (note.id) {
+    const idx = notes.findIndex((n) => n.id === note.id);
+    if (idx >= 0) {
+      notes[idx] = { ...notes[idx], ...note, timestamp: Date.now() };
     } else {
-        const newNote = {
-            id: Date.now().toString(),
-            timestamp: Date.now(),
-            ...note
-        };
-        notes.push(newNote);
+      notes.push({ ...note, timestamp: Date.now() });
     }
-    saveNotes(notes);
-    return true;
+  } else {
+    const newNote = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      ...note,
+    };
+    notes.push(newNote);
+  }
+  saveNotes(notes);
+  return true;
 });
 
 ipcMain.handle("delete-note", (_, id) => {
-    let notes = readNotes();
-    notes = notes.filter(n => n.id !== id);
-    saveNotes(notes);
-    return true;
+  let notes = readNotes();
+  notes = notes.filter((n) => n.id !== id);
+  saveNotes(notes);
+  return true;
 });
-
-
 
 // ----------------- IPC: speech to text -----------------
 
@@ -918,7 +1003,7 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
   while (attempt < maxRetries) {
     try {
       if (!genAI) throw new Error("AI not initialized. Check API Key.");
-      
+
       const settings = readSettings();
       // fileManager needs a valid key. Use currentApiKey.
       const fileManager = new GoogleAIFileManager(currentApiKey);
@@ -945,50 +1030,55 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
           fileData: {
             mimeType: upload.file.mimeType,
             fileUri: upload.file.uri,
-          }
-        }
+          },
+        },
       ]);
 
       const text = result.response.text();
-      
+
       // SUCCESS: Update usage for this specific Key + Model
       updateAIUsage(currentKeyIndex, currentModelName);
 
       const historyItem = {
-          id: Date.now().toString(),
-          timestamp: Date.now(),
-          text: text, // Raw transcript
-          audioPath: savePath
+        id: Date.now().toString(),
+        timestamp: Date.now(),
+        text: text, // Raw transcript
+        audioPath: savePath,
       };
-      
+
       const history = readHistory();
       history.push(historyItem);
       saveHistory(history);
 
       return { text: text, id: historyItem.id };
     } catch (err) {
-      console.error(`Transcription error (Attempt ${attempt + 1}/${maxRetries}):`, err);
-      
+      console.error(
+        `Transcription error (Attempt ${attempt + 1}/${maxRetries}):`,
+        err,
+      );
+
       if (attempt < maxRetries - 1) {
-          console.warn(`[AI] Error encountered. Rotating key/model for robust retry...`);
-          // Mark this pair as exhausted for the current session to force rotation
-          const usageData = readAIUsage();
-          if (!usageData.keys[currentKeyIndex]) usageData.keys[currentKeyIndex] = {};
-          // Temporarily set to max to push rotation
-          usageData.keys[currentKeyIndex][currentModelName] = MAX_DAILY_CALLS;
-          saveAIUsage(usageData);
-          
-          // Re-init with next best key/model pair
-          initGenAI();
-          attempt++;
-          continue;
+        console.warn(
+          `[AI] Error encountered. Rotating key/model for robust retry...`,
+        );
+        // Mark this pair as exhausted for the current session to force rotation
+        const usageData = readAIUsage();
+        if (!usageData.keys[currentKeyIndex])
+          usageData.keys[currentKeyIndex] = {};
+        // Temporarily set to max to push rotation
+        usageData.keys[currentKeyIndex][currentModelName] = MAX_DAILY_CALLS;
+        saveAIUsage(usageData);
+
+        // Re-init with next best key/model pair
+        initGenAI();
+        attempt++;
+        continue;
       }
-      
+
       return "Error: " + err.message;
     }
   }
 });
-
 
 // ----------------- IPC: LLM generation (placeholder) -----------------
 ipcMain.handle("generate-text", async (_, { info, assistantName, appName }) => {
@@ -1019,30 +1109,34 @@ Input: "${info}"
       const model = genAI.getGenerativeModel({ model: currentModelName });
       const result = await model.generateContent(prompt);
       let txt = result.response.text();
-      
+
       // SUCCESS: Update usage for this specific Key + Model
       updateAIUsage(currentKeyIndex, currentModelName);
 
       // Extra safety cleanup for hallucinations
-      txt = txt.replace(/\(\d{2}:\d{2}\)/g, "").trim(); 
+      txt = txt.replace(/\(\d{2}:\d{2}\)/g, "").trim();
       return txt;
     } catch (err) {
-      console.error(`Generation error (Attempt ${attempt + 1}/${maxRetries}):`, err);
-      
+      console.error(
+        `Generation error (Attempt ${attempt + 1}/${maxRetries}):`,
+        err,
+      );
+
       if (attempt < maxRetries - 1) {
-          console.warn(`[AI] Error encountered in enhancement. Rotating...`);
-          // Mark as exhausted for session
-          const usageData = readAIUsage();
-          if (!usageData.keys[currentKeyIndex]) usageData.keys[currentKeyIndex] = {};
-          usageData.keys[currentKeyIndex][currentModelName] = MAX_DAILY_CALLS;
-          saveAIUsage(usageData);
-          
-          // Re-init with next best key/model pair
-          initGenAI();
-          attempt++;
-          continue;
+        console.warn(`[AI] Error encountered in enhancement. Rotating...`);
+        // Mark as exhausted for session
+        const usageData = readAIUsage();
+        if (!usageData.keys[currentKeyIndex])
+          usageData.keys[currentKeyIndex] = {};
+        usageData.keys[currentKeyIndex][currentModelName] = MAX_DAILY_CALLS;
+        saveAIUsage(usageData);
+
+        // Re-init with next best key/model pair
+        initGenAI();
+        attempt++;
+        continue;
       }
-      
+
       return "Error: " + (err && err.message ? err.message : String(err));
     }
   }
@@ -1050,29 +1144,57 @@ Input: "${info}"
 
 // ----------------- app lifecycle -----------------
 app.whenReady().then(() => {
-    initGenAI();
-    createWindow();
+  initGenAI();
+  createWindow();
+
+  // Check for updates
+  autoUpdater.checkForUpdatesAndNotify();
+});
+
+// Auto-Update Events
+autoUpdater.on("update-available", () => {
+  console.log("[Updater] Update available.");
+});
+
+autoUpdater.on("update-downloaded", (info) => {
+  console.log("[Updater] Update downloaded.");
+  dialog
+    .showMessageBox({
+      type: "info",
+      title: "Update Ready",
+      message:
+        "A new version of Woodls has been downloaded. Restart the app to apply the updates?",
+      buttons: ["Restart", "Later"],
+    })
+    .then((result) => {
+      if (result.response === 0) {
+        autoUpdater.quitAndInstall();
+      }
+    });
+});
+
+autoUpdater.on("error", (err) => {
+  console.error("[Updater] Error in auto-updater: ", err);
 });
 
 app.on("window-all-closed", (e) => {
   if (!isQuitting) e.preventDefault();
 });
 
-app.on('before-quit', () => {
-    isQuitting = true;
-    // Close the HTTP server to prevent port lingering
-    if (server) {
-        server.close(() => {
-            console.log('Server closed');
-        });
-    }
+app.on("before-quit", () => {
+  isQuitting = true;
+  // Close the HTTP server to prevent port lingering
+  if (server) {
+    server.close(() => {
+      console.log("Server closed");
+    });
+  }
 });
 
-app.on('activate', () => {
-    if (win === null) {
-        createWindow();
-    } else {
-        win.show();
-    }
+app.on("activate", () => {
+  if (win === null) {
+    createWindow();
+  } else {
+    win.show();
+  }
 });
-
