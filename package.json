@@ -9,12 +9,12 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "postinstall": "electron-rebuild"
+    "postinstall": "node -e \"if (!process.env.CI) require('child_process').execSync('npx electron-rebuild', { stdio: 'inherit' })\""
   },
   "devDependencies": {
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
-    "electron-rebuild": "^3.2.9"
+    "@electron/rebuild": "^3.3.0"
   },
   "build": {
     "appId": "com.satyam.autovoicetyping",
