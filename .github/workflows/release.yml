@@ -35,4 +35,4 @@ jobs:
         run: npm run build -- --publish always
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # If you need to sign your app, add CSC_LINK and CSC_KEY_PASSWORD here
+          # If you need to sign your app, add CSC_LINK and CSC_KEY_PASSWORD ere
