@@ -80,6 +80,7 @@ This project is licensed under the ISC License.
 
 
 <!-- Build releases command -->
-git tag -d v1.0.1
-git tag v1.0.1
-git push origin v1.0.1 --force
+git tag -d v1.0.4
+git tag v1.0.4
+git push origin v1.0.4 --force
+

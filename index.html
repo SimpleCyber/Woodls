@@ -1,1231 +1,2039 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Woodls</title>
 
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Woodls</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-          },
-          colors: {
-            primary: {
-              50: '#eff6ff',
-              100: '#dbeafe',
-              500: '#3b82f6',
-              600: '#2563eb',
-              700: '#1d4ed8',
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
             },
-            slate: {
-              850: '#1e293b', // Custom dark slate
-            }
-          }
-        }
+            colors: {
+              primary: {
+                50: "#eff6ff",
+                100: "#dbeafe",
+                500: "#3b82f6",
+                600: "#2563eb",
+                700: "#1d4ed8",
+              },
+              slate: {
+                850: "#1e293b", // Custom dark slate
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      /* ========== THEME SYSTEM - CSS VARIABLES ========== */
+      :root {
+        /* Light Theme Colors */
+        --bg-primary: #ffffff;
+        --bg-secondary: #f8fafc;
+        --bg-tertiary: #f1f5f9;
+
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-tertiary: #94a3b8;
+
+        --border-primary: #e2e8f0;
+        --border-secondary: #cbd5e1;
+
+        --sidebar-bg: #ffffff;
+        --sidebar-active-bg: #eff6ff;
+        --sidebar-active-text: #2563eb;
+        --sidebar-hover-bg: #f8fafc;
+
+        --titlebar-bg: #ffffff;
+        --titlebar-border: #f1f5f9;
+        --titlebar-text: #64748b;
+
+        --card-bg: #ffffff;
+        --card-border: #e2e8f0;
+        --card-shadow: rgba(0, 0, 0, 0.05);
+
+        --input-bg: #f8fafc;
+        --input-border: #e2e8f0;
+
+        --scrollbar-thumb: #cbd5e1;
+        --scrollbar-thumb-hover: #94a3b8;
+
+        --timeline-dot: #919295;
+        --timeline-dot-border: #ffffff;
       }
-    }
-  </script>
 
-  <style>
-    /* ========== THEME SYSTEM - CSS VARIABLES ========== */
-    :root {
-      /* Light Theme Colors */
-      --bg-primary: #ffffff;
-      --bg-secondary: #f8fafc;
-      --bg-tertiary: #f1f5f9;
-      
-      --text-primary: #0f172a;
-      --text-secondary: #475569;
-      --text-tertiary: #94a3b8;
-      
-      --border-primary: #e2e8f0;
-      --border-secondary: #cbd5e1;
-      
-      --sidebar-bg: #ffffff;
-      --sidebar-active-bg: #eff6ff;
-      --sidebar-active-text: #2563eb;
-      --sidebar-hover-bg: #f8fafc;
-      
-      --titlebar-bg: #ffffff;
-      --titlebar-border: #f1f5f9;
-      --titlebar-text: #64748b;
-      
-      --card-bg: #ffffff;
-      --card-border: #e2e8f0;
-      --card-shadow: rgba(0, 0, 0, 0.05);
-      
-      --input-bg: #f8fafc;
-      --input-border: #e2e8f0;
-      
-      --scrollbar-thumb: #cbd5e1;
-      --scrollbar-thumb-hover: #94a3b8;
-      
-      --timeline-dot: #919295;
-      --timeline-dot-border: #ffffff;
-    }
+      [data-theme="dark"] {
+        /* Dark Theme Colors - Neutral Grays */
+        --bg-primary: #1a1a1a;
+        --bg-secondary: #242424;
+        --bg-tertiary: #2e2e2e;
 
-    [data-theme="dark"] {
-      /* Dark Theme Colors - Neutral Grays */
-      --bg-primary: #1a1a1a;
-      --bg-secondary: #242424;
-      --bg-tertiary: #2e2e2e;
-      
-      --text-primary: #e5e5e5;
-      --text-secondary: #b3b3b3;
-      --text-tertiary: #737373;
-      
-      --border-primary: #3a3a3a;
-      --border-secondary: #4a4a4a;
-      
-      --sidebar-bg: #1f1f1f;
-      --sidebar-active-bg: #2a2a2a;
-      --sidebar-active-text: #60a5fa;
-      --sidebar-hover-bg: #2e2e2e;
-      
-      --titlebar-bg: #1a1a1a;
-      --titlebar-border: #2e2e2e;
-      --titlebar-text: #a3a3a3;
-      
-      --card-bg: #242424;
-      --card-border: #3a3a3a;
-      --card-shadow: rgba(0, 0, 0, 0.5);
-      
-      --input-bg: #2e2e2e;
-      --input-border: #4a4a4a;
-      
-      --scrollbar-thumb: #4a4a4a;
-      --scrollbar-thumb-hover: #5a5a5a;
-      
-      --timeline-dot: #737373;
-      --timeline-dot-border: #1a1a1a;
-    }
+        --text-primary: #e5e5e5;
+        --text-secondary: #b3b3b3;
+        --text-tertiary: #737373;
 
-    body {
-      font-family: 'Inter', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      background-color: var(--bg-primary);
-      color: var(--text-primary);
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
+        --border-primary: #3a3a3a;
+        --border-secondary: #4a4a4a;
 
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: var(--scrollbar-thumb);
-      border-radius: 3px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--scrollbar-thumb-hover);
-    }
+        --sidebar-bg: #1f1f1f;
+        --sidebar-active-bg: #2a2a2a;
+        --sidebar-active-text: #60a5fa;
+        --sidebar-hover-bg: #2e2e2e;
 
-    .glass-panel {
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-    }
+        --titlebar-bg: #1a1a1a;
+        --titlebar-border: #2e2e2e;
+        --titlebar-text: #a3a3a3;
 
-    [data-theme="dark"] .glass-panel {
-      background: rgba(36, 36, 36, 0.7);
-      border: 1px solid rgba(58, 58, 58, 0.5);
-    }
+        --card-bg: #242424;
+        --card-border: #3a3a3a;
+        --card-shadow: rgba(0, 0, 0, 0.5);
 
-    .sidebar-item.active {
-      background-color: var(--sidebar-active-bg);
-      color: var(--sidebar-active-text);
-      font-weight: 500;
-    }
-    
-    .sidebar-item {
-      transition: all 0.2s ease-in-out;
-    }
+        --input-bg: #2e2e2e;
+        --input-border: #4a4a4a;
 
-    .smooth-transition {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .card-hover:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 15px -3px var(--card-shadow), 0 4px 6px -2px var(--card-shadow);
-    }
+        --scrollbar-thumb: #4a4a4a;
+        --scrollbar-thumb-hover: #5a5a5a;
 
-    /* Title Bar */
-    #title-bar {
-      -webkit-app-region: drag;
-      height: 32px;
-      padding-left: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      color: var(--titlebar-text);
-      font-size: 12px;
-      background: var(--titlebar-bg);
-      border-bottom: 1px solid var(--titlebar-border);
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 50;
-    }
+        --timeline-dot: #737373;
+        --timeline-dot-border: #1a1a1a;
+      }
 
-    #title-bar-btns {
-      -webkit-app-region: no-drag;
-      display: flex;
-    }
+      body {
+        font-family: "Inter", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        transition:
+          background-color 0.3s ease,
+          color 0.3s ease;
+      }
 
-    .window-btn {
-      width: 46px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: background 0.1s;
-    }
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb);
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--scrollbar-thumb-hover);
+      }
 
-    .window-btn:hover {
-      background-color: var(--bg-tertiary);
-      color: var(--text-primary);
-    }
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+      }
 
-    .window-btn.close:hover {
-      background-color: #ef4444;
-      color: white;
-    }
+      [data-theme="dark"] .glass-panel {
+        background: rgba(36, 36, 36, 0.7);
+        border: 1px solid rgba(58, 58, 58, 0.5);
+      }
 
-    /* Timeline Circle */
-    .timeline-item {
-      position: relative;
-    }
-    
-    .timeline-item::before {
-      content: '';
-      position: absolute;
-      left: -5px;
-      top: 6px;
-      width: 9px;
-      height: 9px;
-      background-color: var(--timeline-dot);
-      border-radius: 50%;
-      border: 2px solid var(--timeline-dot-border);
-      box-shadow: 0 0 0 1px var(--border-primary);
-    }
-    
-    /* ========== DARK MODE OVERRIDES ========== */
-    [data-theme="dark"] .bg-white {
-      background-color: var(--bg-primary) !important;
-    }
-    
-    [data-theme="dark"] .bg-slate-50,
-    [data-theme="dark"] .bg-slate-100 {
-      background-color: var(--bg-secondary) !important;
-    }
-    
-    [data-theme="dark"] .bg-slate-200 {
-      background-color: var(--bg-tertiary) !important;
-    }
-    
-    [data-theme="dark"] .text-slate-800,
-    [data-theme="dark"] .text-slate-900 {
-      color: var(--text-primary) !important;
-    }
-    
-    [data-theme="dark"] .text-slate-600,
-    [data-theme="dark"] .text-slate-700 {
-      color: var(--text-secondary) !important;
-    }
-    
-    [data-theme="dark"] .text-slate-400,
-    [data-theme="dark"] .text-slate-500 {
-      color: var(--text-tertiary) !important;
-    }
-    
-    [data-theme="dark"] .border-slate-100,
-    [data-theme="dark"] .border-slate-200 {
-      border-color: var(--border-primary) !important;
-    }
-    
-    [data-theme="dark"] .border-slate-300 {
-      border-color: var(--border-secondary) !important;
-    }
-    
-    [data-theme="dark"] .divide-slate-100 > * + * {
-      border-color: var(--border-primary) !important;
-    }
-    
-    /* Cards and containers */
-    [data-theme="dark"] .shadow-sm {
-      box-shadow: 0 1px 2px 0 var(--card-shadow) !important;
-    }
-    
-    [data-theme="dark"] .shadow-md {
-      box-shadow: 0 4px 6px -1px var(--card-shadow), 0 2px 4px -1px var(--card-shadow) !important;
-    }
-    
-    [data-theme="dark"] .shadow-xl {
-      box-shadow: 0 20px 25px -5px var(--card-shadow), 0 10px 10px -5px var(--card-shadow) !important;
-    }
-    
-    [data-theme="dark"] .shadow-2xl {
-      box-shadow: 0 25px 50px -12px var(--card-shadow) !important;
-    }
-    
-    /* Specific fixes for dark mode bugs */
-    
-    /* 1. Getting Started box gradient */
-    [data-theme="dark"] .bg-gradient-to-r {
-      background: var(--bg-secondary) !important;
-    }
-    
-    /* 2. Privacy First alert box */
-    [data-theme="dark"] .bg-blue-50\/50 {
-      background-color: rgba(59, 130, 246, 0.1) !important;
-    }
-    
-    [data-theme="dark"] .bg-blue-100 {
-      background-color: rgba(59, 130, 246, 0.2) !important;
-    }
-    
-    [data-theme="dark"] .border-blue-100\/50 {
-      border-color: rgba(59, 130, 246, 0.2) !important;
-    }
-    
-    /* 3. Notes search bar */
-    [data-theme="dark"] .focus-within\:bg-white:focus-within {
-      background-color: var(--bg-tertiary) !important;
-    }
-    
-    [data-theme="dark"] .bg-white\/90 {
-      background-color: rgba(26, 26, 26, 0.9) !important;
-    }
-    
-    /* Notes page container */
-    [data-theme="dark"] #notes.bg-white {
-      background-color: var(--bg-primary) !important;
-    }
-  </style>
-</head>
+      .sidebar-item.active {
+        background-color: var(--sidebar-active-bg);
+        color: var(--sidebar-active-text);
+        font-weight: 500;
+      }
 
-<body class="bg-white h-screen flex flex-col overflow-hidden text-slate-800 selection:bg-primary-100 selection:text-primary-700">
+      .sidebar-item {
+        transition: all 0.2s ease-in-out;
+      }
 
-  <!-- Custom Title Bar -->
-  <div id="title-bar">
+      .smooth-transition {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .card-hover:hover {
+        transform: translateY(-2px);
+        box-shadow:
+          0 10px 15px -3px var(--card-shadow),
+          0 4px 6px -2px var(--card-shadow);
+      }
+
+      /* Title Bar */
+      #title-bar {
+        -webkit-app-region: drag;
+        height: 32px;
+        padding-left: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: var(--titlebar-text);
+        font-size: 12px;
+        background: var(--titlebar-bg);
+        border-bottom: 1px solid var(--titlebar-border);
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 50;
+      }
+
+      #title-bar-btns {
+        -webkit-app-region: no-drag;
+        display: flex;
+      }
+
+      .window-btn {
+        width: 46px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+
+      .window-btn:hover {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+
+      .window-btn.close:hover {
+        background-color: #ef4444;
+        color: white;
+      }
+
+      /* Timeline Circle */
+      .timeline-item {
+        position: relative;
+      }
+
+      .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: -5px;
+        top: 6px;
+        width: 9px;
+        height: 9px;
+        background-color: var(--timeline-dot);
+        border-radius: 50%;
+        border: 2px solid var(--timeline-dot-border);
+        box-shadow: 0 0 0 1px var(--border-primary);
+      }
+
+      /* ========== DARK MODE OVERRIDES ========== */
+      [data-theme="dark"] .bg-white {
+        background-color: var(--bg-primary) !important;
+      }
+
+      [data-theme="dark"] .bg-slate-50,
+      [data-theme="dark"] .bg-slate-100 {
+        background-color: var(--bg-secondary) !important;
+      }
+
+      [data-theme="dark"] .bg-slate-200 {
+        background-color: var(--bg-tertiary) !important;
+      }
+
+      [data-theme="dark"] .text-slate-800,
+      [data-theme="dark"] .text-slate-900 {
+        color: var(--text-primary) !important;
+      }
+
+      [data-theme="dark"] .text-slate-600,
+      [data-theme="dark"] .text-slate-700 {
+        color: var(--text-secondary) !important;
+      }
+
+      [data-theme="dark"] .text-slate-400,
+      [data-theme="dark"] .text-slate-500 {
+        color: var(--text-tertiary) !important;
+      }
+
+      [data-theme="dark"] .border-slate-100,
+      [data-theme="dark"] .border-slate-200 {
+        border-color: var(--border-primary) !important;
+      }
+
+      [data-theme="dark"] .border-slate-300 {
+        border-color: var(--border-secondary) !important;
+      }
+
+      [data-theme="dark"] .divide-slate-100 > * + * {
+        border-color: var(--border-primary) !important;
+      }
+
+      /* Cards and containers */
+      [data-theme="dark"] .shadow-sm {
+        box-shadow: 0 1px 2px 0 var(--card-shadow) !important;
+      }
+
+      [data-theme="dark"] .shadow-md {
+        box-shadow:
+          0 4px 6px -1px var(--card-shadow),
+          0 2px 4px -1px var(--card-shadow) !important;
+      }
+
+      [data-theme="dark"] .shadow-xl {
+        box-shadow:
+          0 20px 25px -5px var(--card-shadow),
+          0 10px 10px -5px var(--card-shadow) !important;
+      }
+
+      [data-theme="dark"] .shadow-2xl {
+        box-shadow: 0 25px 50px -12px var(--card-shadow) !important;
+      }
+
+      /* Specific fixes for dark mode bugs */
+
+      /* 1. Getting Started box gradient */
+      [data-theme="dark"] .bg-gradient-to-r {
+        background: var(--bg-secondary) !important;
+      }
+
+      /* 2. Privacy First alert box */
+      [data-theme="dark"] .bg-blue-50\/50 {
+        background-color: rgba(59, 130, 246, 0.1) !important;
+      }
+
+      [data-theme="dark"] .bg-blue-100 {
+        background-color: rgba(59, 130, 246, 0.2) !important;
+      }
+
+      [data-theme="dark"] .border-blue-100\/50 {
+        border-color: rgba(59, 130, 246, 0.2) !important;
+      }
+
+      /* 3. Notes search bar */
+      [data-theme="dark"] .focus-within\:bg-white:focus-within {
+        background-color: var(--bg-tertiary) !important;
+      }
+
+      [data-theme="dark"] .bg-white\/90 {
+        background-color: rgba(26, 26, 26, 0.9) !important;
+      }
+
+      /* Notes page container */
+      [data-theme="dark"] #notes.bg-white {
+        background-color: var(--bg-primary) !important;
+      }
+    </style>
+  </head>
+
+  <body
+    class="bg-white h-screen flex flex-col overflow-hidden text-slate-800 selection:bg-primary-100 selection:text-primary-700"
+  >
+    <!-- Custom Title Bar -->
+    <div id="title-bar">
       <div class="flex items-center gap-2 font-bold text-sm">
-         <img src="webp/woodls.png" class="w-5 h-5 object-contain"> 
-         <p class="text-slate-900 tracking-tight flex items-center gap-2">
-          Woodls 
-         </p>
+        <img src="webp/woodls.png" class="w-5 h-5 object-contain" />
+        <p class="text-slate-900 tracking-tight flex items-center gap-2">
+          Woodls
+        </p>
       </div>
       <div id="title-bar-btns">
-          <div class="window-btn" id="min-btn"><i class="fa-solid fa-minus"></i></div>
-          <div class="window-btn" id="max-btn"><i class="fa-regular fa-square"></i></div>
-          <div class="window-btn close" id="close-btn"><i class="fa-solid fa-xmark"></i></div>
+        <div class="window-btn" id="min-btn">
+          <i class="fa-solid fa-minus"></i>
+        </div>
+        <div class="window-btn" id="max-btn">
+          <i class="fa-regular fa-square"></i>
+        </div>
+        <div class="window-btn close" id="close-btn">
+          <i class="fa-solid fa-xmark"></i>
+        </div>
       </div>
-  </div>
+    </div>
 
-  <div id="content-container" class="flex flex-1 overflow-hidden pt-[32px]">
-    <!-- SIDEBAR -->
-    <aside class="w-64 bg-white flex flex-col z-10 border-r border-slate-100">
-      <div class="p-6 flex items-center gap-2 mb-2">
-        
-      </div>
+    <div id="content-container" class="flex flex-1 overflow-hidden pt-[32px]">
+      <!-- SIDEBAR -->
+      <aside class="w-64 bg-white flex flex-col z-10 border-r border-slate-100">
+        <div class="p-6 flex items-center gap-2 mb-2"></div>
 
-      <nav class="flex-1 px-4 space-y-1">
-        
-        <div data-page="home"
-          class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group transition-colors">
-          <i class="fa-solid fa-house w-5 text-center transition-colors"></i>
-          <span class="text-sm font-medium">Home</span>
+        <nav class="flex-1 px-4 space-y-1">
+          <div
+            data-page="home"
+            class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group transition-colors"
+          >
+            <i class="fa-solid fa-house w-5 text-center transition-colors"></i>
+            <span class="text-sm font-medium">Home</span>
+          </div>
+
+          <div
+            data-page="history"
+            class="sidebar-item px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group transition-colors"
+          >
+            <i
+              class="fa-solid fa-clock-rotate-left w-5 text-center transition-colors"
+            ></i>
+            <span class="text-sm font-medium">History</span>
+          </div>
+
+          <div
+            data-page="notes"
+            class="sidebar-item px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group transition-colors"
+          >
+            <i
+              class="fa-regular fa-lightbulb w-5 text-center transition-colors"
+            ></i>
+            <span class="text-sm font-medium">Notes</span>
+          </div>
+
+          <div
+            data-page="settings"
+            class="sidebar-item px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group transition-colors"
+          >
+            <i class="fa-solid fa-gear w-5 text-center transition-colors"></i>
+            <span class="text-sm font-medium">Settings</span>
+          </div>
+
+          <!-- Account (Simplified) -->
+          <div
+            data-page="account"
+            class="sidebar-item px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group transition-colors"
+          >
+            <i
+              class="fa-solid fa-circle-info w-5 text-center transition-colors"
+            ></i>
+            <span class="text-sm font-medium">About</span>
+          </div>
+        </nav>
+
+        <!-- Bottom Promo (Removed misleading upgrade text) -->
+        <div class="p-4 mt-auto relative">
+          <!-- User Profile Trigger -->
+          <div
+            id="user-profile-btn"
+            class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group"
+          >
+            <div
+              id="user-avatar"
+              class="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold overflow-hidden border border-slate-200 group-hover:border-slate-300"
+            >
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p
+                id="user-name-display"
+                class="text-sm font-medium text-slate-700 truncate"
+              >
+                Guest
+              </p>
+              <p
+                id="user-email-display"
+                class="text-xs text-slate-400 truncate"
+              >
+                Sign In
+              </p>
+            </div>
+            <i
+              class="fa-solid fa-chevron-up text-xs text-slate-300 group-hover:text-slate-500"
+            ></i>
+          </div>
+
+          <!-- User Popup Menu (Hidden) -->
+          <div
+            id="user-menu-popup"
+            class="hidden absolute bottom-full left-4 right-4 mb-2 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200 z-50"
+          >
+            <div class="p-1">
+              <div
+                id="upgrade-trigger-btn"
+                class="px-3 py-2 hover:bg-amber-50 rounded-lg cursor-pointer transition-colors group"
+              >
+                <div
+                  class="flex items-center gap-2 text-sm font-medium text-amber-600"
+                >
+                  <i class="fa-solid fa-crown text-amber-500"></i> Upgrade Plan
+                </div>
+                <div class="text-[10px] text-amber-500/70 pl-6">
+                  Unlock unlimited everything
+                </div>
+              </div>
+              <div
+                id="logout-option"
+                class="px-3 py-2 hover:bg-red-50 rounded-lg cursor-pointer transition-colors text-red-600 flex items-center gap-2 text-sm"
+              >
+                <i class="fa-solid fa-arrow-right-from-bracket w-4"></i> Sign
+                Out
+              </div>
+            </div>
+          </div>
         </div>
+      </aside>
 
-        <div data-page="history"
-          class="sidebar-item px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group transition-colors">
-          <i class="fa-solid fa-clock-rotate-left w-5 text-center transition-colors"></i>
-          <span class="text-sm font-medium">History</span>
-        </div>
-
-        <div data-page="notes"
-          class="sidebar-item px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group transition-colors">
-          <i class="fa-regular fa-lightbulb w-5 text-center transition-colors"></i> 
-          <span class="text-sm font-medium">Notes</span>
-        </div>
-
-        <div data-page="settings"
-          class="sidebar-item px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group transition-colors">
-          <i class="fa-solid fa-gear w-5 text-center transition-colors"></i>
-          <span class="text-sm font-medium">Settings</span>
-        </div>
-
-        <!-- Account (Simplified) -->
-        <div data-page="account"
-          class="sidebar-item px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group transition-colors">
-          <i class="fa-solid fa-circle-info w-5 text-center transition-colors"></i>
-          <span class="text-sm font-medium">About</span>
-        </div>
-
-      </nav>
-      
-      <!-- Bottom Promo (Removed misleading upgrade text) -->
-      <div class="p-4 mt-auto relative">
-           
-           <!-- User Profile Trigger -->
-           <div id="user-profile-btn" class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group">
-               <div id="user-avatar" class="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold overflow-hidden border border-slate-200 group-hover:border-slate-300">
-                   <i class="fa-solid fa-user"></i>
-               </div>
-               <div class="flex-1 min-w-0">
-                   <p id="user-name-display" class="text-sm font-medium text-slate-700 truncate">Guest</p>
-                   <p id="user-email-display" class="text-xs text-slate-400 truncate">Sign In</p>
-               </div>
-               <i class="fa-solid fa-chevron-up text-xs text-slate-300 group-hover:text-slate-500"></i>
-           </div>
-
-           <!-- User Popup Menu (Hidden) -->
-           <div id="user-menu-popup" class="hidden absolute bottom-full left-4 right-4 mb-2 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200 z-50">
-               <div class="p-1">
-                   <div id="upgrade-trigger-btn" class="px-3 py-2 hover:bg-amber-50 rounded-lg cursor-pointer transition-colors group">
-                       <div class="flex items-center gap-2 text-sm font-medium text-amber-600">
-                           <i class="fa-solid fa-crown text-amber-500"></i> Upgrade Plan
-                       </div>
-                       <div class="text-[10px] text-amber-500/70 pl-6">Unlock unlimited everything</div>
-                   </div>
-                   <div id="logout-option" class="px-3 py-2 hover:bg-red-50 rounded-lg cursor-pointer transition-colors text-red-600 flex items-center gap-2 text-sm">
-                       <i class="fa-solid fa-arrow-right-from-bracket w-4"></i> Sign Out
-                   </div>
-               </div>
-           </div>
-
-      </div>
-
-    </aside>
-
-    <!-- MAIN -->
-    <main class="flex-1 flex flex-col overflow-hidden relative bg-white">
-      
-      <!-- CONTENT -->
-      <section id="content" class="flex-1 flex flex-col overflow-hidden">
-
-        <!-- HOME (Refined) -->
-        <div id="home" class="page flex-1 overflow-y-auto p-10 max-w-5xl mx-auto animate-in fade-in zoom-in-95 duration-300 w-full">
-           
-           <div class="mb-12">
-               <h2 class="text-3xl font-semibold text-slate-900 mb-2">Welcome to Woodls</h2>
-               <p class="text-slate-500">Your intelligent voice assistant for every application.</p>
-           </div>
-           
-           <!-- Hotkey Hint with WebP icon maybe? Or just clean style -->
-           <div class="bg-gradient-to-r from-slate-50 to-white rounded-2xl p-8 text-center text-slate-600 mb-12 border border-slate-100 shadow-sm relative overflow-hidden">
-               <div class="relative z-10">
-                   <p class="mb-4 text-sm font-medium text-slate-400 uppercase tracking-widest">Getting Started</p>
-                   <p id="home-hotkey-instruction" class="text-lg">
-                       Hold down <span id="home-hotkey-text" class="hotkey-dynamic-text font-mono font-bold bg-white border border-slate-200 px-2 py-1 rounded-lg mx-1 shadow-sm text-slate-800">...</span> to start dictating anywhere.
-                   </p>
-               </div>
-               <i class="fa-solid fa-microphone-lines text-9xl absolute -bottom-8 -right-8 text-slate-50 rotate-12"></i>
-           </div>
-
-           <!-- Essential Apps (Using WebP) -->
-           <h4 class="text-sm font-medium text-slate-400 uppercase tracking-wide mb-6 mt-5">Works seamlessly with</h4>
-           
-           <div class="grid grid-cols-5 gap-6">
-               <!-- Slack -->
-               <a href="https://slack.com" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
-                   <img src="webp/slack.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Slack">
-                   <span class="text-xs font-medium text-slate-600">Slack</span>
-               </a>
-               <!-- Gmail -->
-               <a href="https://gmail.com" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
-                   <img src="webp/gmail.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Gmail">
-                   <span class="text-xs font-medium text-slate-600">Gmail</span>
-               </a>
-               <!-- Chrome -->
-               <a href="https://google.com/chrome" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
-                   <img src="webp/chrome.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Chrome">
-                   <span class="text-xs font-medium text-slate-600">Chrome</span>
-               </a>
-                <!-- Cursor -->
-               <a href="https://cursor.sh" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
-                   <img src="webp/cursor.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Cursor">
-                   <span class="text-xs font-medium text-slate-600">Cursor</span>
-               </a>
-               <!-- Notion -->
-               <a href="https://notion.so" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
-                   <img src="webp/notion.webp" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Notion">
-                   <span class="text-xs font-medium text-slate-600">Notion</span>
-               </a>
-           </div>
-
-            <h4 class="text-sm font-medium text-slate-400 uppercase tracking-wide mb-6 mt-10">Our other products
-</h4>
-
-<div class="grid grid-cols-5 gap-6">
-               <!-- Slack -->
-               <a href="https://workwise-sigma.vercel.app/" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
-                   <img src="webp/workwise.png" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="workwise">
-                   <span class="text-xs font-medium text-slate-600">Workwise</span>
-               </a>
-               <!-- Gmail -->
-               <a href="https://habit-builder-rho.vercel.app/" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
-                   <img src="webp/habitx.png" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="habitx">
-                   <span class="text-xs font-medium text-slate-600">Habitx</span>
-               </a>
-               <!-- Chrome -->
-               <a href="https://devhub1.vercel.app/" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
-                   <img src="webp/devhub.png" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="devhub">
-                   <span class="text-xs font-medium text-slate-600">Devhub</span>
-               </a>
-                <!-- Cursor -->
-               <a href="https://nomi-nomi.vercel.app/" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200">
-                   <img src="webp/nominomi.png" class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" alt="Cursor">
-                   <span class="text-xs font-medium text-slate-600">Nomi Nomi</span>
-               </a>               
-           </div>
-
-
-           
-        </div>
-
-        <!-- HISTORY -->
-        <div id="history" class="page hidden flex-1 overflow-y-auto p-10 max-w-4xl mx-auto w-full">
-            <div class="flex items-center justify-between mb-8">
-                <h2 class="text-2xl font-medium text-slate-800">History</h2>
-                <i class="fa-solid fa-ellipsis-vertical text-slate-400 cursor-pointer hover:text-slate-600"></i>
+      <!-- MAIN -->
+      <main class="flex-1 flex flex-col overflow-hidden relative bg-white">
+        <!-- CONTENT -->
+        <section id="content" class="flex-1 flex flex-col overflow-hidden">
+          <!-- HOME (Refined) -->
+          <div
+            id="home"
+            class="page flex-1 overflow-y-auto p-10 max-w-5xl mx-auto animate-in fade-in zoom-in-95 duration-300 w-full"
+          >
+            <div class="mb-12">
+              <h2 class="text-3xl font-semibold text-slate-900 mb-2">
+                Welcome to Woodls
+              </h2>
+              <p class="text-slate-500">
+                Your intelligent voice assistant for every application.
+              </p>
             </div>
 
-            <div class="bg-blue-50/50 rounded-xl p-4 mb-8 border border-blue-100/50 flex items-start gap-4">
-                 <div class="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center shrink-0">
-                     <i class="fa-solid fa-shield-halved text-sm"></i>
-                 </div>
-                 <div>
-                    <p class="text-sm font-medium text-slate-800">Privacy First</p>
-                    <p class="text-xs text-slate-500 leading-relaxed mt-1">Your voice data is processed locally and never stored on our servers. History is saved only on this device.</p>
-                 </div>
+            <!-- Hotkey Hint with WebP icon maybe? Or just clean style -->
+            <div
+              class="bg-gradient-to-r from-slate-50 to-white rounded-2xl p-8 text-center text-slate-600 mb-12 border border-slate-100 shadow-sm relative overflow-hidden"
+            >
+              <div class="relative z-10">
+                <p
+                  class="mb-4 text-sm font-medium text-slate-400 uppercase tracking-widest"
+                >
+                  Getting Started
+                </p>
+                <p id="home-hotkey-instruction" class="text-lg">
+                  Hold down
+                  <span
+                    id="home-hotkey-text"
+                    class="hotkey-dynamic-text font-mono font-bold bg-white border border-slate-200 px-2 py-1 rounded-lg mx-1 shadow-sm text-slate-800"
+                    >...</span
+                  >
+                  to start dictating anywhere.
+                </p>
+              </div>
+              <i
+                class="fa-solid fa-microphone-lines text-9xl absolute -bottom-8 -right-8 text-slate-50 rotate-12"
+              ></i>
+            </div>
+
+            <!-- Essential Apps (Using WebP) -->
+            <h4
+              class="text-sm font-medium text-slate-400 uppercase tracking-wide mb-6 mt-5"
+            >
+              Works seamlessly with
+            </h4>
+
+            <div class="grid grid-cols-5 gap-6">
+              <!-- Slack -->
+              <a
+                href="https://slack.com"
+                target="_blank"
+                class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200"
+              >
+                <img
+                  src="webp/slack.webp"
+                  class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
+                  alt="Slack"
+                />
+                <span class="text-xs font-medium text-slate-600">Slack</span>
+              </a>
+              <!-- Gmail -->
+              <a
+                href="https://gmail.com"
+                target="_blank"
+                class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200"
+              >
+                <img
+                  src="webp/gmail.webp"
+                  class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
+                  alt="Gmail"
+                />
+                <span class="text-xs font-medium text-slate-600">Gmail</span>
+              </a>
+              <!-- Chrome -->
+              <a
+                href="https://google.com/chrome"
+                target="_blank"
+                class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200"
+              >
+                <img
+                  src="webp/chrome.webp"
+                  class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
+                  alt="Chrome"
+                />
+                <span class="text-xs font-medium text-slate-600">Chrome</span>
+              </a>
+              <!-- Cursor -->
+              <a
+                href="https://cursor.sh"
+                target="_blank"
+                class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200"
+              >
+                <img
+                  src="webp/cursor.webp"
+                  class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
+                  alt="Cursor"
+                />
+                <span class="text-xs font-medium text-slate-600">Cursor</span>
+              </a>
+              <!-- Notion -->
+              <a
+                href="https://notion.so"
+                target="_blank"
+                class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200"
+              >
+                <img
+                  src="webp/notion.webp"
+                  class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
+                  alt="Notion"
+                />
+                <span class="text-xs font-medium text-slate-600">Notion</span>
+              </a>
+            </div>
+
+            <h4
+              class="text-sm font-medium text-slate-400 uppercase tracking-wide mb-6 mt-10"
+            >
+              Our other products
+            </h4>
+
+            <div class="grid grid-cols-5 gap-6">
+              <!-- Slack -->
+              <a
+                href="https://workwise-sigma.vercel.app/"
+                target="_blank"
+                class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200"
+              >
+                <img
+                  src="webp/workwise.png"
+                  class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
+                  alt="workwise"
+                />
+                <span class="text-xs font-medium text-slate-600">Workwise</span>
+              </a>
+              <!-- Gmail -->
+              <a
+                href="https://habit-builder-rho.vercel.app/"
+                target="_blank"
+                class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200"
+              >
+                <img
+                  src="webp/habitx.png"
+                  class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
+                  alt="habitx"
+                />
+                <span class="text-xs font-medium text-slate-600">Habitx</span>
+              </a>
+              <!-- Chrome -->
+              <a
+                href="https://devhub1.vercel.app/"
+                target="_blank"
+                class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200"
+              >
+                <img
+                  src="webp/devhub.png"
+                  class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
+                  alt="devhub"
+                />
+                <span class="text-xs font-medium text-slate-600">Devhub</span>
+              </a>
+              <!-- Cursor -->
+              <a
+                href="https://nomi-nomi.vercel.app/"
+                target="_blank"
+                class="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-slate-100 hover:border-slate-200"
+              >
+                <img
+                  src="webp/nominomi.png"
+                  class="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
+                  alt="Cursor"
+                />
+                <span class="text-xs font-medium text-slate-600"
+                  >Nomi Nomi</span
+                >
+              </a>
+            </div>
+          </div>
+
+          <!-- HISTORY -->
+          <div
+            id="history"
+            class="page hidden flex-1 overflow-y-auto p-10 max-w-4xl mx-auto w-full"
+          >
+            <div class="flex items-center justify-between mb-8">
+              <h2 class="text-2xl font-medium text-slate-800">History</h2>
+              <i
+                class="fa-solid fa-ellipsis-vertical text-slate-400 cursor-pointer hover:text-slate-600"
+              ></i>
+            </div>
+
+            <div
+              class="bg-blue-50/50 rounded-xl p-4 mb-8 border border-blue-100/50 flex items-start gap-4"
+            >
+              <div
+                class="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+              >
+                <i class="fa-solid fa-shield-halved text-sm"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-slate-800">Privacy First</p>
+                <p class="text-xs text-slate-500 leading-relaxed mt-1">
+                  Your voice data is processed locally and never stored on our
+                  servers. History is saved only on this device.
+                </p>
+              </div>
             </div>
 
             <!-- History Timeline -->
             <div id="history-list" class="space-y-6">
-                 <!-- Dynamic items will be injected here -->
-                 <div class="text-center text-slate-400 py-10">Loading history...</div>
+              <!-- Dynamic items will be injected here -->
+              <div class="text-center text-slate-400 py-10">
+                Loading history...
+              </div>
             </div>
-        </div>
+          </div>
 
-        <!-- NOTES (Google Keep Style) -->
-        <div id="notes" class="page hidden h-full flex flex-col bg-white">
-            
+          <!-- NOTES (Google Keep Style) -->
+          <div id="notes" class="page hidden h-full flex flex-col bg-white">
             <!-- Notes Header / Search -->
-            <div class="px-8 py-4 flex items-center gap-4 shrink-0 transition-shadow transition-all duration-300 z-20 sticky top-0 bg-white/90 backdrop-blur-md">
-                <div class="flex-1 bg-slate-100 rounded-lg flex items-center px-4 h-12 focus-within:bg-white focus-within:shadow-md transition-all">
-                     <button class="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-slate-700">
-                         <i class="fa-solid fa-bars"></i>
-                     </button>
-                     <input type="text" id="note-search" placeholder="Search" class="bg-transparent border-none outline-none flex-1 h-full px-2 text-slate-700 placeholder:text-slate-500">
-                     <button class="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-slate-700">
-                         <i class="fa-solid fa-magnifying-glass"></i>
-                     </button>
-                </div>
-                 <div class="flex items-center gap-2">
-                     <button id="refreshNotes" class="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-500 transition-colors" title="Refresh">
-                         <i class="fa-solid fa-rotate-right"></i>
-                     </button>
-                     <button class="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-500 transition-colors" title="View">
-                        <i class="fa-solid fa-table-cells-large"></i>
-                     </button>
-                 </div>
+            <div
+              class="px-8 py-4 flex items-center gap-4 shrink-0 transition-shadow transition-all duration-300 z-20 sticky top-0 bg-white/90 backdrop-blur-md"
+            >
+              <div
+                class="flex-1 bg-slate-100 rounded-lg flex items-center px-4 h-12 focus-within:bg-white focus-within:shadow-md transition-all"
+              >
+                <button
+                  class="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-slate-700"
+                >
+                  <i class="fa-solid fa-bars"></i>
+                </button>
+                <input
+                  type="text"
+                  id="note-search"
+                  placeholder="Search"
+                  class="bg-transparent border-none outline-none flex-1 h-full px-2 text-slate-700 placeholder:text-slate-500"
+                />
+                <button
+                  class="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-slate-700"
+                >
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  id="refreshNotes"
+                  class="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"
+                  title="Refresh"
+                >
+                  <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button
+                  class="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"
+                  title="View"
+                >
+                  <i class="fa-solid fa-table-cells-large"></i>
+                </button>
+              </div>
             </div>
 
             <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                
-                <!-- Take a Note Input -->
-                <div class="max-w-2xl mx-auto mb-10 relative group z-10">
-                     <div id="take-note-wrapper" class="bg-white border border-slate-200 shadow-sm rounded-lg overflow-hidden transition-shadow hover:shadow-md">
-                         
-                         <!-- Image Preview Container -->
-                         <div id="note-image-preview-container" class="hidden relative p-2 grid grid-cols-2 gap-2">
-                             <!-- Dynamic IMG tags -->
-                         </div>
+              <!-- Take a Note Input -->
+              <div class="max-w-2xl mx-auto mb-10 relative group z-10">
+                <div
+                  id="take-note-wrapper"
+                  class="bg-white border border-slate-200 shadow-sm rounded-lg overflow-hidden transition-shadow hover:shadow-md"
+                >
+                  <!-- Image Preview Container -->
+                  <div
+                    id="note-image-preview-container"
+                    class="hidden relative p-2 grid grid-cols-2 gap-2"
+                  >
+                    <!-- Dynamic IMG tags -->
+                  </div>
 
-                         <!-- Expanded Title (Hidden initially) -->
-                         <div id="note-title-container" class="hidden px-4 pt-4 pb-2">
-                             <input type="text" id="note-title-input" placeholder="Title" class="w-full text-base font-semibold text-slate-800 placeholder:text-slate-500 outline-none border-none bg-transparent">
-                         </div>
+                  <!-- Expanded Title (Hidden initially) -->
+                  <div id="note-title-container" class="hidden px-4 pt-4 pb-2">
+                    <input
+                      type="text"
+                      id="note-title-input"
+                      placeholder="Title"
+                      class="w-full text-base font-semibold text-slate-800 placeholder:text-slate-500 outline-none border-none bg-transparent"
+                    />
+                  </div>
 
-                         <!-- List Input Container (Hidden initially) -->
-                         <div id="note-list-container" class="hidden px-4 pb-2 flex flex-col gap-2">
-                             <!-- Dynamic items -->
-                         </div>
+                  <!-- List Input Container (Hidden initially) -->
+                  <div
+                    id="note-list-container"
+                    class="hidden px-4 pb-2 flex flex-col gap-2"
+                  >
+                    <!-- Dynamic items -->
+                  </div>
 
-                         <!-- Main Input -->
-                         <div class="px-4 py-3 flex items-center gap-3">
-                             <input type="text" id="note-content-input" placeholder="Take a note..." class="flex-1 text-sm text-slate-700 placeholder:text-slate-500 outline-none border-none bg-transparent font-medium">
-                             
-                             <div class="flex items-center gap-1 text-slate-400" id="input-actions">
-                                 <button id="new-list-btn" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 hover:text-slate-600 transition-colors" title="New List">
-                                     <i class="fa-regular fa-square-check"></i>
-                                 </button>
-                                 <button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 hover:text-slate-600 transition-colors hidden" title="New Note with Drawing">
-                                     <i class="fa-solid fa-paintbrush"></i>
-                                 </button>
-                                 <button id="add-image-btn" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 hover:text-slate-600 transition-colors" title="New Note with Image">
-                                     <i class="fa-regular fa-image"></i>
-                                 </button>
-                                 <!-- Voice Input Trigger -->
-                                 <button id="voice-note-btn" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 hover:text-slate-600 transition-colors" title="Voice Input">
-                                     <i class="fa-solid fa-microphone"></i>
-                                 </button>
-                             </div>
-                         </div>
-                         
-                         <!-- Expanded Footer (Hidden) -->
-                         <div id="note-footer-container" class="hidden flex items-center justify-between px-4 py-2 border-t border-slate-100 bg-slate-50/50">
-                             <div class="flex items-center gap-1 text-slate-500 relative">
-                                 <button class="w-8 h-8 rounded-full hover:bg-slate-200/50 text-xs"><i class="fa-regular fa-bell"></i></button>
-                                 <button class="w-8 h-8 rounded-full hover:bg-slate-200/50 text-xs"><i class="fa-solid fa-user-plus"></i></button>
-                                 
-                                 <!-- Color Picker Trigger -->
-                                 <button id="note-color-btn" class="w-8 h-8 rounded-full hover:bg-slate-200/50 text-xs"><i class="fa-solid fa-palette"></i></button>
-                                 
-                                 <!-- Colors Dropdown (Inside relative container) -->
-                                 <div id="color-palette" class="hidden absolute top-10 left-0 bg-white shadow-xl border border-slate-100 rounded-lg p-2 flex gap-1 z-20">
-                                      <!-- Colors injected by JS -->
-                                 </div>
+                  <!-- Main Input -->
+                  <div class="px-4 py-3 flex items-center gap-3">
+                    <input
+                      type="text"
+                      id="note-content-input"
+                      placeholder="Take a note..."
+                      class="flex-1 text-sm text-slate-700 placeholder:text-slate-500 outline-none border-none bg-transparent font-medium"
+                    />
 
-                                 <button id="add-image-expanded-btn" class="w-8 h-8 rounded-full hover:bg-slate-200/50 text-xs"><i class="fa-regular fa-image"></i></button>
-                                 <button class="w-8 h-8 rounded-full hover:bg-slate-200/50 text-xs"><i class="fa-solid fa-box-archive"></i></button>
-                                 <button class="w-8 h-8 rounded-full hover:bg-slate-200/50 text-xs"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-                             </div>
-                             <button id="close-note-btn" class="text-sm font-semibold text-slate-600 hover:bg-slate-100 px-4 py-1.5 rounded-md transition-colors">Close</button>
-                         </div>
+                    <div
+                      class="flex items-center gap-1 text-slate-400"
+                      id="input-actions"
+                    >
+                      <button
+                        id="new-list-btn"
+                        class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                        title="New List"
+                      >
+                        <i class="fa-regular fa-square-check"></i>
+                      </button>
+                      <button
+                        class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 hover:text-slate-600 transition-colors hidden"
+                        title="New Note with Drawing"
+                      >
+                        <i class="fa-solid fa-paintbrush"></i>
+                      </button>
+                      <button
+                        id="add-image-btn"
+                        class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                        title="New Note with Image"
+                      >
+                        <i class="fa-regular fa-image"></i>
+                      </button>
+                      <!-- Voice Input Trigger -->
+                      <button
+                        id="voice-note-btn"
+                        class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                        title="Voice Input"
+                      >
+                        <i class="fa-solid fa-microphone"></i>
+                      </button>
+                    </div>
+                  </div>
 
-                     </div>
+                  <!-- Expanded Footer (Hidden) -->
+                  <div
+                    id="note-footer-container"
+                    class="hidden flex items-center justify-between px-4 py-2 border-t border-slate-100 bg-slate-50/50"
+                  >
+                    <div
+                      class="flex items-center gap-1 text-slate-500 relative"
+                    >
+                      <button
+                        class="w-8 h-8 rounded-full hover:bg-slate-200/50 text-xs"
+                      >
+                        <i class="fa-regular fa-bell"></i>
+                      </button>
+                      <button
+                        class="w-8 h-8 rounded-full hover:bg-slate-200/50 text-xs"
+                      >
+                        <i class="fa-solid fa-user-plus"></i>
+                      </button>
+
+                      <!-- Color Picker Trigger -->
+                      <button
+                        id="note-color-btn"
+                        class="w-8 h-8 rounded-full hover:bg-slate-200/50 text-xs"
+                      >
+                        <i class="fa-solid fa-palette"></i>
+                      </button>
+
+                      <!-- Colors Dropdown (Inside relative container) -->
+                      <div
+                        id="color-palette"
+                        class="hidden absolute top-10 left-0 bg-white shadow-xl border border-slate-100 rounded-lg p-2 flex gap-1 z-20"
+                      >
+                        <!-- Colors injected by JS -->
+                      </div>
+
+                      <button
+                        id="add-image-expanded-btn"
+                        class="w-8 h-8 rounded-full hover:bg-slate-200/50 text-xs"
+                      >
+                        <i class="fa-regular fa-image"></i>
+                      </button>
+                      <button
+                        class="w-8 h-8 rounded-full hover:bg-slate-200/50 text-xs"
+                      >
+                        <i class="fa-solid fa-box-archive"></i>
+                      </button>
+                      <button
+                        class="w-8 h-8 rounded-full hover:bg-slate-200/50 text-xs"
+                      >
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                      </button>
+                    </div>
+                    <button
+                      id="close-note-btn"
+                      class="text-sm font-semibold text-slate-600 hover:bg-slate-100 px-4 py-1.5 rounded-md transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
+              </div>
 
-                <!-- Notes Grid -->
-                <div id="notes-grid" class="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 px-2 pb-20 space-y-4">
-                     <!-- Dynamic Notes Injection -->
-                     <div class="break-inside-avoid bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-default group relative">
-                         <h3 class="font-semibold text-slate-800 mb-2">Welcome to Notes</h3>
-                         <p class="text-sm text-slate-600 leading-relaxed mb-4">This is your new notes space. Click "Take a note..." to start. You can also use your voice!</p>
-                         <div class="flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                             <div class="flex gap-2">
-                                 <button class="w-6 h-6 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 text-xs"><i class="fa-regular fa-bell"></i></button>
-                                 <button class="w-6 h-6 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 text-xs"><i class="fa-solid fa-palette"></i></button>
-                             </div>
-                             <button class="w-6 h-6 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 text-xs"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-                         </div>
-                     </div>
+              <!-- Notes Grid -->
+              <div
+                id="notes-grid"
+                class="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 px-2 pb-20 space-y-4"
+              >
+                <!-- Dynamic Notes Injection -->
+                <div
+                  class="break-inside-avoid bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-default group relative"
+                >
+                  <h3 class="font-semibold text-slate-800 mb-2">
+                    Welcome to Notes
+                  </h3>
+                  <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                    This is your new notes space. Click "Take a note..." to
+                    start. You can also use your voice!
+                  </p>
+                  <div
+                    class="flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <div class="flex gap-2">
+                      <button
+                        class="w-6 h-6 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 text-xs"
+                      >
+                        <i class="fa-regular fa-bell"></i>
+                      </button>
+                      <button
+                        class="w-6 h-6 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 text-xs"
+                      >
+                        <i class="fa-solid fa-palette"></i>
+                      </button>
+                    </div>
+                    <button
+                      class="w-6 h-6 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 text-xs"
+                    >
+                      <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+                  </div>
                 </div>
-                
-                <!-- RECENTS/Empty State (if needed, mimicking the image) -->
-                <div id="notes-empty-state" class="hidden text-center py-20 text-slate-400">
-                    <i class="fa-regular fa-lightbulb text-6xl mb-4 text-slate-200"></i>
-                    <p>Notes you add appear here</p>
-                </div>
+              </div>
 
+              <!-- RECENTS/Empty State (if needed, mimicking the image) -->
+              <div
+                id="notes-empty-state"
+                class="hidden text-center py-20 text-slate-400"
+              >
+                <i
+                  class="fa-regular fa-lightbulb text-6xl mb-4 text-slate-200"
+                ></i>
+                <p>Notes you add appear here</p>
+              </div>
             </div>
-        </div>
+          </div>
 
-        <!-- Hidden Elements -->
-        <input type="file" id="image-input" accept="image/*" multiple class="hidden">
-        <div id="activeInfo" class="hidden"></div>
-        <div id="output" class="hidden"></div>
+          <!-- Hidden Elements -->
+          <input
+            type="file"
+            id="image-input"
+            accept="image/*"
+            multiple
+            class="hidden"
+          />
+          <div id="activeInfo" class="hidden"></div>
+          <div id="output" class="hidden"></div>
 
-        <!-- SETTINGS -->
-        <div id="settings" class="page hidden flex-1 overflow-y-auto p-10 max-w-4xl mx-auto relative w-full">
+          <!-- SETTINGS -->
+          <div
+            id="settings"
+            class="page hidden flex-1 overflow-y-auto p-10 max-w-4xl mx-auto relative w-full"
+          >
             <h2 class="text-2xl font-medium text-slate-800 mb-8">Settings</h2>
-            
+
             <div class="space-y-8">
-                
-                <!-- General -->
-                <div>
-                    <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2">General</h3>
-                     <div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
-                         <div class="p-6 grid grid-cols-2 gap-6">
-                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1.5">Assistant Name</label>
-                                <input id="assistantName" placeholder="e.g. Jarvis" value="Assistant" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all">
-                             </div>
-                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1.5">Application Name</label>
-                                <input id="appName" placeholder="e.g. My App" value="Woodls" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all">
-                             </div>
-                         </div>
-                         
-                         <!-- Startup Settings -->
-                         <div class="p-4 flex items-center justify-between">
-                             <div>
-                                <div class="text-sm font-medium text-slate-800">Run on Startup</div>
-                                <div class="text-xs text-slate-500">Launch Woodls automatically when you login.</div>
-                             </div>
-                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="startupToggle" class="sr-only peer">
-                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
-                             </label>
-                         </div>
-
-                         <div class="p-4 flex items-center justify-between">
-                             <div>
-                                <div class="text-sm font-medium text-slate-800">Start Hidden</div>
-                                <div class="text-xs text-slate-500">Launch silently in the background (System Tray only).</div>
-                             </div>
-                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="hiddenToggle" class="sr-only peer">
-                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
-                             </label>
-                         </div>
-                     </div>
-                </div>
-
-                <!-- Appearance -->
-                <div>
-                    <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2">Appearance</h3>
-                    <div class="bg-white border border-slate-200 rounded-xl p-6">
-                        <div class="mb-3">
-                            <div class="text-sm font-medium text-slate-800">Theme</div>
-                            <div class="text-xs text-slate-500">Choose your preferred color scheme</div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-3">
-                            <button id="theme-light" class="theme-option flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-slate-200 hover:border-primary-500 transition-all">
-                                <i class="fa-solid fa-sun text-2xl text-amber-500"></i>
-                                <span class="text-xs font-medium text-slate-700">Light</span>
-                            </button>
-                            <button id="theme-dark" class="theme-option flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-slate-200 hover:border-primary-500 transition-all">
-                                <i class="fa-solid fa-moon text-2xl text-indigo-500"></i>
-                                <span class="text-xs font-medium text-slate-700">Dark</span>
-                            </button>
-                            <button id="theme-system" class="theme-option flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-slate-200 hover:border-primary-500 transition-all">
-                                <i class="fa-solid fa-desktop text-2xl text-slate-500"></i>
-                                <span class="text-xs font-medium text-slate-700">System</span>
-                            </button>
-                        </div>
+              <!-- General -->
+              <div>
+                <h3
+                  class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"
+                >
+                  General
+                </h3>
+                <div
+                  class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100"
+                >
+                  <div class="p-6 grid grid-cols-2 gap-6">
+                    <div>
+                      <label
+                        class="block text-sm font-medium text-slate-700 mb-1.5"
+                        >Assistant Name</label
+                      >
+                      <input
+                        id="assistantName"
+                        placeholder="e.g. Jarvis"
+                        value="Assistant"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
+                      />
                     </div>
-                </div>
-
-                <!-- AI Configuration -->
-                <div>
-                     <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2">AI Configuration</h3>
-                     <div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
-                         <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-2">Gemini API Key(s)</label>
-                                
-                                <div id="key-list-container" class="space-y-2 mb-3">
-                                    <!-- Dynamic Keys will go here -->
-                                </div>
-
-                                <div class="flex gap-2">
-                                    <input id="newKeyInput" type="password" placeholder="Enter new API key..." class="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all font-mono">
-                                    <button id="addKeyBtn" class="bg-primary-500 hover:bg-primary-600 text-white w-10 rounded-lg flex items-center justify-center transition-colors">
-                                        <i class="fa-solid fa-plus text-sm"></i>
-                                    </button>
-                                </div>
-                                <p class="text-xs text-slate-400 mt-2">Add multiple keys to increase your daily dictation limits.</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1.5">Model Name</label>
-                                <div class="relative">
-                                    <input id="modelNameInput" type="text" placeholder="gemini-2.5-flash-lite" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all font-mono">
-                                    <div id="ai-usage-badge" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px] font-bold text-slate-500 shadow-sm hidden">
-                                        <span id="ai-key-index" class="text-primary-600 mr-1 opacity-70">K1</span>
-                                        <span id="ai-usage-count">0</span>/20 calls
-                                    </div>
-                                </div>
-                                <p class="text-xs text-slate-400 mt-1">e.g. gemini-1.5-pro</p>
-                            </div>
-                         </div>
-                     </div>
-                </div>
-
-                <!-- Hotkeys -->
-                <div>
-                    <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2">Input</h3>
-                    
-                    <div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
-                         <div class="p-4 flex items-center justify-between">
-                            <div>
-                                <div class="text-sm font-medium text-slate-800">Dictation Hotkey</div>
-                                <div class="text-xs text-slate-500">Hold to speak.</div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button id="startCapture" class="group bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg text-sm font-mono text-slate-600 min-w-[100px] text-center hover:border-primary-500 hover:text-primary-600 transition-all focus:ring-2 focus:ring-primary-100 flex items-center justify-center gap-2">
-                                    <i class="fa-regular fa-keyboard opacity-50 group-hover:opacity-100"></i> <span id="hotkeyDisplay">Set Hotkey</span>
-                                </button>
-                                <button id="clearHotkey" class="text-slate-400 hover:text-red-500 p-2 transition-colors relative" title="Clear"><i class="fa-solid fa-xmark"></i></button>
-                            </div>
-                        </div>
-
-                        <!-- Instant Paste -->
-                        <div class="p-4 flex items-center justify-between">
-                             <div>
-                                <div class="text-sm font-medium text-slate-800">Instant Paste</div>
-                                <div class="text-xs text-slate-500">Paste text directly instead of typing.</div>
-                             </div>
-                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="pasteToggle" class="sr-only peer">
-                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
-                             </label>
-                        </div>
-
-                         <!-- Backspace before typing -->
-                        <div class="p-4 flex items-center justify-between">
-                             <div>
-                                <div class="text-sm font-medium text-slate-800">Backspace First</div>
-                                <div class="text-xs text-slate-500">Delete the hotkey character before typing (e.g. remove "0").</div>
-                             </div>
-                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="backspaceToggle" class="sr-only peer" checked>
-                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
-                             </label>
-                        </div>
-
-                         <!-- AI Modification -->
-                        <div class="p-4 flex items-center justify-between">
-                             <div>
-                                <div class="text-sm font-medium text-slate-800">AI Assistant</div>
-                                <div class="text-xs text-slate-500">Enable for smart tasks (code, emails, notes) and grammar fixes.</div>
-                             </div>
-                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="aiToggle" class="sr-only peer" checked>
-                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
-                             </label>
-                        </div>
+                    <div>
+                      <label
+                        class="block text-sm font-medium text-slate-700 mb-1.5"
+                        >Application Name</label
+                      >
+                      <input
+                        id="appName"
+                        placeholder="e.g. My App"
+                        value="Woodls"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
+                      />
                     </div>
+                  </div>
+
+                  <!-- Startup Settings -->
+                  <div class="p-4 flex items-center justify-between">
+                    <div>
+                      <div class="text-sm font-medium text-slate-800">
+                        Run on Startup
+                      </div>
+                      <div class="text-xs text-slate-500">
+                        Launch Woodls automatically when you login.
+                      </div>
+                    </div>
+                    <label
+                      class="relative inline-flex items-center cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        id="startupToggle"
+                        class="sr-only peer"
+                      />
+                      <div
+                        class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"
+                      ></div>
+                    </label>
+                  </div>
+
+                  <div class="p-4 flex items-center justify-between">
+                    <div>
+                      <div class="text-sm font-medium text-slate-800">
+                        Start Hidden
+                      </div>
+                      <div class="text-xs text-slate-500">
+                        Launch silently in the background (System Tray only).
+                      </div>
+                    </div>
+                    <label
+                      class="relative inline-flex items-center cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        id="hiddenToggle"
+                        class="sr-only peer"
+                      />
+                      <div
+                        class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"
+                      ></div>
+                    </label>
+                  </div>
                 </div>
+              </div>
+
+              <!-- Appearance -->
+              <div>
+                <h3
+                  class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"
+                >
+                  Appearance
+                </h3>
+                <div class="bg-white border border-slate-200 rounded-xl p-6">
+                  <div class="mb-3">
+                    <div class="text-sm font-medium text-slate-800">Theme</div>
+                    <div class="text-xs text-slate-500">
+                      Choose your preferred color scheme
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-3 gap-3">
+                    <button
+                      id="theme-light"
+                      class="theme-option flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-slate-200 hover:border-primary-500 transition-all"
+                    >
+                      <i class="fa-solid fa-sun text-2xl text-amber-500"></i>
+                      <span class="text-xs font-medium text-slate-700"
+                        >Light</span
+                      >
+                    </button>
+                    <button
+                      id="theme-dark"
+                      class="theme-option flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-slate-200 hover:border-primary-500 transition-all"
+                    >
+                      <i class="fa-solid fa-moon text-2xl text-indigo-500"></i>
+                      <span class="text-xs font-medium text-slate-700"
+                        >Dark</span
+                      >
+                    </button>
+                    <button
+                      id="theme-system"
+                      class="theme-option flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-slate-200 hover:border-primary-500 transition-all"
+                    >
+                      <i
+                        class="fa-solid fa-desktop text-2xl text-slate-500"
+                      ></i>
+                      <span class="text-xs font-medium text-slate-700"
+                        >System</span
+                      >
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- AI Configuration -->
+              <div>
+                <h3
+                  class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"
+                >
+                  AI Configuration
+                </h3>
+                <div
+                  class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100"
+                >
+                  <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label
+                        class="block text-sm font-medium text-slate-700 mb-2"
+                        >Gemini API Key(s)</label
+                      >
+
+                      <div id="key-list-container" class="space-y-2 mb-3">
+                        <!-- Dynamic Keys will go here -->
+                      </div>
+
+                      <div class="flex gap-2">
+                        <input
+                          id="newKeyInput"
+                          type="password"
+                          placeholder="Enter new API key..."
+                          class="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all font-mono"
+                        />
+                        <button
+                          id="addKeyBtn"
+                          class="bg-primary-500 hover:bg-primary-600 text-white w-10 rounded-lg flex items-center justify-center transition-colors"
+                        >
+                          <i class="fa-solid fa-plus text-sm"></i>
+                        </button>
+                      </div>
+                      <p class="text-xs text-slate-400 mt-2">
+                        Add multiple keys to increase your daily dictation
+                        limits.
+                      </p>
+                    </div>
+                    <div>
+                      <label
+                        class="block text-sm font-medium text-slate-700 mb-1.5"
+                        >Model Name</label
+                      >
+                      <div class="relative">
+                        <input
+                          id="modelNameInput"
+                          type="text"
+                          placeholder="gemini-2.5-flash-lite"
+                          class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all font-mono"
+                        />
+                        <div
+                          id="ai-usage-badge"
+                          class="absolute right-2 top-1/2 -translate-y-1/2 bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px] font-bold text-slate-500 shadow-sm hidden"
+                        >
+                          <span
+                            id="ai-key-index"
+                            class="text-primary-600 mr-1 opacity-70"
+                            >K1</span
+                          >
+                          <span id="ai-usage-count">0</span>/20 calls
+                        </div>
+                      </div>
+                      <p class="text-xs text-slate-400 mt-1">
+                        e.g. gemini-1.5-pro
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Hotkeys -->
+              <div>
+                <h3
+                  class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"
+                >
+                  Input
+                </h3>
+
+                <div
+                  class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100"
+                >
+                  <div class="p-4 flex items-center justify-between">
+                    <div>
+                      <div class="text-sm font-medium text-slate-800">
+                        Dictation Hotkey
+                      </div>
+                      <div class="text-xs text-slate-500">Hold to speak.</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button
+                        id="startCapture"
+                        class="group bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg text-sm font-mono text-slate-600 min-w-[100px] text-center hover:border-primary-500 hover:text-primary-600 transition-all focus:ring-2 focus:ring-primary-100 flex items-center justify-center gap-2"
+                      >
+                        <i
+                          class="fa-regular fa-keyboard opacity-50 group-hover:opacity-100"
+                        ></i>
+                        <span id="hotkeyDisplay">Set Hotkey</span>
+                      </button>
+                      <button
+                        id="clearHotkey"
+                        class="text-slate-400 hover:text-red-500 p-2 transition-colors relative"
+                        title="Clear"
+                      >
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Instant Paste -->
+                  <div class="p-4 flex items-center justify-between">
+                    <div>
+                      <div class="text-sm font-medium text-slate-800">
+                        Instant Paste
+                      </div>
+                      <div class="text-xs text-slate-500">
+                        Paste text directly instead of typing.
+                      </div>
+                    </div>
+                    <label
+                      class="relative inline-flex items-center cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        id="pasteToggle"
+                        class="sr-only peer"
+                      />
+                      <div
+                        class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"
+                      ></div>
+                    </label>
+                  </div>
+
+                  <!-- Backspace before typing -->
+                  <div class="p-4 flex items-center justify-between">
+                    <div>
+                      <div class="text-sm font-medium text-slate-800">
+                        Backspace First
+                      </div>
+                      <div class="text-xs text-slate-500">
+                        Delete the hotkey character before typing (e.g. remove
+                        "0").
+                      </div>
+                    </div>
+                    <label
+                      class="relative inline-flex items-center cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        id="backspaceToggle"
+                        class="sr-only peer"
+                        checked
+                      />
+                      <div
+                        class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"
+                      ></div>
+                    </label>
+                  </div>
+
+                  <!-- AI Modification -->
+                  <div class="p-4 flex items-center justify-between">
+                    <div>
+                      <div class="text-sm font-medium text-slate-800">
+                        AI Assistant
+                      </div>
+                      <div class="text-xs text-slate-500">
+                        Enable for smart tasks (code, emails, notes) and grammar
+                        fixes.
+                      </div>
+                    </div>
+                    <label
+                      class="relative inline-flex items-center cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        id="aiToggle"
+                        class="sr-only peer"
+                        checked
+                      />
+                      <div
+                        class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"
+                      ></div>
+                    </label>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Capture Modal -->
-            <div id="captureArea" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-                <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center scale-100 animate-in zoom-in-95 duration-200">
-                    <div class="w-16 h-16 bg-primary-50 text-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-                        <i class="fa-solid fa-keyboard text-2xl"></i>
-                    </div>
-                    <h4 class="text-xl font-bold text-slate-900 mb-2">Press any key</h4>
-                    <p class="text-sm text-slate-500 mb-8">Press the single key you want to use for dictation.</p>
-                    
-                    <div class="bg-slate-50 border-2 border-slate-200 border-dashed rounded-xl p-4 mb-8 min-h-[80px] flex items-center justify-center">
-                         <span id="capturedKeys" class="text-3xl font-mono font-bold text-slate-700">...</span>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <button id="cancelCapture" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl py-2.5 text-sm font-medium transition-colors">Cancel</button>
-                        <button id="saveHotkey" class="bg-primary-600 hover:bg-primary-700 text-white rounded-xl py-2.5 text-sm font-medium transition-colors shadow-lg shadow-primary-600/20">Save Hotkey</button>
-                    </div>
+            <div
+              id="captureArea"
+              class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200"
+            >
+              <div
+                class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center scale-100 animate-in zoom-in-95 duration-200"
+              >
+                <div
+                  class="w-16 h-16 bg-primary-50 text-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm"
+                >
+                  <i class="fa-solid fa-keyboard text-2xl"></i>
                 </div>
-            </div>
-        </div>
+                <h4 class="text-xl font-bold text-slate-900 mb-2">
+                  Press any key
+                </h4>
+                <p class="text-sm text-slate-500 mb-8">
+                  Press the single key you want to use for dictation.
+                </p>
 
-         <!-- ACCOUNT (About) -->
-        <div id="account" class="page hidden flex-1 overflow-y-auto p-10 max-w-3xl mx-auto w-full">
-            <h2 class="text-2xl font-medium text-slate-800 mb-8">About Woodls</h2>
-            
-            <div class="bg-white border border-slate-200 rounded-2xl p-8 text-center">
-                 <img src="webp/woodls.png" class="w-24 h-24 mx-auto mb-6 object-contain">
-                 <h3 class="text-xl font-bold text-slate-900">Woodls</h3>
-                 <p class="text-slate-500 text-sm mb-6">Version 1.0.3</p>
-                 
-                 <div class="flex justify-center gap-4 text-sm">
-                  <div class="flex justify-center gap-4 text-sm">
-                     <a href="https://woodls.vercel.app/" target="_blank" class="text-primary-600 hover:text-primary-700 font-medium">Website</a>
-                     <span class="text-slate-300">|</span>
-                     <div data-page="privacy-page" class="text-primary-600 hover:text-primary-700 font-medium cursor-pointer sidebar-item-link">Privacy Policy</div>
-                     <span class="text-slate-300">|</span>
-                     <div data-page="terms-page" class="text-primary-600 hover:text-primary-700 font-medium cursor-pointer sidebar-item-link">Terms</div>
-                 </div>
-                 </div>
-                 
-                 <div class="mt-8 pt-8 text-xs text-slate-400">
-                     © 2026 Woodls AI. All rights reserved.
-                 </div>
-                 
-            </div>
-        </div>
-        
-        <!-- PRIVACY POLICY -->
-        <div id="privacy-page" class="page hidden flex-1 overflow-y-auto p-10 max-w-3xl mx-auto w-full">
-            <div class="flex items-center gap-4 mb-8">
-                <button data-page="account" class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 sidebar-item-link">
-                    <i class="fa-solid fa-arrow-left"></i>
-                </button>
-                <h2 class="text-2xl font-medium text-slate-800">Privacy Policy</h2>
-            </div>
-            
-            <div class="bg-white border border-slate-200 rounded-2xl p-8 prose prose-slate max-w-none">
-                <p class="text-slate-600 mb-4 italic text-sm">Last updated: January 6, 2026</p>
-                <div class="space-y-6 text-slate-700 leading-relaxed text-sm">
-                    <section>
-                        <h4 class="font-bold text-slate-900 mb-2">1. Overview</h4>
-                        <p>Woodls is designed with a "Local First" approach. We believe your voice and your data belong to you.</p>
-                    </section>
-                    <section>
-                        <h4 class="font-bold text-slate-900 mb-2">2. Data Collection</h4>
-                        <p>We do not collect or store your audio recordings or transcripts on our servers. All processing happens locally on your device or directly through the Gemini API using your own keys.</p>
-                    </section>
-                    <section>
-                        <h4 class="font-bold text-slate-900 mb-2">3. Third-Party Services</h4>
-                        <p>Our app uses the Google Gemini API for transcription and AI enhancement. Use of this service is subject to Google's Privacy Policy. Your API keys are stored securely on your local machine.</p>
-                    </section>
-                    <section>
-                        <h4 class="font-bold text-slate-900 mb-2">4. Local Storage</h4>
-                        <p>Your history, notes, and settings are saved locally in your application data folder. This data never leaves your computer unless you explicitly choose to export or sync it.</p>
-                    </section>
+                <div
+                  class="bg-slate-50 border-2 border-slate-200 border-dashed rounded-xl p-4 mb-8 min-h-[80px] flex items-center justify-center"
+                >
+                  <span
+                    id="capturedKeys"
+                    class="text-3xl font-mono font-bold text-slate-700"
+                    >...</span
+                  >
                 </div>
-            </div>
-        </div>
 
-        <!-- TERMS OF SERVICE -->
-        <div id="terms-page" class="page hidden flex-1 overflow-y-auto p-10 max-w-3xl mx-auto w-full">
-            <div class="flex items-center gap-4 mb-8">
-                <button data-page="account" class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 sidebar-item-link">
-                    <i class="fa-solid fa-arrow-left"></i>
-                </button>
-                <h2 class="text-2xl font-medium text-slate-800">Terms of Service</h2>
-            </div>
-            
-            <div class="bg-white border border-slate-200 rounded-2xl p-8 prose prose-slate max-w-none">
-                <p class="text-slate-600 mb-4 italic text-sm">Last updated: January 6, 2026</p>
-                <div class="space-y-6 text-slate-700 leading-relaxed text-sm">
-                    <section>
-                        <h4 class="font-bold text-slate-900 mb-2">1. Use of Service</h4>
-                        <p>Woodls is provided as-is. By using this application, you agree to take full responsibility for the content you dictate and the use of your API keys.</p>
-                    </section>
-                    <section>
-                        <h4 class="font-bold text-slate-900 mb-2">2. Liability</h4>
-                        <p>We are not responsible for any inaccuracies in transcription or AI-enhanced text. Always verify critical information before use.</p>
-                    </section>
-                    <section>
-                        <h4 class="font-bold text-slate-900 mb-2">3. API Usage</h4>
-                        <p>Excessive use of the API may result in costs or rate limiting from Google. You are responsible for any charges incurred on your Gemini API account.</p>
-                    </section>
-                </div>
-            </div>
-        </div>
-        
-      </section>
-    </main>
-  </div>
-
-  <script type="module">
-    import { initApp } from './js/app.js';
-    initApp();
-  </script>
-
-  <!-- Delete Modal -->
-  <div id="delete-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center scale-100 animate-in zoom-in-95 duration-200">
-          <div class="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <i class="fa-solid fa-trash-can text-lg"></i>
-          </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2">Delete Note?</h3>
-          <p class="text-sm text-slate-500 mb-6">This action cannot be undone.</p>
-          <div class="grid grid-cols-2 gap-3">
-              <button id="cancel-delete-btn" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl py-2 text-sm font-medium transition-colors">Cancel</button>
-              <button id="confirm-delete-btn" class="bg-red-500 hover:bg-red-600 text-white rounded-xl py-2 text-sm font-medium transition-colors shadow-lg shadow-red-500/20">Delete</button>
-          </div>
-      </div>
-  </div>
-
-  <!-- History Delete Modal -->
-  <div id="history-delete-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center scale-100 animate-in zoom-in-95 duration-200">
-          <div class="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <i class="fa-solid fa-trash-can text-lg"></i>
-          </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2">Delete Recording?</h3>
-          <p class="text-sm text-slate-500 mb-6">This action cannot be undone.</p>
-          <div class="grid grid-cols-2 gap-3">
-              <button id="cancel-history-delete-btn" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl py-2 text-sm font-medium transition-colors">Cancel</button>
-              <button id="confirm-history-delete-btn" class="bg-red-500 hover:bg-red-600 text-white rounded-xl py-2 text-sm font-medium transition-colors shadow-lg shadow-red-500/20">Delete</button>
-          </div>
-      </div>
-  </div>
-
-  <!-- Edit Modal -->
-  <!-- Edit Modal -->
-  <div id="edit-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col max-h-[85vh] scale-100 animate-in zoom-in-95 duration-200 overflow-hidden transition-colors" id="edit-modal-content">
-          
-          <!-- Edit Image Preview -->
-          <div id="edit-note-images" class="hidden p-0"></div>
-
-          <div class="p-4 flex items-center justify-between bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-              <input id="edit-note-title" type="text" placeholder="Title" class="bg-transparent text-lg font-bold text-slate-800 placeholder:text-slate-400 outline-none border-none w-full">
-              <button id="cancel-edit-btn" class="text-slate-400 hover:text-slate-600 p-2"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-          
-          <div class="flex-1 p-0 overflow-y-auto relative custom-scrollbar">
-              <!-- Text Editor -->
-              <textarea id="edit-note-content" class="w-full h-full min-h-[300px] resize-none p-6 outline-none border-none text-slate-700 leading-relaxed bg-transparent" placeholder="Note content..."></textarea>
-              
-              <!-- List Editor -->
-              <div id="edit-note-list-container" class="hidden p-6 space-y-2"></div>
-          </div>
-
-          <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
-              <div class="flex items-center gap-1">
-                   <button class="w-8 h-8 rounded-full hover:bg-black/10 text-slate-500 text-xs" title="Color" id="edit-color-btn"><i class="fa-solid fa-palette"></i></button>
-                   <div id="edit-color-palette" class="hidden absolute bottom-16 left-4 bg-white shadow-xl border border-slate-100 rounded-lg p-2 gap-1 z-50 flex"></div>
-
-                   <button class="w-8 h-8 rounded-full hover:bg-black/10 text-slate-500 text-xs" title="Add Image" id="edit-add-image-btn"><i class="fa-regular fa-image"></i></button>
-              </div>
-              <button id="save-edit-btn" class="bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 px-6 py-2 rounded-xl text-sm font-medium shadow-sm transition-all hover:shadow-md">Close</button>
-          </div>
-      </div>
-  </div>
-  <!-- Upgrade Modal -->
-  <div id="upgrade-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div class="relative w-full max-w-4xl mx-4 perspective-1000">
-          
-          <!-- Close Button -->
-          <button id="close-upgrade-btn" class="absolute -top-12 right-0 text-white/80 hover:text-white transition-colors">
-              <i class="fa-solid fa-xmark text-2xl"></i>
-          </button>
-
-          <div class="bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[600px] animate-in zoom-in-95 duration-300">
-              
-              <!-- Left: Premium Visuals -->
-              <div class="w-full md:w-2/5 bg-slate-900 relative overflow-hidden p-8 flex flex-col justify-between text-white border-r border-slate-800">
-                  
-                  <!-- Gradient Blobs -->
-                  <div class="absolute top-0 right-0 p-32 bg-amber-500 rounded-full blur-[100px] opacity-20 -mr-20 -mt-20"></div>
-                  <div class="absolute bottom-0 left-0 p-32 bg-purple-600 rounded-full blur-[100px] opacity-20 -ml-20 -mb-20"></div>
-
-                  <div class="relative z-10">
-                      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider mb-6">
-                          <i class="fa-solid fa-crown"></i> Premium Access
-                      </div>
-                      <h2 class="text-4xl font-bold mb-4 leading-tight">Unlock the full power of your voice.</h2>
-                      <p class="text-slate-400 text-lg leading-relaxed">Remove limits and experience AI dictation without boundaries.</p>
-                  </div>
-
-                  <div class="relative z-10 space-y-4">
-                      <div class="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
-                          <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
-                              <i class="fa-solid fa-infinity"></i>
-                          </div>
-                          <div>
-                              <h4 class="font-bold">Unlimited Dictation</h4>
-                              <p class="text-xs text-slate-400">No more daily time limits.</p>
-                          </div>
-                      </div>
-                      <div class="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
-                           <div class="w-10 h-10 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
-                              <i class="fa-solid fa-wand-magic-sparkles"></i>
-                          </div>
-                          <div>
-                              <h4 class="font-bold">Advanced AI Assistance</h4>
-                              <p class="text-xs text-slate-400">Best conversion and accuracy</p>
-                          </div>
-                      </div>
-                  </div>
-
-              </div>
-
-              <!-- Right: Pricing Plans -->
-              <div class="w-full md:w-3/5 bg-white p-8 md:p-12 overflow-y-auto">
-                  
-                  <div class="text-center mb-10">
-                      <h3 class="text-2xl font-bold text-slate-900">Choose your plan</h3>
-                      <p class="text-slate-500 mt-2">Cancel anytime. No questions asked.</p>
-                  </div>
-
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                       <!-- Monthly -->
-                       <div class="border-2 border-slate-100 rounded-2xl p-6 cursor-pointer hover:border-slate-300 transition-all relative group" onclick="selectPlan(this, 'monthly')">
-                           <div class="absolute top-4 right-4 w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-slate-400 flex items-center justify-center">
-                               <div class="w-2.5 h-2.5 rounded-full bg-slate-900 opacity-0 transition-opacity check-dot"></div>
-                           </div>
-                           <h4 class="font-bold text-slate-900 mb-1">Monthly</h4>
-                           <div class="flex items-baseline gap-1">
-                               <span class="text-3xl font-bold text-slate-900">$5</span>
-                               <span class="text-slate-500">/mo</span>
-                           </div>
-                           <p class="text-xs text-slate-400 mt-4 leading-relaxed">Billed monthly.</p>
-                       </div>
-
-                       <!-- Annual -->
-                       <div class="border-2 border-amber-500 bg-amber-50/10 rounded-2xl p-6 cursor-pointer relative shadow-xl shadow-amber-500/10 ring-1 ring-amber-500/20" onclick="selectPlan(this, 'yearly')">
-                            <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
-                                Best Value
-                            </div>
-                           <div class="absolute top-4 right-4 w-5 h-5 rounded-full border-2 border-amber-500 flex items-center justify-center">
-                               <div class="w-2.5 h-2.5 rounded-full bg-amber-500 check-dot"></div>
-                           </div>
-                           <h4 class="font-bold text-slate-900 mb-1">Yearly</h4>
-                           <div class="flex items-baseline gap-1">
-                               <span class="text-3xl font-bold text-slate-900">$4</span>
-                               <span class="text-slate-500">/mo</span>
-                           </div>
-                           <p class="text-xs text-slate-500 mt-4 leading-relaxed text-amber-700 font-medium">Billed $48 yearly. Save 25%.</p>
-                       </div>
-                  </div>
-
-                  <button class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-lg shadow-xl shadow-slate-900/20 transition-all transform active:scale-95 flex items-center justify-center gap-2">
-                      Upgrade Now <i class="fa-solid fa-arrow-right"></i>
+                <div class="grid grid-cols-2 gap-3">
+                  <button
+                    id="cancelCapture"
+                    class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl py-2.5 text-sm font-medium transition-colors"
+                  >
+                    Cancel
                   </button>
-                  
-                  <p class="text-center text-xs text-slate-400 mt-6">
-                      Secured by Stripe. By upgrading, you agree to our Terms.
-                  </p>
+                  <button
+                    id="saveHotkey"
+                    class="bg-primary-600 hover:bg-primary-700 text-white rounded-xl py-2.5 text-sm font-medium transition-colors shadow-lg shadow-primary-600/20"
+                  >
+                    Save Hotkey
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
+          <!-- ACCOUNT (About) -->
+          <div
+            id="account"
+            class="page hidden flex-1 overflow-y-auto p-10 max-w-3xl mx-auto w-full"
+          >
+            <h2 class="text-2xl font-medium text-slate-800 mb-8">
+              About Woodls
+            </h2>
+
+            <div
+              class="bg-white border border-slate-200 rounded-2xl p-8 text-center"
+            >
+              <img
+                src="webp/woodls.png"
+                class="w-24 h-24 mx-auto mb-6 object-contain"
+              />
+              <h3 class="text-xl font-bold text-slate-900">Woodls</h3>
+              <p class="text-slate-500 text-sm mb-2">Version 1.0.4</p>
+              <div
+                class="text-[10px] text-primary-500 font-bold uppercase tracking-wider mb-6"
+                id="update-status-text"
+              ></div>
+
+              <div class="flex justify-center gap-4 text-sm">
+                <div class="flex justify-center gap-4 text-sm">
+                  <a
+                    href="https://woodls.vercel.app/"
+                    target="_blank"
+                    class="text-primary-600 hover:text-primary-700 font-medium"
+                    >Website</a
+                  >
+                  <span class="text-slate-300">|</span>
+                  <div
+                    data-page="privacy-page"
+                    class="text-primary-600 hover:text-primary-700 font-medium cursor-pointer sidebar-item-link"
+                  >
+                    Privacy Policy
+                  </div>
+                  <span class="text-slate-300">|</span>
+                  <div
+                    data-page="terms-page"
+                    class="text-primary-600 hover:text-primary-700 font-medium cursor-pointer sidebar-item-link"
+                  >
+                    Terms
+                  </div>
+                </div>
               </div>
 
+              <div class="mt-8 pt-8 text-xs text-slate-400">
+                © 2026 Woodls AI. All rights reserved.
+              </div>
+            </div>
           </div>
-      </div>
-      
-      <script>
-          // Simple script to handle plan selection visuals inside the modal context
-          function selectPlan(el, plan) {
-              // Reset all
-              const container = el.parentElement;
-              const cards = container.querySelectorAll('div[onclick]');
-              cards.forEach(c => {
-                  c.className = "border-2 border-slate-100 rounded-2xl p-6 cursor-pointer hover:border-slate-300 transition-all relative group";
-                  c.querySelector('.check-dot').classList.remove('bg-amber-500');
-                  c.querySelector('.check-dot').classList.add('bg-slate-900', 'opacity-0');
-                  const ring = c.querySelector('.ring-1');
-                  if(ring) ring.classList.remove('ring-1', 'ring-amber-500/20');
-              });
 
-              // Set Active
-              el.className = "border-2 border-amber-500 bg-amber-50/10 rounded-2xl p-6 cursor-pointer relative shadow-xl shadow-amber-500/10 ring-1 ring-amber-500/20";
-              const dot = el.querySelector('.check-dot');
-              dot.classList.remove('bg-slate-900', 'opacity-0');
-              dot.classList.add('bg-amber-500');
-          }
+          <!-- PRIVACY POLICY -->
+          <div
+            id="privacy-page"
+            class="page hidden flex-1 overflow-y-auto p-10 max-w-3xl mx-auto w-full"
+          >
+            <div class="flex items-center gap-4 mb-8">
+              <button
+                data-page="account"
+                class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 sidebar-item-link"
+              >
+                <i class="fa-solid fa-arrow-left"></i>
+              </button>
+              <h2 class="text-2xl font-medium text-slate-800">
+                Privacy Policy
+              </h2>
+            </div>
+
+            <div
+              class="bg-white border border-slate-200 rounded-2xl p-8 prose prose-slate max-w-none"
+            >
+              <p class="text-slate-600 mb-4 italic text-sm">
+                Last updated: January 6, 2026
+              </p>
+              <div class="space-y-6 text-slate-700 leading-relaxed text-sm">
+                <section>
+                  <h4 class="font-bold text-slate-900 mb-2">1. Overview</h4>
+                  <p>
+                    Woodls is designed with a "Local First" approach. We believe
+                    your voice and your data belong to you.
+                  </p>
+                </section>
+                <section>
+                  <h4 class="font-bold text-slate-900 mb-2">
+                    2. Data Collection
+                  </h4>
+                  <p>
+                    We do not collect or store your audio recordings or
+                    transcripts on our servers. All processing happens locally
+                    on your device or directly through the Gemini API using your
+                    own keys.
+                  </p>
+                </section>
+                <section>
+                  <h4 class="font-bold text-slate-900 mb-2">
+                    3. Third-Party Services
+                  </h4>
+                  <p>
+                    Our app uses the Google Gemini API for transcription and AI
+                    enhancement. Use of this service is subject to Google's
+                    Privacy Policy. Your API keys are stored securely on your
+                    local machine.
+                  </p>
+                </section>
+                <section>
+                  <h4 class="font-bold text-slate-900 mb-2">
+                    4. Local Storage
+                  </h4>
+                  <p>
+                    Your history, notes, and settings are saved locally in your
+                    application data folder. This data never leaves your
+                    computer unless you explicitly choose to export or sync it.
+                  </p>
+                </section>
+              </div>
+            </div>
+          </div>
+
+          <!-- TERMS OF SERVICE -->
+          <div
+            id="terms-page"
+            class="page hidden flex-1 overflow-y-auto p-10 max-w-3xl mx-auto w-full"
+          >
+            <div class="flex items-center gap-4 mb-8">
+              <button
+                data-page="account"
+                class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 sidebar-item-link"
+              >
+                <i class="fa-solid fa-arrow-left"></i>
+              </button>
+              <h2 class="text-2xl font-medium text-slate-800">
+                Terms of Service
+              </h2>
+            </div>
+
+            <div
+              class="bg-white border border-slate-200 rounded-2xl p-8 prose prose-slate max-w-none"
+            >
+              <p class="text-slate-600 mb-4 italic text-sm">
+                Last updated: January 6, 2026
+              </p>
+              <div class="space-y-6 text-slate-700 leading-relaxed text-sm">
+                <section>
+                  <h4 class="font-bold text-slate-900 mb-2">
+                    1. Use of Service
+                  </h4>
+                  <p>
+                    Woodls is provided as-is. By using this application, you
+                    agree to take full responsibility for the content you
+                    dictate and the use of your API keys.
+                  </p>
+                </section>
+                <section>
+                  <h4 class="font-bold text-slate-900 mb-2">2. Liability</h4>
+                  <p>
+                    We are not responsible for any inaccuracies in transcription
+                    or AI-enhanced text. Always verify critical information
+                    before use.
+                  </p>
+                </section>
+                <section>
+                  <h4 class="font-bold text-slate-900 mb-2">3. API Usage</h4>
+                  <p>
+                    Excessive use of the API may result in costs or rate
+                    limiting from Google. You are responsible for any charges
+                    incurred on your Gemini API account.
+                  </p>
+                </section>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module">
+      import { initApp } from "./js/app.js";
+      initApp();
+    </script>
+
+    <!-- Delete Modal -->
+    <div
+      id="delete-modal"
+      class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200"
+    >
+      <div
+        class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center scale-100 animate-in zoom-in-95 duration-200"
+      >
+        <div
+          class="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"
+        >
+          <i class="fa-solid fa-trash-can text-lg"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 mb-2">Delete Note?</h3>
+        <p class="text-sm text-slate-500 mb-6">This action cannot be undone.</p>
+        <div class="grid grid-cols-2 gap-3">
+          <button
+            id="cancel-delete-btn"
+            class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl py-2 text-sm font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            id="confirm-delete-btn"
+            class="bg-red-500 hover:bg-red-600 text-white rounded-xl py-2 text-sm font-medium transition-colors shadow-lg shadow-red-500/20"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Delete Modal -->
+    <div
+      id="history-delete-modal"
+      class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200"
+    >
+      <div
+        class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center scale-100 animate-in zoom-in-95 duration-200"
+      >
+        <div
+          class="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"
+        >
+          <i class="fa-solid fa-trash-can text-lg"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 mb-2">Delete Recording?</h3>
+        <p class="text-sm text-slate-500 mb-6">This action cannot be undone.</p>
+        <div class="grid grid-cols-2 gap-3">
+          <button
+            id="cancel-history-delete-btn"
+            class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl py-2 text-sm font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            id="confirm-history-delete-btn"
+            class="bg-red-500 hover:bg-red-600 text-white rounded-xl py-2 text-sm font-medium transition-colors shadow-lg shadow-red-500/20"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <!-- Edit Modal -->
+    <div
+      id="edit-modal"
+      class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200"
+    >
+      <div
+        class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col max-h-[85vh] scale-100 animate-in zoom-in-95 duration-200 overflow-hidden transition-colors"
+        id="edit-modal-content"
+      >
+        <!-- Edit Image Preview -->
+        <div id="edit-note-images" class="hidden p-0"></div>
+
+        <div
+          class="p-4 flex items-center justify-between bg-white/50 backdrop-blur-sm sticky top-0 z-10"
+        >
+          <input
+            id="edit-note-title"
+            type="text"
+            placeholder="Title"
+            class="bg-transparent text-lg font-bold text-slate-800 placeholder:text-slate-400 outline-none border-none w-full"
+          />
+          <button
+            id="cancel-edit-btn"
+            class="text-slate-400 hover:text-slate-600 p-2"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="flex-1 p-0 overflow-y-auto relative custom-scrollbar">
+          <!-- Text Editor -->
+          <textarea
+            id="edit-note-content"
+            class="w-full h-full min-h-[300px] resize-none p-6 outline-none border-none text-slate-700 leading-relaxed bg-transparent"
+            placeholder="Note content..."
+          ></textarea>
+
+          <!-- List Editor -->
+          <div id="edit-note-list-container" class="hidden p-6 space-y-2"></div>
+        </div>
+
+        <div
+          class="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between"
+        >
+          <div class="flex items-center gap-1">
+            <button
+              class="w-8 h-8 rounded-full hover:bg-black/10 text-slate-500 text-xs"
+              title="Color"
+              id="edit-color-btn"
+            >
+              <i class="fa-solid fa-palette"></i>
+            </button>
+            <div
+              id="edit-color-palette"
+              class="hidden absolute bottom-16 left-4 bg-white shadow-xl border border-slate-100 rounded-lg p-2 gap-1 z-50 flex"
+            ></div>
+
+            <button
+              class="w-8 h-8 rounded-full hover:bg-black/10 text-slate-500 text-xs"
+              title="Add Image"
+              id="edit-add-image-btn"
+            >
+              <i class="fa-regular fa-image"></i>
+            </button>
+          </div>
+          <button
+            id="save-edit-btn"
+            class="bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 px-6 py-2 rounded-xl text-sm font-medium shadow-sm transition-all hover:shadow-md"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Upgrade Modal -->
+    <div
+      id="upgrade-modal"
+      class="hidden fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+    >
+      <div class="relative w-full max-w-4xl mx-4 perspective-1000">
+        <!-- Close Button -->
+        <button
+          id="close-upgrade-btn"
+          class="absolute -top-12 right-0 text-white/80 hover:text-white transition-colors"
+        >
+          <i class="fa-solid fa-xmark text-2xl"></i>
+        </button>
+
+        <div
+          class="bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[600px] animate-in zoom-in-95 duration-300"
+        >
+          <!-- Left: Premium Visuals -->
+          <div
+            class="w-full md:w-2/5 bg-slate-900 relative overflow-hidden p-8 flex flex-col justify-between text-white border-r border-slate-800"
+          >
+            <!-- Gradient Blobs -->
+            <div
+              class="absolute top-0 right-0 p-32 bg-amber-500 rounded-full blur-[100px] opacity-20 -mr-20 -mt-20"
+            ></div>
+            <div
+              class="absolute bottom-0 left-0 p-32 bg-purple-600 rounded-full blur-[100px] opacity-20 -ml-20 -mb-20"
+            ></div>
+
+            <div class="relative z-10">
+              <div
+                class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider mb-6"
+              >
+                <i class="fa-solid fa-crown"></i> Premium Access
+              </div>
+              <h2 class="text-4xl font-bold mb-4 leading-tight">
+                Unlock the full power of your voice.
+              </h2>
+              <p class="text-slate-400 text-lg leading-relaxed">
+                Remove limits and experience AI dictation without boundaries.
+              </p>
+            </div>
+
+            <div class="relative z-10 space-y-4">
+              <div
+                class="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm"
+              >
+                <div
+                  class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0"
+                >
+                  <i class="fa-solid fa-infinity"></i>
+                </div>
+                <div>
+                  <h4 class="font-bold">Unlimited Dictation</h4>
+                  <p class="text-xs text-slate-400">
+                    No more daily time limits.
+                  </p>
+                </div>
+              </div>
+              <div
+                class="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm"
+              >
+                <div
+                  class="w-10 h-10 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0"
+                >
+                  <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </div>
+                <div>
+                  <h4 class="font-bold">Advanced AI Assistance</h4>
+                  <p class="text-xs text-slate-400">
+                    Best conversion and accuracy
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Pricing Plans -->
+          <div class="w-full md:w-3/5 bg-white p-8 md:p-12 overflow-y-auto">
+            <div class="text-center mb-10">
+              <h3 class="text-2xl font-bold text-slate-900">
+                Choose your plan
+              </h3>
+              <p class="text-slate-500 mt-2">
+                Cancel anytime. No questions asked.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <!-- Monthly -->
+              <div
+                class="border-2 border-slate-100 rounded-2xl p-6 cursor-pointer hover:border-slate-300 transition-all relative group"
+                onclick="selectPlan(this, 'monthly')"
+              >
+                <div
+                  class="absolute top-4 right-4 w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-slate-400 flex items-center justify-center"
+                >
+                  <div
+                    class="w-2.5 h-2.5 rounded-full bg-slate-900 opacity-0 transition-opacity check-dot"
+                  ></div>
+                </div>
+                <h4 class="font-bold text-slate-900 mb-1">Monthly</h4>
+                <div class="flex items-baseline gap-1">
+                  <span class="text-3xl font-bold text-slate-900">$5</span>
+                  <span class="text-slate-500">/mo</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-4 leading-relaxed">
+                  Billed monthly.
+                </p>
+              </div>
+
+              <!-- Annual -->
+              <div
+                class="border-2 border-amber-500 bg-amber-50/10 rounded-2xl p-6 cursor-pointer relative shadow-xl shadow-amber-500/10 ring-1 ring-amber-500/20"
+                onclick="selectPlan(this, 'yearly')"
+              >
+                <div
+                  class="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
+                >
+                  Best Value
+                </div>
+                <div
+                  class="absolute top-4 right-4 w-5 h-5 rounded-full border-2 border-amber-500 flex items-center justify-center"
+                >
+                  <div
+                    class="w-2.5 h-2.5 rounded-full bg-amber-500 check-dot"
+                  ></div>
+                </div>
+                <h4 class="font-bold text-slate-900 mb-1">Yearly</h4>
+                <div class="flex items-baseline gap-1">
+                  <span class="text-3xl font-bold text-slate-900">$4</span>
+                  <span class="text-slate-500">/mo</span>
+                </div>
+                <p
+                  class="text-xs text-slate-500 mt-4 leading-relaxed text-amber-700 font-medium"
+                >
+                  Billed $48 yearly. Save 25%.
+                </p>
+              </div>
+            </div>
+
+            <button
+              class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-lg shadow-xl shadow-slate-900/20 transition-all transform active:scale-95 flex items-center justify-center gap-2"
+            >
+              Upgrade Now <i class="fa-solid fa-arrow-right"></i>
+            </button>
+
+            <p class="text-center text-xs text-slate-400 mt-6">
+              Secured by Stripe. By upgrading, you agree to our Terms.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        // Simple script to handle plan selection visuals inside the modal context
+        function selectPlan(el, plan) {
+          // Reset all
+          const container = el.parentElement;
+          const cards = container.querySelectorAll("div[onclick]");
+          cards.forEach((c) => {
+            c.className =
+              "border-2 border-slate-100 rounded-2xl p-6 cursor-pointer hover:border-slate-300 transition-all relative group";
+            c.querySelector(".check-dot").classList.remove("bg-amber-500");
+            c.querySelector(".check-dot").classList.add(
+              "bg-slate-900",
+              "opacity-0",
+            );
+            const ring = c.querySelector(".ring-1");
+            if (ring) ring.classList.remove("ring-1", "ring-amber-500/20");
+          });
+
+          // Set Active
+          el.className =
+            "border-2 border-amber-500 bg-amber-50/10 rounded-2xl p-6 cursor-pointer relative shadow-xl shadow-amber-500/10 ring-1 ring-amber-500/20";
+          const dot = el.querySelector(".check-dot");
+          dot.classList.remove("bg-slate-900", "opacity-0");
+          dot.classList.add("bg-amber-500");
+        }
       </script>
-  </div>
-  <!-- Auth / Onboarding Page -->
-  <div id="auth-page" class="hidden fixed inset-0 z-50 bg-white flex flex-col animate-in fade-in duration-300">
-      
+    </div>
+    <!-- Auth / Onboarding Page -->
+    <div
+      id="auth-page"
+      class="hidden fixed inset-0 z-50 bg-white flex flex-col animate-in fade-in duration-300"
+    >
       <!-- Auth Header -->
-      <div class="h-16 flex items-center justify-between px-8 border-b border-slate-100">
-           <div class="flex items-center gap-2 font-bold text-slate-800 text-xl">
-               <img src="webp/woodls.png" class="w-8 h-8 object-contain"> Woodls
-           </div>
-           <div class="text-xs text-slate-400">Beta v1.0</div>
+      <div
+        class="h-16 flex items-center justify-between px-8 border-b border-slate-100"
+      >
+        <div class="flex items-center gap-2 font-bold text-slate-800 text-xl">
+          <img src="webp/woodls.png" class="w-8 h-8 object-contain" /> Woodls
+        </div>
+        <div class="text-xs text-slate-400">Beta v1.0</div>
       </div>
 
       <div class="flex-1 flex overflow-hidden">
-          
-          <!-- Left Side: Hero / Test Drive -->
-          <div class="w-1/2 bg-slate-50 p-12 flex flex-col justify-center relative overflow-hidden">
-              <div class="absolute top-0 right-0 p-20 bg-blue-100 rounded-full blur-3xl opacity-50 -mr-20 -mt-20"></div>
-              <div class="absolute bottom-0 left-0 p-20 bg-purple-100 rounded-full blur-3xl opacity-50 -ml-20 -mb-20"></div>
-              
-              <div class="relative z-10 max-w-md mx-auto">
-                  <h1 class="text-4xl font-bold text-slate-900 mb-6 leading-tight">Your voice, empowered.</h1>
-                  <p class="text-slate-600 text-lg mb-8 leading-relaxed">Experience the future of voice dictation. Fast, accurate, and completely private on your device.</p>
-                  
-                  <!-- Test Drive Box -->
-                  <div class="bg-white rounded-2xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
-                       <div class="flex items-center gap-3 mb-4">
-                           <div class="w-10 h-10 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center">
-                               <i class="fa-solid fa-microphone"></i>
-                           </div>
-                           <div>
-                               <h3 class="font-bold text-slate-800">Try it out</h3>
-                               <p class="text-xs text-slate-500">Press and hold to dictate</p>
-                           </div>
-                       </div>
-                       
-                       <div id="onboarding-test-area" class="bg-slate-50 rounded-xl p-4 min-h-[100px] mb-4 text-slate-500 text-sm border border-slate-100 border-dashed flex items-center justify-center transition-all">
-                           <span class="italic">"Say something..."</span>
-                       </div>
+        <!-- Left Side: Hero / Test Drive -->
+        <div
+          class="w-1/2 bg-slate-50 p-12 flex flex-col justify-center relative overflow-hidden"
+        >
+          <div
+            class="absolute top-0 right-0 p-20 bg-blue-100 rounded-full blur-3xl opacity-50 -mr-20 -mt-20"
+          ></div>
+          <div
+            class="absolute bottom-0 left-0 p-20 bg-purple-100 rounded-full blur-3xl opacity-50 -ml-20 -mb-20"
+          ></div>
 
-                       <button id="onboarding-mic-btn" class="w-full py-3 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors flex items-center justify-center gap-2">
-                           <i class="fa-solid fa-microphone"></i> Hold to Speak
-                       </button>
-                  </div>
+          <div class="relative z-10 max-w-md mx-auto">
+            <h1 class="text-4xl font-bold text-slate-900 mb-6 leading-tight">
+              Your voice, empowered.
+            </h1>
+            <p class="text-slate-600 text-lg mb-8 leading-relaxed">
+              Experience the future of voice dictation. Fast, accurate, and
+              completely private on your device.
+            </p>
+
+            <!-- Test Drive Box -->
+            <div
+              class="bg-white rounded-2xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100"
+            >
+              <div class="flex items-center gap-3 mb-4">
+                <div
+                  class="w-10 h-10 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center"
+                >
+                  <i class="fa-solid fa-microphone"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-slate-800">Try it out</h3>
+                  <p class="text-xs text-slate-500">
+                    Press and hold to dictate
+                  </p>
+                </div>
               </div>
-          </div>
 
-          <!-- Right Side: Login / Signup -->
-          <div class="w-1/2 bg-white p-12 flex flex-col justify-center items-center">
-              
-              <div class="w-full max-w-sm" id="auth-forms">
-                  
-                  <!-- Login Form -->
-                  <div id="login-form" class="animate-in slide-in-from-right-4 duration-300">
-                      <h2 class="text-2xl font-bold text-slate-900 mb-2">Welcome Back</h2>
-                      <p class="text-slate-500 mb-8">Sign in to continue to Woodls.</p>
-                      
-                      <form id="sign-in-form" class="space-y-4">
-                          <div>
-                              <label class="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
-                              <input type="email" id="login-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all">
-                          </div>
-                          <div>
-                              <label class="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
-                              <input type="password" id="login-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all">
-                          </div>
-                          <div class="flex items-center justify-between text-sm">
-                              <a href="#" class="text-primary-600 hover:underline">Forgot password?</a>
-                          </div>
-                          <button type="submit" class="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20">Sign In</button>
-                          
-                          <div class="relative flex py-5 items-center">
-                              <div class="flex-grow border-t border-slate-200"></div>
-                              <span class="flex-shrink-0 mx-4 text-slate-400 text-xs">OR</span>
-                              <div class="flex-grow border-t border-slate-200"></div>
-                          </div>
-
-                          <button type="button" id="google-signin-btn" class="w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
-                              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5">
-                              Sign in with Google
-                          </button>
-                      </form>
-
-                      <div class="mt-6 text-center text-sm text-slate-500">
-                          Don't have an account? <button id="to-signup-btn" class="text-primary-600 font-medium hover:underline">Sign up</button>
-                      </div>
-                  </div>
-
-                  <!-- Signup Form -->
-                  <div id="signup-form" class="hidden animate-in slide-in-from-right-4 duration-300">
-                      <h2 class="text-2xl font-bold text-slate-900 mb-2">Create Account</h2>
-                      <p class="text-slate-500 mb-8">Get started with Woodls today.</p>
-                      
-                      <form id="sign-up-form" class="space-y-4">
-                          <div>
-                              <label class="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
-                              <input type="text" id="signup-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all">
-                          </div>
-                          <div>
-                              <label class="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
-                              <input type="email" id="signup-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all">
-                          </div>
-                          <div>
-                              <label class="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
-                              <input type="password" id="signup-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all">
-                          </div>
-                          <button type="submit" class="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20">Create Account</button>
-                      </form>
-
-                      <div class="mt-6 text-center text-sm text-slate-500">
-                          Already have an account? <button id="to-login-btn" class="text-primary-600 font-medium hover:underline">Sign in</button>
-                      </div>
-                  </div>
-
+              <div
+                id="onboarding-test-area"
+                class="bg-slate-50 rounded-xl p-4 min-h-[100px] mb-4 text-slate-500 text-sm border border-slate-100 border-dashed flex items-center justify-center transition-all"
+              >
+                <span class="italic">"Say something..."</span>
               </div>
+
+              <button
+                id="onboarding-mic-btn"
+                class="w-full py-3 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+              >
+                <i class="fa-solid fa-microphone"></i> Hold to Speak
+              </button>
+            </div>
           </div>
+        </div>
+
+        <!-- Right Side: Login / Signup -->
+        <div
+          class="w-1/2 bg-white p-12 flex flex-col justify-center items-center"
+        >
+          <div class="w-full max-w-sm" id="auth-forms">
+            <!-- Login Form -->
+            <div
+              id="login-form"
+              class="animate-in slide-in-from-right-4 duration-300"
+            >
+              <h2 class="text-2xl font-bold text-slate-900 mb-2">
+                Welcome Back
+              </h2>
+              <p class="text-slate-500 mb-8">Sign in to continue to Woodls.</p>
+
+              <form id="sign-in-form" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1.5"
+                    >Email</label
+                  >
+                  <input
+                    type="email"
+                    id="login-email"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1.5"
+                    >Password</label
+                  >
+                  <input
+                    type="password"
+                    id="login-password"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
+                  />
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <a href="#" class="text-primary-600 hover:underline"
+                    >Forgot password?</a
+                  >
+                </div>
+                <button
+                  type="submit"
+                  class="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20"
+                >
+                  Sign In
+                </button>
+
+                <div class="relative flex py-5 items-center">
+                  <div class="flex-grow border-t border-slate-200"></div>
+                  <span class="flex-shrink-0 mx-4 text-slate-400 text-xs"
+                    >OR</span
+                  >
+                  <div class="flex-grow border-t border-slate-200"></div>
+                </div>
+
+                <button
+                  type="button"
+                  id="google-signin-btn"
+                  class="w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <img
+                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                    class="w-5 h-5"
+                  />
+                  Sign in with Google
+                </button>
+              </form>
+
+              <div class="mt-6 text-center text-sm text-slate-500">
+                Don't have an account?
+                <button
+                  id="to-signup-btn"
+                  class="text-primary-600 font-medium hover:underline"
+                >
+                  Sign up
+                </button>
+              </div>
+            </div>
+
+            <!-- Signup Form -->
+            <div
+              id="signup-form"
+              class="hidden animate-in slide-in-from-right-4 duration-300"
+            >
+              <h2 class="text-2xl font-bold text-slate-900 mb-2">
+                Create Account
+              </h2>
+              <p class="text-slate-500 mb-8">Get started with Woodls today.</p>
+
+              <form id="sign-up-form" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1.5"
+                    >Full Name</label
+                  >
+                  <input
+                    type="text"
+                    id="signup-name"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1.5"
+                    >Email</label
+                  >
+                  <input
+                    type="email"
+                    id="signup-email"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1.5"
+                    >Password</label
+                  >
+                  <input
+                    type="password"
+                    id="signup-password"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  class="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20"
+                >
+                  Create Account
+                </button>
+              </form>
+
+              <div class="mt-6 text-center text-sm text-slate-500">
+                Already have an account?
+                <button
+                  id="to-login-btn"
+                  class="text-primary-600 font-medium hover:underline"
+                >
+                  Sign in
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-  </div>
-</body>
-
+    </div>
+  </body>
 </html>
-
-
-
-

@@ -11,19 +11,21 @@ contextBridge.exposeInMainWorld("api", {
   sendBackspace: () => ipcRenderer.invoke("send-backspace"),
   pasteString: (text) => ipcRenderer.invoke("paste-string", text),
   autoType: (text) => ipcRenderer.invoke("auto-type", text),
-  
+
   // Overlay Processing States
   processingStart: () => ipcRenderer.send("processing-start"),
   processingEnd: () => ipcRenderer.send("processing-end"),
-  
+
   // Settings
   saveSetting: (k, v) => ipcRenderer.send("save-setting", { key: k, value: v }),
   onSettingsLoaded: (cb) => ipcRenderer.on("settings-loaded", cb),
-  
+
   // Startup
-  setStartupSettings: (settings) => ipcRenderer.send("set-startup-settings", settings),
+  setStartupSettings: (settings) =>
+    ipcRenderer.send("set-startup-settings", settings),
   getStartupSettings: () => ipcRenderer.send("get-startup-settings"),
-  onStartupSettingsLoaded: (cb) => ipcRenderer.on("startup-settings-loaded", cb),
+  onStartupSettingsLoaded: (cb) =>
+    ipcRenderer.on("startup-settings-loaded", cb),
 
   // LLM
   generateText: (data) => ipcRenderer.invoke("generate-text", data),
@@ -49,9 +51,8 @@ contextBridge.exposeInMainWorld("api", {
 
   // Speech to text
   transcribeAudio: (buffer) => ipcRenderer.invoke("transcribe-audio", buffer),
-  
-  // Auto type
 
+  // Auto type
 
   // Notes
   getNotes: () => ipcRenderer.invoke("get-notes"),
@@ -76,5 +77,8 @@ contextBridge.exposeInMainWorld("api", {
   logout: () => ipcRenderer.invoke("auth-logout"),
   getCurrentUser: () => ipcRenderer.invoke("auth-get-current"),
   onAuthStateChanged: (cb) => ipcRenderer.on("auth-state-changed", cb),
-  onAIInfoUpdate: (cb) => ipcRenderer.on("ai-info-update", (event, ...args) => cb(...args)),
+  onAIInfoUpdate: (cb) =>
+    ipcRenderer.on("ai-info-update", (event, ...args) => cb(...args)),
+  onUpdateStatus: (cb) =>
+    ipcRenderer.on("update-status", (event, ...args) => cb(...args)),
 });

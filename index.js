@@ -1151,13 +1151,22 @@ app.whenReady().then(() => {
   autoUpdater.checkForUpdatesAndNotify();
 });
 
+// Helper to send update status to all windows
+function sendUpdateStatus(status, details = null) {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("update-status", { status, details });
+  }
+}
+
 // Auto-Update Events
 autoUpdater.on("checking-for-update", () => {
   console.log("[Updater] Checking for update...");
+  sendUpdateStatus("checking");
 });
 
 autoUpdater.on("update-available", (info) => {
   console.log("[Updater] Update available:", info.version);
+  sendUpdateStatus("available", info.version);
 });
 
 autoUpdater.on("update-not-available", (info) => {
@@ -1166,10 +1175,12 @@ autoUpdater.on("update-not-available", (info) => {
     info.version,
     ")",
   );
+  sendUpdateStatus("up-to-date", info.version);
 });
 
 autoUpdater.on("update-downloaded", (info) => {
   console.log("[Updater] Update downloaded:", info.version);
+  sendUpdateStatus("downloaded", info.version);
   dialog
     .showMessageBox({
       type: "info",
@@ -1186,6 +1197,7 @@ autoUpdater.on("update-downloaded", (info) => {
 
 autoUpdater.on("error", (err) => {
   console.error("[Updater] Error in auto-updater: ", err);
+  sendUpdateStatus("error", err.message);
 });
 
 app.on("window-all-closed", (e) => {

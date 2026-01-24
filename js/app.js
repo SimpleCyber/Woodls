@@ -108,6 +108,24 @@ export function initApp() {
     }
   });
 
+  // Auto-Update Feedback
+  const updateStats = document.getElementById("update-status-text");
+  if (updateStats) {
+    window.api.onUpdateStatus((data) => {
+      const { status, details } = data;
+      if (status === "checking")
+        updateStats.textContent = "Checking for updates...";
+      else if (status === "available")
+        updateStats.textContent = `Update available: v${details}`;
+      else if (status === "up-to-date")
+        updateStats.textContent = "App is up to date";
+      else if (status === "downloaded")
+        updateStats.textContent = `Update v${details} ready!`;
+      else if (status === "error")
+        updateStats.textContent = "Update check failed";
+    });
+  }
+
   // Tab Switching
 
   // Tab Switching
