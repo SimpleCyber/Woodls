@@ -1152,18 +1152,29 @@ app.whenReady().then(() => {
 });
 
 // Auto-Update Events
-autoUpdater.on("update-available", () => {
-  console.log("[Updater] Update available.");
+autoUpdater.on("checking-for-update", () => {
+  console.log("[Updater] Checking for update...");
+});
+
+autoUpdater.on("update-available", (info) => {
+  console.log("[Updater] Update available:", info.version);
+});
+
+autoUpdater.on("update-not-available", (info) => {
+  console.log(
+    "[Updater] App is up to date (Current version:",
+    info.version,
+    ")",
+  );
 });
 
 autoUpdater.on("update-downloaded", (info) => {
-  console.log("[Updater] Update downloaded.");
+  console.log("[Updater] Update downloaded:", info.version);
   dialog
     .showMessageBox({
       type: "info",
       title: "Update Ready",
-      message:
-        "A new version of Woodls has been downloaded. Restart the app to apply the updates?",
+      message: `Version ${info.version} of Woodls is ready. Restart the app to apply the updates?`,
       buttons: ["Restart", "Later"],
     })
     .then((result) => {
