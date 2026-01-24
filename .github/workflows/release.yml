@@ -28,6 +28,8 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+        env:
+          npm_config_python: python
 
       - name: Build and Publish Electron App
         run: npm run build -- --publish always
