@@ -152,7 +152,9 @@ export function initApp() {
           checkUpdatesBtn.onclick = () => window.api.closeWindow(); // This will trigger the quitAndInstall dialog if it popped up, or just close and let main handle it
         }
       } else if (status === "error") {
-        updateStats.textContent = "Update check failed";
+        updateStats.textContent = details
+          ? `Error: ${details}`
+          : "Update check failed";
         updateStats.className =
           "text-[10px] text-red-500 font-bold uppercase tracking-wider mb-2";
       }
