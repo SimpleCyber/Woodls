@@ -1,446 +1,779 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Woodls - AI Voice Dictation | Write 5x Faster with AI</title>
-    <meta name="description" content="Woodls is an AI-powered voice dictation tool that helps you write 5x faster. Dictate into any app on Windows 10 & 11 with high-accuracy speech-to-text.">
+    <meta
+      name="description"
+      content="Woodls is an AI-powered voice dictation tool that helps you write 5x faster. Dictate into any app on Windows 10 & 11 with high-accuracy speech-to-text."
+    />
     <link rel="canonical" href="https://woodls.vercel.app/" />
 
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://woodls.vercel.app/">
-    <meta property="og:title" content="Woodls - AI Voice Dictation | Write 5x Faster with AI">
-    <meta property="og:description" content="AI-powered voice dictation that's so powerful it can replace your keyboard entirely.">
-    <meta property="og:image" content="https://woodls.vercel.app/assets/woodls.png">
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://woodls.vercel.app/" />
+    <meta
+      property="og:title"
+      content="Woodls - AI Voice Dictation | Write 5x Faster with AI"
+    />
+    <meta
+      property="og:description"
+      content="AI-powered voice dictation that's so powerful it can replace your keyboard entirely."
+    />
+    <meta
+      property="og:image"
+      content="https://woodls.vercel.app/assets/woodls.png"
+    />
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://woodls.vercel.app/">
-    <meta property="twitter:title" content="Woodls - AI Voice Dictation | Write 5x Faster with AI">
-    <meta property="twitter:description" content="AI-powered voice dictation that's so powerful it can replace your keyboard entirely.">
-    <meta property="twitter:image" content="https://woodls.vercel.app/assets/woodls.png">
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://woodls.vercel.app/" />
+    <meta
+      property="twitter:title"
+      content="Woodls - AI Voice Dictation | Write 5x Faster with AI"
+    />
+    <meta
+      property="twitter:description"
+      content="AI-powered voice dictation that's so powerful it can replace your keyboard entirely."
+    />
+    <meta
+      property="twitter:image"
+      content="https://woodls.vercel.app/assets/woodls.png"
+    />
 
-    <link rel="apple-touch-icon" href="./assets/woodls.png">
+    <link rel="apple-touch-icon" href="./assets/woodls.png" />
 
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "Woodls",
-      "operatingSystem": "Windows 10, Windows 11",
-      "applicationCategory": "ProductivityApplication",
-      "description": "AI-powered voice dictation tool for Windows. Write 5x faster with your voice.",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Woodls",
+        "operatingSystem": "Windows 10, Windows 11",
+        "applicationCategory": "ProductivityApplication",
+        "description": "AI-powered voice dictation tool for Windows. Write 5x faster with your voice.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
       }
-    }
     </script>
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "Woodls",
-      "url": "https://woodls.vercel.app/",
-      "logo": "https://woodls.vercel.app/assets/woodls.png",
-      "sameAs": [
-        "https://x.com/Satyam_yadav_04",
-        "https://github.com/SimpleCyber"
-      ]
-    }
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Woodls",
+        "url": "https://woodls.vercel.app/",
+        "logo": "https://woodls.vercel.app/assets/woodls.png",
+        "sameAs": [
+          "https://x.com/Satyam_yadav_04",
+          "https://github.com/SimpleCyber"
+        ]
+      }
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
-<link rel="icon" type="image/png" href="./assets/woodls.png" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="./assets/woodls.png" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        primary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                        },
-                        slate: {
-                            850: '#1e293b',
-                        }
-                    },
-                    animation: {
-                        'blob': 'blob 7s infinite',
-                    },
-                    keyframes: {
-                        blob: {
-                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
-                        }
-                    }
-                }
-            }
-        }
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+            },
+            colors: {
+              primary: {
+                50: "#eff6ff",
+                100: "#dbeafe",
+                500: "#3b82f6",
+                600: "#2563eb",
+                700: "#1d4ed8",
+              },
+              slate: {
+                850: "#1e293b",
+              },
+            },
+            animation: {
+              blob: "blob 7s infinite",
+            },
+            keyframes: {
+              blob: {
+                "0%": { transform: "translate(0px, 0px) scale(1)" },
+                "33%": { transform: "translate(30px, -50px) scale(1.1)" },
+                "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
+                "100%": { transform: "translate(0px, 0px) scale(1)" },
+              },
+            },
+          },
+        },
+      };
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
-        
-        .glass-nav {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-        }
+      body {
+        font-family: "Inter", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            transition: all 0.3s ease;
-        }
+      .glass-nav {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+      }
 
-        .glass-card:hover {
-            background: rgba(255, 255, 255, 0.85);
-            border-color: rgba(255, 255, 255, 1);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
-        }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.65);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow:
+          0 4px 6px -1px rgba(0, 0, 0, 0.05),
+          0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transition: all 0.3s ease;
+      }
 
-        .ambient-bg {
-            background-color: #f8fafc;
-            background-image: 
-                radial-gradient(at 0% 0%, hsla(253,16%,7%,0) 0, transparent 50%), 
-                radial-gradient(at 50% 0%, hsla(225,39%,30%,0) 0, transparent 50%), 
-                radial-gradient(at 100% 0%, hsla(339,49%,30%,0) 0, transparent 50%);
-        }
+      .glass-card:hover {
+        background: rgba(255, 255, 255, 0.85);
+        border-color: rgba(255, 255, 255, 1);
+        transform: translateY(-4px);
+        box-shadow:
+          0 20px 25px -5px rgba(0, 0, 0, 0.05),
+          0 10px 10px -5px rgba(0, 0, 0, 0.02);
+      }
 
-        .hero-blob {
-            position: absolute;
-            filter: blur(80px);
-            z-index: -1;
-            opacity: 0.6;
-        }
+      .ambient-bg {
+        background-color: #f8fafc;
+        background-image:
+          radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 0) 0, transparent 50%),
+          radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 0) 0, transparent 50%),
+          radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 0) 0, transparent 50%);
+      }
 
-        /* Fancy Toggle */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #4f46e5;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #4f46e5;
-        }
+      .hero-blob {
+        position: absolute;
+        filter: blur(80px);
+        z-index: -1;
+        opacity: 0.6;
+      }
+
+      /* Fancy Toggle */
+      .toggle-checkbox:checked {
+        right: 0;
+        border-color: #4f46e5;
+      }
+      .toggle-checkbox:checked + .toggle-label {
+        background-color: #4f46e5;
+      }
     </style>
-</head>
-<body class="bg-slate-50 text-slate-900 overflow-x-hidden relative">
-
+  </head>
+  <body class="bg-slate-50 text-slate-900 overflow-x-hidden relative">
     <!-- Ambient Background Blobs -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div class="hero-blob bg-purple-200 w-96 h-96 rounded-full top-0 left-[-10%] mix-blend-multiply opacity-50 animate-blob"></div>
-        <div class="hero-blob bg-blue-200 w-96 h-96 rounded-full top-0 right-[-10%] mix-blend-multiply opacity-50 animate-blob" style="animation-delay: 2s"></div>
-        <div class="hero-blob bg-indigo-200 w-96 h-96 rounded-full top-40 left-[30%] mix-blend-multiply opacity-50 animate-blob" style="animation-delay: 4s"></div>
-        <!-- Bottom blobs -->
-        <div class="hero-blob bg-white w-[120%] h-[50vh] bottom-0 left-0 blur-xl opacity-100 z-0"></div>
+      <div
+        class="hero-blob bg-purple-200 w-96 h-96 rounded-full top-0 left-[-10%] mix-blend-multiply opacity-50 animate-blob"
+      ></div>
+      <div
+        class="hero-blob bg-blue-200 w-96 h-96 rounded-full top-0 right-[-10%] mix-blend-multiply opacity-50 animate-blob"
+        style="animation-delay: 2s"
+      ></div>
+      <div
+        class="hero-blob bg-indigo-200 w-96 h-96 rounded-full top-40 left-[30%] mix-blend-multiply opacity-50 animate-blob"
+        style="animation-delay: 4s"
+      ></div>
+      <!-- Bottom blobs -->
+      <div
+        class="hero-blob bg-white w-[120%] h-[50vh] bottom-0 left-0 blur-xl opacity-100 z-0"
+      ></div>
     </div>
 
     <!-- Navigation -->
     <nav class="glass-nav fixed w-full z-50 top-0 transition-all">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
-                <!-- Logo -->
-                <div class="flex-shrink-0 flex items-center gap-3 cursor-pointer group" onclick="window.location.href='index.html'">
-                    <img src="assets/woodls.png" alt="Woodls" class="h-8 w-8 group-hover:scale-110 transition-transform duration-300">
-                    <span class="font-bold text-xl tracking-tight text-slate-900">Woodls</span>
-                </div>
-                
-                <!-- Desktop Menu -->
-                <div class="hidden md:flex items-center space-x-10">
-                    <a href="index.html#features" class="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Features</a>
-                    <a href="index.html#works-with" class="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Integrations</a>
-                    <a href="#pricing" class="text-sm font-medium text-indigo-600 transition-colors">Pricing</a>
-                </div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-20">
+          <!-- Logo -->
+          <div
+            class="flex-shrink-0 flex items-center gap-3 cursor-pointer group"
+            onclick="window.location.href = 'index.html'"
+          >
+            <img
+              src="assets/woodls.png"
+              alt="Woodls"
+              class="h-8 w-8 group-hover:scale-110 transition-transform duration-300"
+            />
+            <span class="font-bold text-xl tracking-tight text-slate-900"
+              >Woodls</span
+            >
+          </div>
 
-                <!-- CTA -->
-                <div class="hidden md:flex items-center">
-                    <a href="#" class="bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-6 py-2.5 rounded-full transition-all shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 hover:-translate-y-0.5">
-                        <i class="fa-brands fa-windows mr-2"></i> Get Started
-                    </a>
-                </div>
+          <!-- Desktop Menu -->
+          <div class="hidden md:flex items-center space-x-10">
+            <a
+              href="index.html#features"
+              class="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors"
+              >Features</a
+            >
+            <a
+              href="index.html#works-with"
+              class="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors"
+              >Integrations</a
+            >
+            <a
+              href="#pricing"
+              class="text-sm font-medium text-indigo-600 transition-colors"
+              >Pricing</a
+            >
+          </div>
 
-                <!-- Mobile menu button -->
-                <div class="md:hidden flex items-center">
-                    <button class="text-slate-500 hover:text-slate-700">
-                        <i class="fa-solid fa-bars text-xl"></i>
-                    </button>
-                </div>
-            </div>
+          <!-- CTA -->
+          <div class="hidden md:flex items-center">
+            <a
+              href="#"
+              class="bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-6 py-2.5 rounded-full transition-all shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 hover:-translate-y-0.5"
+            >
+              <i class="fa-brands fa-windows mr-2"></i> Get Started
+            </a>
+          </div>
+
+          <!-- Mobile menu button -->
+          <div class="md:hidden flex items-center">
+            <button class="text-slate-500 hover:text-slate-700">
+              <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+          </div>
         </div>
+      </div>
     </nav>
 
     <!-- Pricing Section -->
     <main class="pt-40 pb-24 px-4 sm:px-6 lg:px-8 relative z-10" id="pricing">
-        <div class="max-w-7xl mx-auto">
-            
-            <div class="text-center max-w-4xl mx-auto mb-20 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                <h1 class="text-5xl md:text-7xl font-extrabold text-slate-900 mb-8 tracking-tight leading-[1.1]">
-                    Speech is new Keyboard <br>
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Type faster with voice.</span>
-                </h1>
-                <p class="text-xl md:text-2xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed font-light">
-                    AI-powered voice dictation that's so powerful it can replace your keyboard entirely.
-                </p>
+      <div class="max-w-7xl mx-auto">
+        <div
+          class="text-center max-w-4xl mx-auto mb-20 animate-in fade-in slide-in-from-bottom-8 duration-700"
+        >
+          <h1
+            class="text-5xl md:text-7xl font-extrabold text-slate-900 mb-8 tracking-tight leading-[1.1]"
+          >
+            Speech is new Keyboard <br />
+            <span
+              class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600"
+              >Type faster with voice.</span
+            >
+          </h1>
+          <p
+            class="text-xl md:text-2xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed font-light"
+          >
+            AI-powered voice dictation that's so powerful it can replace your
+            keyboard entirely.
+          </p>
 
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-                    <a href="https://github.com/SimpleCyber/Images/raw/main/woodlssetup2.exe" class="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-full transition-all shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/40 hover:-translate-y-1">
-                        <i class="fa-brands fa-windows mr-2"></i> Download for Windows
-                    </a>
-                    <p class="text-sm text-slate-400 mt-2 sm:mt-0 sm:absolute sm:-bottom-8">Available on Windows 10 & 11</p>
-                </div>
+          <div
+            class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
+          >
+            <a
+              href="https://github.com/SimpleCyber/Woodls/releases/latest/download/Woodls-Setup-1.0.8.exe"
+              class="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-full transition-all shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/40 hover:-translate-y-1"
+            >
+              <i class="fa-brands fa-windows mr-2"></i> Download for Windows
+            </a>
+            <p
+              class="text-sm text-slate-400 mt-2 sm:mt-0 sm:absolute sm:-bottom-8"
+            >
+              Available on Windows 10 & 11
+            </p>
+          </div>
 
-                <!-- App Screenshot -->
-                <div class="relative max-w-5xl mx-auto mb-32 group perspective-1000">
-                    <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-                    <div class="relative rounded-2xl bg-white/5 p-2 ring-1 ring-white/10 backdrop-blur-xl transform transition-transform duration-500 hover:rotate-x-2">
-                        <img src="assets/app-screenshot.png" alt="Woodls App Interface" class="rounded-xl shadow-2xl w-full border border-slate-200/50">
-                    </div>
-                </div>
-                
-                <!-- Trusted By -->
-                <div class="mb-20 pt-10 border-t border-slate-200/50">
-                    <p class="text-sm font-medium text-slate-400 uppercase tracking-widest mb-8">Trusted by 100+ users</p>
-                    <div class="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-                        <img src="assets/slack.webp" alt="Slack" class="h-8 w-auto object-contain hover:scale-110 transition-transform" loading="lazy">
-                        <img src="assets/gmail.webp" alt="Gmail" class="h-8 w-auto object-contain hover:scale-110 transition-transform" loading="lazy">
-                        <img src="assets/cursor.webp" alt="Cursor" class="h-8 w-auto object-contain hover:scale-110 transition-transform" loading="lazy">
-                        <img src="assets/notion.webp" alt="Notion" class="h-8 w-auto object-contain hover:scale-110 transition-transform" loading="lazy">
-                        <img src="assets/chrome.webp" alt="Chrome" class="h-8 w-auto object-contain hover:scale-110 transition-transform" loading="lazy">
-                    </div>
-                </div>
-
-                <!-- Features Section -->
-                <section id="features" class="py-20 border-t border-slate-200/50">
-                    <div class="max-w-4xl mx-auto text-left">
-                        <h2 class="text-3xl font-bold text-slate-900 mb-12 text-center">Why professionals choose Woodls</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                            <div>
-                                <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-3">
-                                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 text-sm italic">01</span>
-                                    Unmatched Accuracy
-                                </h3>
-                                <p class="text-slate-600 leading-relaxed mb-6">
-                                    Woodls utilizes state-of-the-art AI models specifically trained on diverse accents and technical terminology. Whether you're writing code, legal documents, or medical reports, our engine understands the context and punctuates automatically, so you don't have to.
-                                </p>
-                                <p class="text-slate-600 leading-relaxed">
-                                    Stop correcting typos. Our intelligent correction system learns from your common edits, becoming more precise the more you use it.
-                                </p>
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-3">
-                                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-100 text-purple-600 text-sm italic">02</span>
-                                    Deep Integration
-                                </h3>
-                                <p class="text-slate-600 leading-relaxed mb-6">
-                                    Unlike other dictation tools that limit you to their own text editor, Woodls lives in your system tray. It works globally across any application on Windows 10 and 11. Just point your cursor and start talking.
-                                </p>
-                                <p class="text-slate-600 leading-relaxed">
-                                    Dictate emails in Outlook, responses in Slack, or complex logic in VS Code. Woodls treats every input field like its native environment.
-                                </p>
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-3">
-                                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-600 text-sm italic">03</span>
-                                    Privacy First
-                                </h3>
-                                <p class="text-slate-600 leading-relaxed mb-6">
-                                    We believe your voice is private. Woodls offers local processing modes where your data never leaves your machine. For sensitive workflows, you can rest assured that your dictation is end-to-end encrypted.
-                                </p>
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-3">
-                                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 text-sm italic">04</span>
-                                    Voice Commands
-                                </h3>
-                                <p class="text-slate-600 leading-relaxed mb-6">
-                                    It's more than just speech-to-text. Use voice commands to navigate, delete entire paragraphs, or format text on the fly. Say "delete last sentence" or "new paragraph" to maintain your flow without touching the mouse.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-               
+          <!-- App Screenshot -->
+          <div class="relative max-w-5xl mx-auto mb-32 group perspective-1000">
+            <div
+              class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"
+            ></div>
+            <div
+              class="relative rounded-2xl bg-white/5 p-2 ring-1 ring-white/10 backdrop-blur-xl transform transition-transform duration-500 hover:rotate-x-2"
+            >
+              <img
+                src="assets/app-screenshot.png"
+                alt="Woodls App Interface"
+                class="rounded-xl shadow-2xl w-full border border-slate-200/50"
+              />
             </div>
+          </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                
-                <!-- Free Tier -->
-                <div class="glass-card rounded-3xl p-8 flex flex-col items-start relative overflow-hidden group">
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-slate-100 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-slate-200 transition-colors"></div>
-                    
-                    <h3 class="text-xl font-bold text-slate-900 mb-2 z-10">Starter</h3>
-                    <p class="text-sm text-slate-500 mb-6 z-10 h-10">Perfect for trying out voice typing on your personal machine.</p>
-                    
-                    <div class="flex items-baseline gap-1 mb-8 z-10">
-                        <span class="text-5xl font-extrabold text-slate-900 tracking-tight">$0</span>
-                        <span class="text-slate-500 font-medium">/forever</span>
-                    </div>
-                    
-                    <a href="#" class="w-full py-4 px-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-center transition-all mb-8 z-10">
-                        Download Free
-                    </a>
-
-                    <ul class="space-y-4 text-sm text-slate-600 z-10 w-full">
-                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-slate-400"></i> <span>Basic Dictation</span></li>
-                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-slate-400"></i> <span>Local Processing</span></li>
-                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-slate-400"></i> <span>50 requests / day</span></li>
-                    </ul>
-                </div>
-
-                  <!-- Pro Yearly (Best Value) -->
-                <div class="glass-card rounded-3xl p-8 flex flex-col items-start relative overflow-hidden border-indigo-200 shadow-xl scale-105 z-20">
-                    <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-                     <div class="absolute top-0 right-0 w-40 h-40 bg-indigo-100 rounded-full blur-3xl -mr-10 -mt-10 opacity-60"></div>
-                    
-                    <div class="flex justify-between w-full items-center mb-2 z-10">
-                        <h3 class="text-xl font-bold text-indigo-700">Pro Yearly</h3>
-                        <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide">Save 30%</span>
-                    </div>
-                    <p class="text-sm text-slate-500 mb-6 z-10 h-10">Best value for power users. Billed annually.</p>
-                    
-                    <div class="flex items-baseline gap-1 mb-8 z-10">
-                        <span class="text-5xl font-extrabold text-slate-900 tracking-tight">$7</span>
-                        <span class="text-slate-500 font-medium">/mo</span>
-                    </div>
-                    
-                    <a href="#" class="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-2xl text-center transition-all shadow-lg shadow-indigo-500/30 mb-8 z-10 hover:shadow-indigo-500/40 hover:-translate-y-0.5">
-                        Get Yearly
-                    </a>
-
-                    <ul class="space-y-4 text-sm text-slate-700 font-medium z-10 w-full">
-                        <li class="flex items-center gap-3"><div class="bg-indigo-100 p-1 rounded-full"><i class="fa-solid fa-check text-indigo-600 text-xs"></i></div> <span>Everything in Pro</span></li>
-                        <li class="flex items-center gap-3"><div class="bg-indigo-100 p-1 rounded-full"><i class="fa-solid fa-check text-indigo-600 text-xs"></i></div> <span>2 Months Free</span></li>
-                        <li class="flex items-center gap-3"><div class="bg-indigo-100 p-1 rounded-full"><i class="fa-solid fa-check text-indigo-600 text-xs"></i></div> <span>Priority Support</span></li>
-                    </ul>
-                </div>
-
-                <!-- Pro Monthly (Standard) -->
-                <div class="glass-card rounded-3xl p-8 flex flex-col items-start relative overflow-hidden">
-                    <div class="flex justify-between w-full items-center mb-2">
-                         <h3 class="text-xl font-bold text-slate-900">Pro Monthly</h3>
-                    </div>
-                   
-                    <p class="text-sm text-slate-500 mb-6 h-10">Flexible monthly voice dictation power.</p>
-                    
-                    <div class="flex items-baseline gap-1 mb-8">
-                        <span class="text-5xl font-extrabold text-slate-900 tracking-tight">$10</span>
-                        <span class="text-slate-500 font-medium">/mo</span>
-                    </div>
-                    
-                    <a href="#" class="w-full py-4 px-6 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-center transition-all mb-8 shadow-lg shadow-slate-900/10">
-                        Get Started
-                    </a>
-
-                    <ul class="space-y-4 text-sm text-slate-600 font-medium w-full">
-                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-slate-400"></i> <span>Unlimited Dictation</span></li>
-                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-slate-400"></i> <span>Advanced Punctuation</span></li>
-                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-slate-400"></i> <span>Custom Vocabulary</span></li>
-                    </ul>
-                </div>
-
-              
-
+          <!-- Trusted By -->
+          <div class="mb-20 pt-10 border-t border-slate-200/50">
+            <p
+              class="text-sm font-medium text-slate-400 uppercase tracking-widest mb-8"
+            >
+              Trusted by 100+ users
+            </p>
+            <div
+              class="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500"
+            >
+              <img
+                src="assets/slack.webp"
+                alt="Slack"
+                class="h-8 w-auto object-contain hover:scale-110 transition-transform"
+                loading="lazy"
+              />
+              <img
+                src="assets/gmail.webp"
+                alt="Gmail"
+                class="h-8 w-auto object-contain hover:scale-110 transition-transform"
+                loading="lazy"
+              />
+              <img
+                src="assets/cursor.webp"
+                alt="Cursor"
+                class="h-8 w-auto object-contain hover:scale-110 transition-transform"
+                loading="lazy"
+              />
+              <img
+                src="assets/notion.webp"
+                alt="Notion"
+                class="h-8 w-auto object-contain hover:scale-110 transition-transform"
+                loading="lazy"
+              />
+              <img
+                src="assets/chrome.webp"
+                alt="Chrome"
+                class="h-8 w-auto object-contain hover:scale-110 transition-transform"
+                loading="lazy"
+              />
             </div>
-            
-            <!-- FAQ Section -->
-            <div class="mt-32 max-w-3xl mx-auto pb-20">
-                <h2 class="text-3xl font-bold text-slate-900 mb-12 text-center tracking-tight">Frequently Asked Questions</h2>
-                <div class="space-y-4">
-                    <div class="glass-card rounded-2xl p-6 cursor-pointer hover:bg-white/80 transition-colors">
-                        <h4 class="font-bold text-slate-900 mb-2 text-lg">Do I need a credit card for the free plan?</h4>
-                        <p class="text-slate-500 leading-relaxed">No, the Starter plan is completely free and doesn't require any payment information. You can use it as long as you like.</p>
-                    </div>
-                    <div class="glass-card rounded-2xl p-6 cursor-pointer hover:bg-white/80 transition-colors">
-                        <h4 class="font-bold text-slate-900 mb-2 text-lg">Can I switch plans later?</h4>
-                        <p class="text-slate-500 leading-relaxed">Yes, you can upgrade, downgrade, or cancel your subscription at any time from your account settings. Prorated refunds are applied automatically.</p>
-                    </div>
-                     <div class="glass-card rounded-2xl p-6 cursor-pointer hover:bg-white/80 transition-colors">
-                        <h4 class="font-bold text-slate-900 mb-2 text-lg">Does it work on Mac?</h4>
-                        <p class="text-slate-500 leading-relaxed">Currently Woodls is available for Windows 10 and 11. A Mac version is in development and will be released later this year.</p>
-                    </div>
-                </div>
-            </div>
+          </div>
 
+          <!-- Features Section -->
+          <section id="features" class="py-20 border-t border-slate-200/50">
+            <div class="max-w-4xl mx-auto text-left">
+              <h2 class="text-3xl font-bold text-slate-900 mb-12 text-center">
+                Why professionals choose Woodls
+              </h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div>
+                  <h3
+                    class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-3"
+                  >
+                    <span
+                      class="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 text-sm italic"
+                      >01</span
+                    >
+                    Unmatched Accuracy
+                  </h3>
+                  <p class="text-slate-600 leading-relaxed mb-6">
+                    Woodls utilizes state-of-the-art AI models specifically
+                    trained on diverse accents and technical terminology.
+                    Whether you're writing code, legal documents, or medical
+                    reports, our engine understands the context and punctuates
+                    automatically, so you don't have to.
+                  </p>
+                  <p class="text-slate-600 leading-relaxed">
+                    Stop correcting typos. Our intelligent correction system
+                    learns from your common edits, becoming more precise the
+                    more you use it.
+                  </p>
+                </div>
+                <div>
+                  <h3
+                    class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-3"
+                  >
+                    <span
+                      class="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-100 text-purple-600 text-sm italic"
+                      >02</span
+                    >
+                    Deep Integration
+                  </h3>
+                  <p class="text-slate-600 leading-relaxed mb-6">
+                    Unlike other dictation tools that limit you to their own
+                    text editor, Woodls lives in your system tray. It works
+                    globally across any application on Windows 10 and 11. Just
+                    point your cursor and start talking.
+                  </p>
+                  <p class="text-slate-600 leading-relaxed">
+                    Dictate emails in Outlook, responses in Slack, or complex
+                    logic in VS Code. Woodls treats every input field like its
+                    native environment.
+                  </p>
+                </div>
+                <div>
+                  <h3
+                    class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-3"
+                  >
+                    <span
+                      class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-600 text-sm italic"
+                      >03</span
+                    >
+                    Privacy First
+                  </h3>
+                  <p class="text-slate-600 leading-relaxed mb-6">
+                    We believe your voice is private. Woodls offers local
+                    processing modes where your data never leaves your machine.
+                    For sensitive workflows, you can rest assured that your
+                    dictation is end-to-end encrypted.
+                  </p>
+                </div>
+                <div>
+                  <h3
+                    class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-3"
+                  >
+                    <span
+                      class="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 text-sm italic"
+                      >04</span
+                    >
+                    Voice Commands
+                  </h3>
+                  <p class="text-slate-600 leading-relaxed mb-6">
+                    It's more than just speech-to-text. Use voice commands to
+                    navigate, delete entire paragraphs, or format text on the
+                    fly. Say "delete last sentence" or "new paragraph" to
+                    maintain your flow without touching the mouse.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <!-- Free Tier -->
+          <div
+            class="glass-card rounded-3xl p-8 flex flex-col items-start relative overflow-hidden group"
+          >
+            <div
+              class="absolute top-0 right-0 w-32 h-32 bg-slate-100 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-slate-200 transition-colors"
+            ></div>
+
+            <h3 class="text-xl font-bold text-slate-900 mb-2 z-10">Starter</h3>
+            <p class="text-sm text-slate-500 mb-6 z-10 h-10">
+              Perfect for trying out voice typing on your personal machine.
+            </p>
+
+            <div class="flex items-baseline gap-1 mb-8 z-10">
+              <span
+                class="text-5xl font-extrabold text-slate-900 tracking-tight"
+                >$0</span
+              >
+              <span class="text-slate-500 font-medium">/forever</span>
+            </div>
+
+            <a
+              href="#"
+              class="w-full py-4 px-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-center transition-all mb-8 z-10"
+            >
+              Download Free
+            </a>
+
+            <ul class="space-y-4 text-sm text-slate-600 z-10 w-full">
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-check text-slate-400"></i>
+                <span>Basic Dictation</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-check text-slate-400"></i>
+                <span>Local Processing</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-check text-slate-400"></i>
+                <span>50 requests / day</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Pro Yearly (Best Value) -->
+          <div
+            class="glass-card rounded-3xl p-8 flex flex-col items-start relative overflow-hidden border-indigo-200 shadow-xl scale-105 z-20"
+          >
+            <div
+              class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500"
+            ></div>
+            <div
+              class="absolute top-0 right-0 w-40 h-40 bg-indigo-100 rounded-full blur-3xl -mr-10 -mt-10 opacity-60"
+            ></div>
+
+            <div class="flex justify-between w-full items-center mb-2 z-10">
+              <h3 class="text-xl font-bold text-indigo-700">Pro Yearly</h3>
+              <span
+                class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide"
+                >Save 30%</span
+              >
+            </div>
+            <p class="text-sm text-slate-500 mb-6 z-10 h-10">
+              Best value for power users. Billed annually.
+            </p>
+
+            <div class="flex items-baseline gap-1 mb-8 z-10">
+              <span
+                class="text-5xl font-extrabold text-slate-900 tracking-tight"
+                >$7</span
+              >
+              <span class="text-slate-500 font-medium">/mo</span>
+            </div>
+
+            <a
+              href="#"
+              class="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-2xl text-center transition-all shadow-lg shadow-indigo-500/30 mb-8 z-10 hover:shadow-indigo-500/40 hover:-translate-y-0.5"
+            >
+              Get Yearly
+            </a>
+
+            <ul
+              class="space-y-4 text-sm text-slate-700 font-medium z-10 w-full"
+            >
+              <li class="flex items-center gap-3">
+                <div class="bg-indigo-100 p-1 rounded-full">
+                  <i class="fa-solid fa-check text-indigo-600 text-xs"></i>
+                </div>
+                <span>Everything in Pro</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <div class="bg-indigo-100 p-1 rounded-full">
+                  <i class="fa-solid fa-check text-indigo-600 text-xs"></i>
+                </div>
+                <span>2 Months Free</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <div class="bg-indigo-100 p-1 rounded-full">
+                  <i class="fa-solid fa-check text-indigo-600 text-xs"></i>
+                </div>
+                <span>Priority Support</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Pro Monthly (Standard) -->
+          <div
+            class="glass-card rounded-3xl p-8 flex flex-col items-start relative overflow-hidden"
+          >
+            <div class="flex justify-between w-full items-center mb-2">
+              <h3 class="text-xl font-bold text-slate-900">Pro Monthly</h3>
+            </div>
+
+            <p class="text-sm text-slate-500 mb-6 h-10">
+              Flexible monthly voice dictation power.
+            </p>
+
+            <div class="flex items-baseline gap-1 mb-8">
+              <span
+                class="text-5xl font-extrabold text-slate-900 tracking-tight"
+                >$10</span
+              >
+              <span class="text-slate-500 font-medium">/mo</span>
+            </div>
+
+            <a
+              href="#"
+              class="w-full py-4 px-6 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-center transition-all mb-8 shadow-lg shadow-slate-900/10"
+            >
+              Get Started
+            </a>
+
+            <ul class="space-y-4 text-sm text-slate-600 font-medium w-full">
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-check text-slate-400"></i>
+                <span>Unlimited Dictation</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-check text-slate-400"></i>
+                <span>Advanced Punctuation</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-check text-slate-400"></i>
+                <span>Custom Vocabulary</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="mt-32 max-w-3xl mx-auto pb-20">
+          <h2
+            class="text-3xl font-bold text-slate-900 mb-12 text-center tracking-tight"
+          >
+            Frequently Asked Questions
+          </h2>
+          <div class="space-y-4">
+            <div
+              class="glass-card rounded-2xl p-6 cursor-pointer hover:bg-white/80 transition-colors"
+            >
+              <h4 class="font-bold text-slate-900 mb-2 text-lg">
+                Do I need a credit card for the free plan?
+              </h4>
+              <p class="text-slate-500 leading-relaxed">
+                No, the Starter plan is completely free and doesn't require any
+                payment information. You can use it as long as you like.
+              </p>
+            </div>
+            <div
+              class="glass-card rounded-2xl p-6 cursor-pointer hover:bg-white/80 transition-colors"
+            >
+              <h4 class="font-bold text-slate-900 mb-2 text-lg">
+                Can I switch plans later?
+              </h4>
+              <p class="text-slate-500 leading-relaxed">
+                Yes, you can upgrade, downgrade, or cancel your subscription at
+                any time from your account settings. Prorated refunds are
+                applied automatically.
+              </p>
+            </div>
+            <div
+              class="glass-card rounded-2xl p-6 cursor-pointer hover:bg-white/80 transition-colors"
+            >
+              <h4 class="font-bold text-slate-900 mb-2 text-lg">
+                Does it work on Mac?
+              </h4>
+              <p class="text-slate-500 leading-relaxed">
+                Currently Woodls is available for Windows 10 and 11. A Mac
+                version is in development and will be released later this year.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white/80 backdrop-blur-md border-t border-slate-200 pt-20 pb-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-                <div class="col-span-1 md:col-span-1">
-                    <div class="flex items-center gap-3 mb-6">
-                        <img src="assets/woodls.png" alt="Woodls" class="h-8 w-8 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all">
-                        <span class="font-bold text-xl text-slate-900">Woodls</span>
-                    </div>
-                    <p class="text-sm text-slate-500 mb-6 leading-relaxed">
-                        The intelligent voice assistant for modern productivity. Replacing keyboards one voice command at a time.
-                    </p>
-                    <div class="flex gap-5 text-slate-400">
-                        <a href="https://x.com/Satyam_yadav_04" class="hover:text-indigo-600 transition-colors"><i class="fa-brands fa-twitter text-xl"></i></a>
-                        <a href="https://github.com/SimpleCyber" class="hover:text-indigo-600 transition-colors"><i class="fa-brands fa-github text-xl"></i></a>
-                        <a href="https://www.linkedin.com/in/yadav-satyam04/" class="hover:text-indigo-600 transition-colors"><i class="fa-brands fa-linkedin text-xl"></i></a>
-                    </div>
-                </div>
-                
-                <div>
-                    <h4 class="font-bold text-slate-900 mb-6">Product</h4>
-                    <ul class="space-y-4 text-sm text-slate-500 font-medium">
-                        <li><a href="#" class="hover:text-indigo-600 transition-colors">Download</a></li>
-                        <li><a href="#pricing" class="hover:text-indigo-600 transition-colors">Pricing</a></li>
-                        <li><a href="#" class="hover:text-indigo-600 transition-colors">Changelog</a></li>
-                        <li><a href="#" class="hover:text-indigo-600 transition-colors">Roadmap</a></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h4 class="font-bold text-slate-900 mb-6">Resources</h4>
-                    <ul class="space-y-4 text-sm text-slate-500 font-medium">
-                        <li><a href="#" class="hover:text-indigo-600 transition-colors">Documentation</a></li>
-                        <li><a href="#" class="hover:text-indigo-600 transition-colors">API Reference</a></li>
-                        <li><a href="#" class="hover:text-indigo-600 transition-colors">Community</a></li>
-                        <li><a href="#" class="hover:text-indigo-600 transition-colors">Help Center</a></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h4 class="font-bold text-slate-900 mb-6">Company</h4>
-                    <ul class="space-y-4 text-sm text-slate-500 font-medium">
-                        <li><a href="#" class="hover:text-indigo-600 transition-colors">About</a></li>
-                        <li><a href="#" class="hover:text-indigo-600 transition-colors">Blog</a></li>
-                        <li><a href="#" class="hover:text-indigo-600 transition-colors">Careers</a></li>
-                        <li><a href="#" class="hover:text-indigo-600 transition-colors">Contact</a></li>
-                    </ul>
-                </div>
+    <footer
+      class="bg-white/80 backdrop-blur-md border-t border-slate-200 pt-20 pb-10"
+    >
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+          <div class="col-span-1 md:col-span-1">
+            <div class="flex items-center gap-3 mb-6">
+              <img
+                src="assets/woodls.png"
+                alt="Woodls"
+                class="h-8 w-8 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all"
+              />
+              <span class="font-bold text-xl text-slate-900">Woodls</span>
             </div>
-            
-            <div class="border-t border-slate-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                <p class="text-xs text-slate-400 font-medium">© 2025 Woodls Inc. All rights reserved.</p>
-                <div class="flex gap-8 text-xs text-slate-400 font-medium">
-                    <a href="#" class="hover:text-slate-600 transition-colors">Privacy Policy</a>
-                    <a href="#" class="hover:text-slate-600 transition-colors">Terms of Service</a>
-                    <a href="#" class="hover:text-slate-600 transition-colors">Cookies</a>
-                </div>
+            <p class="text-sm text-slate-500 mb-6 leading-relaxed">
+              The intelligent voice assistant for modern productivity. Replacing
+              keyboards one voice command at a time.
+            </p>
+            <div class="flex gap-5 text-slate-400">
+              <a
+                href="https://x.com/Satyam_yadav_04"
+                class="hover:text-indigo-600 transition-colors"
+                ><i class="fa-brands fa-twitter text-xl"></i
+              ></a>
+              <a
+                href="https://github.com/SimpleCyber"
+                class="hover:text-indigo-600 transition-colors"
+                ><i class="fa-brands fa-github text-xl"></i
+              ></a>
+              <a
+                href="https://www.linkedin.com/in/yadav-satyam04/"
+                class="hover:text-indigo-600 transition-colors"
+                ><i class="fa-brands fa-linkedin text-xl"></i
+              ></a>
             </div>
+          </div>
+
+          <div>
+            <h4 class="font-bold text-slate-900 mb-6">Product</h4>
+            <ul class="space-y-4 text-sm text-slate-500 font-medium">
+              <li>
+                <a href="#" class="hover:text-indigo-600 transition-colors"
+                  >Download</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#pricing"
+                  class="hover:text-indigo-600 transition-colors"
+                  >Pricing</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-indigo-600 transition-colors"
+                  >Changelog</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-indigo-600 transition-colors"
+                  >Roadmap</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="font-bold text-slate-900 mb-6">Resources</h4>
+            <ul class="space-y-4 text-sm text-slate-500 font-medium">
+              <li>
+                <a href="#" class="hover:text-indigo-600 transition-colors"
+                  >Documentation</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-indigo-600 transition-colors"
+                  >API Reference</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-indigo-600 transition-colors"
+                  >Community</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-indigo-600 transition-colors"
+                  >Help Center</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="font-bold text-slate-900 mb-6">Company</h4>
+            <ul class="space-y-4 text-sm text-slate-500 font-medium">
+              <li>
+                <a href="#" class="hover:text-indigo-600 transition-colors"
+                  >About</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-indigo-600 transition-colors"
+                  >Blog</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-indigo-600 transition-colors"
+                  >Careers</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-indigo-600 transition-colors"
+                  >Contact</a
+                >
+              </li>
+            </ul>
+          </div>
         </div>
+
+        <div
+          class="border-t border-slate-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4"
+        >
+          <p class="text-xs text-slate-400 font-medium">
+            © 2025 Woodls Inc. All rights reserved.
+          </p>
+          <div class="flex gap-8 text-xs text-slate-400 font-medium">
+            <a href="#" class="hover:text-slate-600 transition-colors"
+              >Privacy Policy</a
+            >
+            <a href="#" class="hover:text-slate-600 transition-colors"
+              >Terms of Service</a
+            >
+            <a href="#" class="hover:text-slate-600 transition-colors"
+              >Cookies</a
+            >
+          </div>
+        </div>
+      </div>
     </footer>
-
-
-</body>
+  </body>
 </html>

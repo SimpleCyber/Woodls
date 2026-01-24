@@ -173,6 +173,28 @@ export function initApp() {
         }, 3000);
       };
     }
+
+    // Dev Log Display (only shows for developer account)
+    const devLogContainer = document.createElement("div");
+    devLogContainer.id = "dev-log-container";
+    devLogContainer.className =
+      "hidden mt-4 p-3 bg-slate-900 rounded-lg max-h-48 overflow-y-auto";
+    devLogContainer.innerHTML =
+      '<div class="text-[10px] text-slate-400 font-mono" id="dev-log-content"></div>';
+    updateStats?.parentNode?.appendChild(devLogContainer);
+
+    window.api.onDevLog((msg) => {
+      const container = document.getElementById("dev-log-container");
+      const content = document.getElementById("dev-log-content");
+      if (container && content) {
+        container.classList.remove("hidden");
+        const line = document.createElement("div");
+        line.className = "text-[10px] text-green-400 font-mono py-0.5";
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        content.appendChild(line);
+        container.scrollTop = container.scrollHeight;
+      }
+    });
   }
 
   // Tab Switching

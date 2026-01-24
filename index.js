@@ -1167,6 +1167,14 @@ ipcMain.handle("check-for-updates", async () => {
   }
 });
 
+// Developer email for debug logs
+const DEV_EMAIL = "satyamyadav9uv@gmail.com";
+
+// Helper to check if current user is developer
+function isDevUser() {
+  return currentUser && currentUser.email === DEV_EMAIL;
+}
+
 // Helper to send update status to all windows
 function sendUpdateStatus(status, details = null) {
   if (win && !win.isDestroyed()) {
@@ -1174,9 +1182,18 @@ function sendUpdateStatus(status, details = null) {
   }
 }
 
+// Helper to send debug logs only to developer
+function sendDevLog(message) {
+  console.log(`[DEV] ${message}`);
+  if (isDevUser() && win && !win.isDestroyed()) {
+    win.webContents.send("dev-log", message);
+  }
+}
+
 // Auto-Update Events and Configuration
 autoUpdater.autoDownload = true;
 autoUpdater.allowPrerelease = false;
+autoUpdater.requestHeaders = { "Cache-Control": "no-cache" };
 
 // Set up logger
 autoUpdater.logger = {
@@ -1187,11 +1204,20 @@ autoUpdater.logger = {
 
 autoUpdater.on("checking-for-update", () => {
   console.log("[Updater] Checking for update...");
+  sendDevLog(
+    `[Updater] Checking for update... Current version: ${app.getVersion()}`,
+  );
+  sendDevLog(
+    `[Updater] Update URL: https://github.com/SimpleCyber/Woodls/releases/latest/download/latest.yml`,
+  );
   sendUpdateStatus("checking");
 });
 
 autoUpdater.on("update-available", (info) => {
   console.log("[Updater] Update available:", info.version);
+  sendDevLog(`[Updater] ✅ Update FOUND! New version: ${info.version}`);
+  sendDevLog(`[Updater] Release date: ${info.releaseDate}`);
+  sendDevLog(`[Updater] Files: ${JSON.stringify(info.files)}`);
   sendUpdateStatus("available", info.version);
 });
 
@@ -1201,6 +1227,11 @@ autoUpdater.on("update-not-available", (info) => {
     app.getVersion(),
     ")",
   );
+  sendDevLog(`[Updater] ❌ No update available`);
+  sendDevLog(
+    `[Updater] Current: ${app.getVersion()} | Latest: ${info.version}`,
+  );
+  sendDevLog(`[Updater] Release date checked: ${info.releaseDate}`);
   sendUpdateStatus("up-to-date", app.getVersion());
 });
 
@@ -1241,6 +1272,8 @@ autoUpdater.on("update-downloaded", (info) => {
 
 autoUpdater.on("error", (err) => {
   console.error("[Updater] Error in auto-updater: ", err);
+  sendDevLog(`[Updater] ⚠️ ERROR: ${err.message}`);
+  sendDevLog(`[Updater] Stack: ${err.stack}`);
   sendUpdateStatus("error", err.message || "Unknown error");
 });
 
