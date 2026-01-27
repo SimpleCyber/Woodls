@@ -1,4 +1,3 @@
-
 # <img src="webp/woodls.png" width="40" height="40" alt="Woodls Logo" style="vertical-align: middle;"> Woodls
 
 **Woodls** is an intelligent AI-powered voice typing assistant designed to streamline your workflow. By combining global hotkeys with Google's advanced Gemini AI, Woodls captures your speech, refines it for perfect grammar and punctuation, and types it directly into any active application.
@@ -18,27 +17,32 @@
 ## 🛠️ Installation
 
 > [!IMPORTANT]
-> **Windows SmartScreen Notice**: Since Woodls is currently an unsigned application, Windows may show a "Windows protected your PC" warning during installation. 
+> **Windows SmartScreen Notice**: Since Woodls is currently an unsigned application, Windows may show a "Windows protected your PC" warning during installation.
 > To proceed: Click **"More info"** and then select **"Run anyway"**.
 
 ### Prerequisites
+
 - [Node.js](https://nodejs.org/) (v16 or higher)
 - A Google Gemini API Key (Get one from [Google AI Studio](https://aistudio.google.com/))
 
 ### Steps
+
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/SimpleCyber/Woodls.git
    cd woodls
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Configure Environment**
    Create a `.env` file in the root directory:
+
    ```env
    GEN_AI_API_KEY=your_gemini_api_key_here
    GEN_AI_MODEL=gemini-2.5-flash-lite
@@ -76,26 +80,23 @@
 
 This project is licensed under the ISC License.
 
-
-
-
 <!-- Build releases command -->
+
 git tag -d v1.0.9
 git tag v1.0.9
 git push origin v1.0.9 --force
 
+---
 
-
-
------
-steps to follow for the new releases 
+steps to follow for the new releases
 
 1. update the version in package.json
-2. commit the changes 
+2. commit the changes
 3. <!-- Build releases command -->
-git tag -d v1.5.0
-git tag v1.5.0
-git push origin v1.5.0 --force
 
-4. now update the relsease -> draft to publish changes 
+   git tag -d v1.6.0
+   git tag v1.6.0
+   git push origin v1.6.0 --force
+
+4. now update the relsease -> draft to publish changes
 5. Great Good to go now users will see the update info
