@@ -737,21 +737,53 @@ function createOverlayWindow() {
 }
 
 function createUpdatePromptWindow() {
+  const { screen } = require("electron");
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
+  const { x, y } = primaryDisplay.workArea;
+
+  const winW = 380;
+  const winH = 90;
+  const margin = 16; // 1rem
+
   const updatePromptWin = new BrowserWindow({
-    width: 450,
-    height: 350,
+    width: winW,
+    height: winH,
+    x: Math.round(x + width - winW - margin),
+    y: Math.round(y + height - winH - margin),
     frame: false,
     transparent: true,
     alwaysOnTop: true,
     resizable: false,
+    skipTaskbar: true,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    hasShadow: false,
+    show: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      devTools: false,
     },
   });
 
   updatePromptWin.loadFile("update_prompt.html");
-  updatePromptWin.center();
+
+  updatePromptWin.once("ready-to-show", () => {
+    // Small timeout to ensure Windows applies transparency and position properly
+    setTimeout(() => {
+      // Re-apply bounds to ensure it sticks
+      updatePromptWin.setBounds({
+        width: winW,
+        height: winH,
+        x: Math.round(x + width - winW - margin),
+        y: Math.round(y + height - winH - margin),
+      });
+      updatePromptWin.show();
+    }, 150);
+  });
 }
 
 // ----------------- Active Window Monitor -----------------

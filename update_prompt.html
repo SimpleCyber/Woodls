@@ -5,12 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Update Woodls</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "media",
+      };
+    </script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -21,63 +26,100 @@
         padding: 0;
         overflow: hidden;
         -webkit-app-region: drag;
+        user-select: none;
       }
-      .container {
-        -webkit-app-region: no-drag;
-      }
+
+      /* Premium Glassmorphism Effect */
       .premium-bg {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.5);
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow:
+          0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05),
+          0 20px 25px -5px rgba(0, 0, 0, 0.1);
       }
+
       @media (prefers-color-scheme: dark) {
         .premium-bg {
-          background: rgba(30, 41, 59, 0.9);
-          border: 1px solid rgba(51, 65, 85, 0.5);
-          color: #f1f5f9;
+          background: rgba(15, 23, 42, 0.95); /* Slate 900 */
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow:
+            0 10px 15px -3px rgba(0, 0, 0, 0.5),
+            0 4px 6px -2px rgba(0, 0, 0, 0.3);
         }
+      }
+
+      /* Animation */
+      @keyframes slideUp {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .animate-slide-up {
+        animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      .toast-container {
+        -webkit-app-region: no-drag;
+      }
+
+      /* Button Hover Effects */
+      .btn-hover-effect {
+        transition: all 0.2s ease;
+      }
+      .btn-hover-effect:active {
+        transform: scale(0.96);
       }
     </style>
   </head>
-  <body class="flex items-center justify-center h-screen">
+  <body class="bg-transparent h-screen flex">
+    <!-- Main Container -->
     <div
-      class="premium-bg w-[400px] rounded-3xl shadow-2xl overflow-hidden p-8 animate-in zoom-in-95 duration-300"
+      class="premium-bg w-[380px] h-[90px] rounded-2xl flex items-center px-4 py-3 gap-3 overflow-hidden toast-container animate-slide-up fixed bottom-4 right-4"
     >
-      <div class="flex flex-col items-center text-center">
-        <div
-          class="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6"
-        >
-          <i
-            class="fa-solid fa-cloud-arrow-down text-3xl text-blue-500 animate-bounce"
-          ></i>
-        </div>
+      <!-- Icon -->
+      <div
+        class="flex-shrink-0 w-10 h-10 bg-blue-500/10 dark:bg-blue-500/20 rounded-xl flex items-center justify-center"
+      >
+        <i
+          class="fa-solid fa-cloud-arrow-down text-lg text-blue-600 dark:text-blue-400"
+        ></i>
+      </div>
 
-        <h1 class="text-2xl font-bold mb-2">Update Ready</h1>
-        <p
-          class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8"
+      <!-- Text Content -->
+      <div class="flex-grow min-w-0 flex flex-col justify-center">
+        <h2
+          class="text-[14px] font-semibold leading-tight text-slate-900 dark:text-white mb-0.5"
         >
-          A new version of
-          <span class="font-semibold text-slate-800 dark:text-slate-100"
-            >Woodls</span
-          >
-          is ready to install. Restart now to get the latest features and
-          improvements.
+          New version ready
+        </h2>
+        <p class="text-[12px] text-slate-500 dark:text-slate-400 truncate">
+          Reset now to update Woodls
         </p>
+      </div>
 
-        <div class="flex flex-col w-full gap-3">
-          <button
-            id="restart-btn"
-            class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-2xl shadow-lg shadow-blue-500/30 transition-all active:scale-95"
-          >
-            Restart and Install
-          </button>
-          <button
-            id="later-btn"
-            class="w-full py-3 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-sm font-medium transition-colors"
-          >
-            Later
-          </button>
-        </div>
+      <!-- Buttons -->
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <button
+          id="later-btn"
+          class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors btn-hover-effect"
+        >
+          Later
+        </button>
+        <button
+          id="restart-btn"
+          class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-md shadow-blue-500/20 transition-all btn-hover-effect"
+        >
+          Reset Now
+        </button>
       </div>
     </div>
 
@@ -89,6 +131,10 @@
       });
 
       document.getElementById("later-btn").addEventListener("click", () => {
+        // Just checking how to close - ipcRenderer.send('close-update-prompt') or window.close()
+        // In the original file it was window.close().
+        // However, usually it's cleaner to send an event, but window.close() works for a frameless window if scriptable.
+        // Let's stick to the original behavior unless I see a reason not to.
         window.close();
       });
     </script>
