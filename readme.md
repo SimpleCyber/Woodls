@@ -93,9 +93,9 @@ steps to follow for the new releases
 1. update the version in package.json
 2. commit the changes 
 3. <!-- Build releases command -->
-git tag -d v1.1.0
-git tag v1.1.0
-git push origin v1.1.0 --force
+git tag -d v1.2.0
+git tag v1.2.0
+git push origin v1.2.0 --force
 
 4. now update the relsease -> draft to publish changes 
 5. Great Good to go now users will see the update info
