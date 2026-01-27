@@ -459,6 +459,15 @@ function createWindow() {
   });
   ipcMain.on("window-close", () => win.close());
 
+  ipcMain.on("restart-app", () => {
+    isQuitting = true;
+    autoUpdater.quitAndInstall();
+  });
+
+  ipcMain.on("test-update-ui", () => {
+    createUpdatePromptWindow();
+  });
+
   // Auth IPC
   ipcMain.handle("auth-login", async (_, { email, password }) => {
     try {
@@ -723,6 +732,24 @@ function createOverlayWindow() {
   overlayWin.setIgnoreMouseEvents(true);
   overlayWin.loadFile("overlay.html");
   overlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+}
+
+function createUpdatePromptWindow() {
+  const updatePromptWin = new BrowserWindow({
+    width: 450,
+    height: 350,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+  });
+
+  updatePromptWin.loadFile("update_prompt.html");
+  updatePromptWin.center();
 }
 
 // ----------------- Active Window Monitor -----------------
@@ -1253,21 +1280,8 @@ autoUpdater.on("update-downloaded", (info) => {
   console.log("[Updater] Update downloaded:", info.version);
   sendUpdateStatus("downloaded", info.version);
 
-  // Also show a dialog as backup
-  dialog
-    .showMessageBox({
-      type: "info",
-      title: "Update Ready",
-      message: `Version ${info.version} of Woodls is ready. Restart the app to apply the updates?`,
-      buttons: ["Restart Now", "Later"],
-      defaultId: 0,
-      cancelId: 1,
-    })
-    .then((result) => {
-      if (result.response === 0) {
-        autoUpdater.quitAndInstall();
-      }
-    });
+  // Show custom update prompt
+  createUpdatePromptWindow();
 });
 
 autoUpdater.on("error", (err) => {

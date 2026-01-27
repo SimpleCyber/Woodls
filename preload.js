@@ -83,5 +83,6 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.on("update-status", (event, ...args) => cb(...args)),
   onDevLog: (cb) => ipcRenderer.on("dev-log", (event, msg) => cb(msg)),
   checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
-  quitAndInstall: () => ipcRenderer.send("window-close"), // We'll handle this differently if needed, but for now we'll use the main process dialog
+  quitAndInstall: () => ipcRenderer.send("restart-app"),
+  testUpdateUI: () => ipcRenderer.send("test-update-ui"),
 });

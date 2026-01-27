@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Update Woodls</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background: transparent;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        -webkit-app-region: drag;
+      }
+      .container {
+        -webkit-app-region: no-drag;
+      }
+      .premium-bg {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+      }
+      @media (prefers-color-scheme: dark) {
+        .premium-bg {
+          background: rgba(30, 41, 59, 0.9);
+          border: 1px solid rgba(51, 65, 85, 0.5);
+          color: #f1f5f9;
+        }
+      }
+    </style>
+  </head>
+  <body class="flex items-center justify-center h-screen">
+    <div
+      class="premium-bg w-[400px] rounded-3xl shadow-2xl overflow-hidden p-8 animate-in zoom-in-95 duration-300"
+    >
+      <div class="flex flex-col items-center text-center">
+        <div
+          class="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6"
+        >
+          <i
+            class="fa-solid fa-cloud-arrow-down text-3xl text-blue-500 animate-bounce"
+          ></i>
+        </div>
+
+        <h1 class="text-2xl font-bold mb-2">Update Ready</h1>
+        <p
+          class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8"
+        >
+          A new version of
+          <span class="font-semibold text-slate-800 dark:text-slate-100"
+            >Woodls</span
+          >
+          is ready to install. Restart now to get the latest features and
+          improvements.
+        </p>
+
+        <div class="flex flex-col w-full gap-3">
+          <button
+            id="restart-btn"
+            class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-2xl shadow-lg shadow-blue-500/30 transition-all active:scale-95"
+          >
+            Restart and Install
+          </button>
+          <button
+            id="later-btn"
+            class="w-full py-3 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-sm font-medium transition-colors"
+          >
+            Later
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { ipcRenderer } = require("electron");
+
+      document.getElementById("restart-btn").addEventListener("click", () => {
+        ipcRenderer.send("restart-app");
+      });
+
+      document.getElementById("later-btn").addEventListener("click", () => {
+        window.close();
+      });
+    </script>
+  </body>
+</html>
