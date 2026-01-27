@@ -466,10 +466,6 @@ function createWindow() {
     autoUpdater.quitAndInstall();
   });
 
-  ipcMain.on("test-update-ui", () => {
-    createUpdatePromptWindow();
-  });
-
   // Auth IPC
   ipcMain.handle("auth-login", async (_, { email, password }) => {
     try {
@@ -734,56 +730,6 @@ function createOverlayWindow() {
   overlayWin.setIgnoreMouseEvents(true);
   overlayWin.loadFile("overlay.html");
   overlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-}
-
-function createUpdatePromptWindow() {
-  const { screen } = require("electron");
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const { width, height } = primaryDisplay.workAreaSize;
-  const { x, y } = primaryDisplay.workArea;
-
-  const winW = 380;
-  const winH = 90;
-  const margin = 16; // 1rem
-
-  const updatePromptWin = new BrowserWindow({
-    width: winW,
-    height: winH,
-    x: Math.round(x + width - winW - margin),
-    y: Math.round(y + height - winH - margin),
-    frame: false,
-    transparent: true,
-    alwaysOnTop: true,
-    resizable: false,
-    skipTaskbar: true,
-    movable: false,
-    minimizable: false,
-    maximizable: false,
-    fullscreenable: false,
-    hasShadow: false,
-    show: false,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      devTools: false,
-    },
-  });
-
-  updatePromptWin.loadFile("update_prompt.html");
-
-  updatePromptWin.once("ready-to-show", () => {
-    // Small timeout to ensure Windows applies transparency and position properly
-    setTimeout(() => {
-      // Re-apply bounds to ensure it sticks
-      updatePromptWin.setBounds({
-        width: winW,
-        height: winH,
-        x: Math.round(x + width - winW - margin),
-        y: Math.round(y + height - winH - margin),
-      });
-      updatePromptWin.show();
-    }, 150);
-  });
 }
 
 // ----------------- Active Window Monitor -----------------
@@ -1406,9 +1352,6 @@ autoUpdater.on("download-progress", (progressObj) => {
 autoUpdater.on("update-downloaded", (info) => {
   console.log("[Updater] Update downloaded:", info.version);
   sendUpdateStatus("downloaded", info.version);
-
-  // Show custom update prompt
-  createUpdatePromptWindow();
 });
 
 autoUpdater.on("error", (err) => {
