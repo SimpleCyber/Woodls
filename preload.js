@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("api", {
   // History
   getHistory: () => ipcRenderer.invoke("get-history"),
+  getStats: () => ipcRenderer.invoke("get-stats"),
   deleteHistoryItem: (id) => ipcRenderer.invoke("delete-history-item", id),
   updateHistoryItem: (data) => ipcRenderer.invoke("update-history-item", data),
   readAudioFile: (path) => ipcRenderer.invoke("read-audio-file", path),
@@ -51,6 +52,7 @@ contextBridge.exposeInMainWorld("api", {
 
   // Speech to text
   transcribeAudio: (buffer) => ipcRenderer.invoke("transcribe-audio", buffer),
+  retranscribeAudio: (id) => ipcRenderer.invoke("retranscribe-audio", id),
 
   // Auto type
 

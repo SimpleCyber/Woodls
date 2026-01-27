@@ -376,6 +376,8 @@ function normalizeKeyName(raw) {
 
 let overlayWin;
 
+let lastDuration = 0;
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1200,
@@ -814,6 +816,7 @@ function setupGlobalKeyboard() {
       running = false;
       const releaseTime = Date.now();
       const duration = releaseTime - (pressStart || releaseTime);
+      lastDuration = duration;
       pressStart = null;
       win.webContents.send("record-stop");
       win.webContents.send("hotkey-released", {
@@ -986,6 +989,40 @@ ipcMain.handle("read-audio-file", (_, p) => {
   return null;
 });
 
+ipcMain.handle("get-stats", () => {
+  const history = readHistory();
+  let totalWords = 0;
+  let totalDurationMs = 0;
+
+  history.forEach((item) => {
+    // Word count
+    if (item.text) {
+      const words = item.text.trim().split(/\s+/).length;
+      totalWords += words;
+
+      // Duration
+      if (item.duration) {
+        totalDurationMs += item.duration;
+      } else {
+        // Estimate for legacy items: 150 WPM = 2.5 words per second
+        totalDurationMs += (words / 2.5) * 1000;
+      }
+    }
+  });
+
+  const totalMinutes = totalDurationMs / 60000;
+  // Time saved: Assuming typing is 40 WPM
+  const timeSavedMinutes = Math.max(0, totalWords / 40 - totalMinutes);
+  const averageWPM = totalMinutes > 0 ? totalWords / totalMinutes : 0;
+
+  return {
+    totalWords,
+    totalDurationMs,
+    timeSavedMinutes,
+    averageWPM,
+  };
+});
+
 // ----------------- IPC: Notes -----------------
 ipcMain.handle("get-notes", () => {
   return readNotes().reverse();
@@ -1071,7 +1108,11 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
         timestamp: Date.now(),
         text: text, // Raw transcript
         audioPath: savePath,
+        duration: lastDuration,
       };
+
+      // Reset lastDuration to avoid reuse
+      lastDuration = 0;
 
       const history = readHistory();
       history.push(historyItem);
@@ -1102,6 +1143,60 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
         continue;
       }
 
+      return "Error: " + err.message;
+    }
+  }
+});
+
+ipcMain.handle("retranscribe-audio", async (_, id) => {
+  const history = readHistory();
+  const item = history.find((i) => i.id === id);
+  if (!item || !item.audioPath || !fs.existsSync(item.audioPath)) {
+    return "Error: File not found";
+  }
+
+  const maxRetries = 3;
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      if (!genAI) throw new Error("AI not initialized.");
+      const fileManager = new GoogleAIFileManager(currentApiKey);
+      const upload = await fileManager.uploadFile(item.audioPath, {
+        mimeType: "audio/webm",
+        displayName: "retranscription",
+      });
+
+      const model = genAI.getGenerativeModel({ model: currentModelName });
+      const result = await model.generateContent([
+        "Transcribe this audio to plain text only: ",
+        {
+          fileData: {
+            mimeType: upload.file.mimeType,
+            fileUri: upload.file.uri,
+          },
+        },
+      ]);
+
+      const text = result.response.text();
+      updateAIUsage(currentKeyIndex, currentModelName);
+
+      // Update history item
+      const historyUpdate = readHistory();
+      const idx = historyUpdate.findIndex((i) => i.id === id);
+      if (idx >= 0) {
+        historyUpdate[idx].text = text;
+        saveHistory(historyUpdate);
+      }
+
+      return text;
+    } catch (err) {
+      console.error(`Retranscription error:`, err);
+      if (attempt < maxRetries - 1) {
+        initGenAI();
+        attempt++;
+        continue;
+      }
       return "Error: " + err.message;
     }
   }

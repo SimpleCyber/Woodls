@@ -490,9 +490,136 @@
               <h2 class="text-3xl font-semibold text-slate-900 mb-2">
                 Welcome to Woodls
               </h2>
-              <p class="text-slate-500">
+              <p class="text-slate-400">
                 Your intelligent voice assistant for every application.
               </p>
+            </div>
+
+            <!-- Stats Dashboard -->
+            <div class="grid grid-cols-4 gap-6 mb-12" id="stats-dashboard">
+              <!-- Total Dictation Time -->
+              <div
+                class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3 card-hover smooth-transition"
+              >
+                <span
+                  class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                  >Total dictation time</span
+                >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400"
+                  >
+                    <i class="fa-regular fa-clock text-lg"></i>
+                  </div>
+                  <div class="flex items-baseline gap-1">
+                    <span
+                      id="stat-hours"
+                      class="text-2xl font-bold text-slate-800"
+                      >0</span
+                    >
+                    <span class="text-[10px] font-bold text-slate-400 uppercase"
+                      >hr</span
+                    >
+                    <span
+                      id="stat-minutes"
+                      class="text-2xl font-bold text-slate-800"
+                      >0</span
+                    >
+                    <span class="text-[10px] font-bold text-slate-400 uppercase"
+                      >min</span
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <!-- Words Dictated -->
+              <div
+                class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3 card-hover smooth-transition"
+              >
+                <span
+                  class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                  >Words dictated</span
+                >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400"
+                  >
+                    <i class="fa-solid fa-microphone text-lg"></i>
+                  </div>
+                  <div class="flex items-baseline gap-1">
+                    <span
+                      id="stat-words"
+                      class="text-2xl font-bold text-slate-800"
+                      >0</span
+                    >
+                    <span class="text-[10px] font-bold text-slate-400 uppercase"
+                      >words</span
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <!-- Time Saved -->
+              <div
+                class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3 card-hover smooth-transition"
+              >
+                <span
+                  class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                  >Time saved</span
+                >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400"
+                  >
+                    <i class="fa-solid fa-hourglass-half text-lg"></i>
+                  </div>
+                  <div class="flex items-baseline gap-1">
+                    <span
+                      id="stat-saved-hours"
+                      class="text-2xl font-bold text-slate-800"
+                      >0</span
+                    >
+                    <span class="text-[10px] font-bold text-slate-400 uppercase"
+                      >hr</span
+                    >
+                    <span
+                      id="stat-saved-minutes"
+                      class="text-2xl font-bold text-slate-800"
+                      >0</span
+                    >
+                    <span class="text-[10px] font-bold text-slate-400 uppercase"
+                      >min</span
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <!-- Average Speed -->
+              <div
+                class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3 card-hover smooth-transition"
+              >
+                <span
+                  class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                  >Avg. dictation speed</span
+                >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400"
+                  >
+                    <i class="fa-solid fa-bolt text-lg"></i>
+                  </div>
+                  <div class="flex items-baseline gap-1">
+                    <span
+                      id="stat-wpm"
+                      class="text-2xl font-bold text-slate-800"
+                      >0</span
+                    >
+                    <span class="text-[10px] font-bold text-slate-400 uppercase"
+                      >WPM</span
+                    >
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Hotkey Hint with WebP icon maybe? Or just clean style -->

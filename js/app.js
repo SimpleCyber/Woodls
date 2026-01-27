@@ -74,6 +74,7 @@ export function initApp() {
   setupHistory();
   setupAccount();
   setupUpgradeModal();
+  setupDashboard();
 
   // Init other modules
   Notes.initNotes();
@@ -99,6 +100,10 @@ export function initApp() {
 
       updateProfileUI(user);
       syncHelpDeckUser(user);
+
+      // Re-trigger stats when app starts and user is authorized
+      loadStats();
+      renderStatsFromCache();
     } else {
       // Logged Out
       if (authPage) authPage.classList.remove("hidden");
@@ -685,6 +690,7 @@ function setupRecordingEvents() {
         }
 
         window.api.processingEnd();
+        loadStats(); // Update dashboard stats immediately after transcription
         setTimeout(() => window.api.hideOverlay(), 1000);
       };
 
@@ -745,6 +751,7 @@ function renderHistory(items) {
                     ${item.isAI ? '<span class="text-xs" title="Processed by AI Assistant">🤖</span>' : ""}
                 </div>
                 <div class="flex gap-2">
+                    <button class="retranscribe-btn text-slate-300 hover:text-primary-500 transition-colors" title="Retranscribe"><i class="fa-solid fa-arrows-rotate"></i></button>
                     <button class="play-btn text-slate-300 hover:text-slate-700 transition-colors" title="Play Recording"><i class="fa-solid fa-play"></i></button>
                     <button class="copy-btn text-slate-300 hover:text-slate-700 transition-colors" title="Copy Text"><i class="fa-solid fa-copy"></i></button>
                     <button class="del-btn text-slate-300 hover:text-slate-700 transition-colors" title="Delete"><i class="fa-solid fa-trash"></i></button>
@@ -757,6 +764,22 @@ function renderHistory(items) {
     const delBtn = div.querySelector(".del-btn");
     const playBtn = div.querySelector(".play-btn");
     const copyBtn = div.querySelector(".copy-btn");
+    const reBtn = div.querySelector(".retranscribe-btn");
+
+    if (reBtn) {
+      reBtn.onclick = async () => {
+        reBtn.classList.add("animate-spin", "text-primary-500");
+        const result = await window.api.retranscribeAudio(item.id);
+        reBtn.classList.remove("animate-spin", "text-primary-500");
+        if (result && typeof result === "string") {
+          addLog("Retranscription complete", "green");
+          loadHistory();
+          loadStats();
+        } else {
+          addLog("Retranscription failed", "red");
+        }
+      };
+    }
 
     if (delBtn) {
       delBtn.onclick = () => {
@@ -773,6 +796,7 @@ function renderHistory(items) {
         const handleConfirm = async () => {
           await window.api.deleteHistoryItem(item.id);
           loadHistory();
+          loadStats(); // Update dashboard stats after deletion
           if (modal) modal.classList.add("hidden");
           cleanup();
         };
@@ -1064,4 +1088,137 @@ function updateThemeButtons(theme) {
     activeBtn.classList.remove("border-slate-200");
     activeBtn.classList.add("border-primary-500", "bg-primary-50");
   }
+}
+
+function setupDashboard() {
+  const homeTabBtn = document.querySelector('[data-page="home"]');
+  if (homeTabBtn) {
+    homeTabBtn.addEventListener("click", () => {
+      loadStats();
+    });
+  }
+
+  // Load from cache first for immediate display
+  renderStatsFromCache();
+
+  // Initial fetch from backend
+  loadStats();
+}
+
+function renderStatsFromCache() {
+  const cached = localStorage.getItem("dashboard_stats");
+  if (cached) {
+    try {
+      const stats = JSON.parse(cached);
+      renderStatsUI(stats, true); // Always animate from 0 on initial load as requested
+    } catch (e) {
+      console.error("Failed to parse cached stats", e);
+    }
+  }
+}
+
+function renderStatsUI(stats, animate = true) {
+  if (!stats) return;
+
+  // Calculate hours/minutes
+  const hours = Math.floor(stats.totalDurationMs / 3600000);
+  const mins = Math.floor((stats.totalDurationMs % 3600000) / 60000);
+
+  // Calculate time saved hours/minutes
+  const savedHours = Math.floor(stats.timeSavedMinutes / 60);
+  const savedMins = Math.floor(stats.timeSavedMinutes % 60);
+
+  if (animate) {
+    // Animate from current values if they exist
+    const parseVal = (id) =>
+      parseInt(
+        document.getElementById(id)?.textContent?.replace(/,/g, "") || "0",
+      );
+
+    animateValue(
+      document.getElementById("stat-hours"),
+      parseVal("stat-hours"),
+      hours,
+      1000,
+    );
+    animateValue(
+      document.getElementById("stat-minutes"),
+      parseVal("stat-minutes"),
+      mins,
+      1000,
+    );
+    animateValue(
+      document.getElementById("stat-words"),
+      parseVal("stat-words"),
+      stats.totalWords,
+      1200,
+    );
+    animateValue(
+      document.getElementById("stat-saved-hours"),
+      parseVal("stat-saved-hours"),
+      savedHours,
+      1000,
+    );
+    animateValue(
+      document.getElementById("stat-saved-minutes"),
+      parseVal("stat-saved-minutes"),
+      savedMins,
+      1000,
+    );
+    animateValue(
+      document.getElementById("stat-wpm"),
+      parseVal("stat-wpm"),
+      Math.round(stats.averageWPM),
+      1500,
+    );
+  } else {
+    // Direct set for immediate display
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val.toLocaleString();
+    };
+
+    setVal("stat-hours", hours);
+    setVal("stat-minutes", mins);
+    setVal("stat-words", stats.totalWords);
+    setVal("stat-saved-hours", savedHours);
+    setVal("stat-saved-minutes", savedMins);
+    setVal("stat-wpm", Math.round(stats.averageWPM));
+  }
+}
+
+async function loadStats() {
+  try {
+    const stats = await window.api.getStats();
+    if (!stats) return;
+
+    // Save to cache
+    localStorage.setItem("dashboard_stats", JSON.stringify(stats));
+
+    // Render with animation
+    renderStatsUI(stats, true);
+  } catch (e) {
+    console.error("Failed to load stats:", e);
+  }
+}
+
+function animateValue(el, start, end, duration) {
+  if (!el) return;
+  let startTimestamp = null;
+  const step = (timestamp) => {
+    if (!startTimestamp) startTimestamp = timestamp;
+    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+    // Use easeOutQuad for smoother feel
+    const easeProgress = 1 - (1 - progress) * (1 - progress);
+
+    const current = Math.floor(easeProgress * (end - start) + start);
+
+    // Format large numbers with commas
+    el.textContent = current.toLocaleString();
+
+    if (progress < 1) {
+      window.requestAnimationFrame(step);
+    }
+  };
+  window.requestAnimationFrame(step);
 }
