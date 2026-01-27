@@ -552,27 +552,70 @@ function setupRecordingEvents() {
       mediaRecorder = new MediaRecorder(mediaStream);
       chunks = [];
 
-      // Audio Context for Visualizer
+      // Audio Context for Enhanced Voice Visualizer
       audioContext = new AudioContext();
       await audioContext.resume();
       audioSource = audioContext.createMediaStreamSource(mediaStream);
       audioAnalyser = audioContext.createAnalyser();
-      audioAnalyser.fftSize = 64;
+      // Higher fftSize for better frequency resolution (voice range 85Hz-255Hz)
+      audioAnalyser.fftSize = 256;
+      audioAnalyser.smoothingTimeConstant = 0.3; // Smooth transitions
       audioSource.connect(audioAnalyser);
 
       const dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
-      const updateVolume = () => {
-        if (!capturing && mediaRecorder.state === "inactive") return;
-        audioAnalyser.getByteFrequencyData(dataArray);
-        // Average volume
-        let values = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          values += dataArray[i];
-        }
-        const average = values / dataArray.length;
-        const vol = Math.min(average / 128, 1); // 0.0 to 1.0 (approx)
+      // Store previous values for smooth interpolation
+      let prevBarValues = [0.1, 0.15, 0.2, 0.15, 0.1];
+      const smoothingFactor = 0.35; // How much to blend with previous values
 
-        window.api.sendMicVolume(vol);
+      const updateVolume = () => {
+        if (!mediaRecorder || mediaRecorder.state === "inactive") return;
+        audioAnalyser.getByteFrequencyData(dataArray);
+
+        // Voice-optimized frequency bands (focus on 100Hz-3000Hz for speech)
+        // Sample rate is typically 48000Hz, so each bin ≈ 187.5Hz (48000/256)
+        // We'll target voice frequency ranges for more responsive motion
+        const binRanges = [
+          { start: 0, end: 2, weight: 0.8 }, // Low bass (0-375Hz)
+          { start: 2, end: 6, weight: 1.2 }, // Low-mid (375-1125Hz) - fundamental voice
+          { start: 6, end: 12, weight: 1.5 }, // Mid (1125-2250Hz) - primary voice range
+          { start: 12, end: 20, weight: 1.2 }, // High-mid (2250-3750Hz) - harmonics
+          { start: 20, end: 32, weight: 0.8 }, // High (3750Hz+) - sibilants
+        ];
+
+        const barValues = binRanges.map((range, barIndex) => {
+          let sum = 0;
+          let count = 0;
+          for (
+            let j = range.start;
+            j < Math.min(range.end, dataArray.length);
+            j++
+          ) {
+            sum += dataArray[j];
+            count++;
+          }
+          if (count === 0) return prevBarValues[barIndex];
+
+          // Apply weight and normalize
+          const average = (sum / count) * range.weight;
+          let normalizedValue = Math.min(average / 120, 1.0);
+
+          // Apply minimum threshold to avoid dead bars
+          normalizedValue = Math.max(normalizedValue, 0.05);
+
+          // Smooth blending with previous value for natural motion
+          const smoothed =
+            prevBarValues[barIndex] * smoothingFactor +
+            normalizedValue * (1 - smoothingFactor);
+
+          // Add slight random variation for organic feel
+          const jitter = (Math.random() - 0.5) * 0.08;
+          return Math.max(0.05, Math.min(1.0, smoothed + jitter));
+        });
+
+        // Update previous values for next frame
+        prevBarValues = [...barValues];
+
+        window.api.sendMicVolume(barValues);
         animationFrameId = requestAnimationFrame(updateVolume);
       };
       updateVolume();

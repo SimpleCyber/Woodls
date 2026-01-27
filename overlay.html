@@ -1,88 +1,240 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: transparent;
-      user-select: none;
-      -webkit-app-region: drag; /* draggable if needed, but usually static */
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-  </style>
-</head>
-<body>
-  <!-- Pill Container -->
-  <div class="bg-black rounded-full px-4 py-2 flex items-center justify-center gap-1 shadow-2xl transition-transform duration-100 h-full w-full" id="pill">
-     
-     <!-- Waveform Bars -->
-     <div id="waveform" class="flex items-center gap-1 h-full">
-        <div class="bar w-1 bg-white rounded-full h-2 transition-all duration-75"></div>
-        <div class="bar w-1 bg-white rounded-full h-3 transition-all duration-75"></div>
-        <div class="bar w-1 bg-white rounded-full h-5 transition-all duration-75"></div>
-        <div class="bar w-1 bg-white rounded-full h-3 transition-all duration-75"></div>
-        <div class="bar w-1 bg-white rounded-full h-2 transition-all duration-75"></div>
-     </div>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: transparent;
+        user-select: none;
+        -webkit-app-region: drag; /* draggable if needed, but usually static */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Pill Container -->
+    <div
+      class="bg-black rounded-full px-4 py-2 flex items-center justify-center gap-1 shadow-2xl transition-transform duration-100 h-full w-full"
+      id="pill"
+    >
+      <!-- Waveform Bars - Voice Responsive -->
+      <div id="waveform" class="flex items-center gap-[3px] h-full">
+        <div
+          class="bar w-[4px] rounded-full h-2"
+          style="
+            background: linear-gradient(
+              to top,
+              #fff 0%,
+              rgba(255, 255, 255, 0.8) 100%
+            );
+            transition:
+              height 50ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 50ms ease-out;
+          "
+        ></div>
+        <div
+          class="bar w-[4px] rounded-full h-3"
+          style="
+            background: linear-gradient(
+              to top,
+              #fff 0%,
+              rgba(255, 255, 255, 0.85) 100%
+            );
+            transition:
+              height 50ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 50ms ease-out;
+          "
+        ></div>
+        <div
+          class="bar w-[4px] rounded-full h-5"
+          style="
+            background: linear-gradient(
+              to top,
+              #fff 0%,
+              rgba(255, 255, 255, 0.9) 100%
+            );
+            transition:
+              height 50ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 50ms ease-out;
+          "
+        ></div>
+        <div
+          class="bar w-[4px] rounded-full h-3"
+          style="
+            background: linear-gradient(
+              to top,
+              #fff 0%,
+              rgba(255, 255, 255, 0.85) 100%
+            );
+            transition:
+              height 50ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 50ms ease-out;
+          "
+        ></div>
+        <div
+          class="bar w-[4px] rounded-full h-2"
+          style="
+            background: linear-gradient(
+              to top,
+              #fff 0%,
+              rgba(255, 255, 255, 0.8) 100%
+            );
+            transition:
+              height 50ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 50ms ease-out;
+          "
+        ></div>
+      </div>
 
-     <!-- Spinner (Hidden by default) -->
-     <div id="spinner" class="hidden">
-        <i class="fa-solid fa-circle-notch text-white/50 text-sm animate-spin"></i>
-     </div>
+      <!-- Spinner (Hidden by default) -->
+      <div id="spinner" class="hidden">
+        <i
+          class="fa-solid fa-circle-notch text-white/50 text-sm animate-spin"
+        ></i>
+      </div>
 
-     <!-- AI Status Icon (🤖) -->
-     <div id="ai-icon" class="hidden ml-1">
+      <!-- AI Status Icon (🤖) -->
+      <div id="ai-icon" class="hidden ml-1">
         <span class="text-xs">🤖</span>
-     </div>
+      </div>
+    </div>
 
-  </div>
+    <script>
+      const { ipcRenderer } = require("electron");
+      const bars = document.querySelectorAll(".bar");
+      const pill = document.getElementById("pill");
+      const waveform = document.getElementById("waveform");
+      const spinner = document.getElementById("spinner");
 
-  <script>
-    const { ipcRenderer } = require('electron');
-    const bars = document.querySelectorAll('.bar');
-    const pill = document.getElementById('pill');
-    const waveform = document.getElementById('waveform');
-    const spinner = document.getElementById('spinner');
+      // Track last update time for idle animation
+      let lastMicUpdate = 0;
+      let isRecording = false;
+      let animationFrame = null;
 
-    ipcRenderer.on('mic-volume', (event, volume) => {
-      // volume is 0.0 - 1.0
-      const v = Math.max(volume, 0.1); 
-      
-      bars.forEach((bar, i) => {
-          const centerFactor = 1 - Math.abs(i - 2) * 0.2; 
-          // Max height constrained by container h=40
-          const h = 6 + (v * 25 * centerFactor * (0.8 + Math.random() * 0.4));
-          bar.style.height = h + 'px';
-      });
-    });
+      // Wave-like center emphasis pattern
+      const centerWeight = [0.7, 0.9, 1.0, 0.9, 0.7];
 
-    // Processing states
-    ipcRenderer.on('processing-start', () => {
-        waveform.classList.add('hidden');
-        spinner.classList.remove('hidden');
-    });
+      // Update bars with given volume values
+      function updateBars(volumes) {
+        bars.forEach((bar, i) => {
+          const v = Math.max(volumes[i] || 0.08, 0.08);
+          const weighted = v * centerWeight[i];
+          // Height range: 4px (min) to 32px (max)
+          const h = 4 + weighted * 28;
+          bar.style.height = h + "px";
+          // Subtle scale for lively feel
+          const scale = 1 + weighted * 0.15;
+          bar.style.transform = `scaleY(${scale})`;
+        });
+      }
 
-    ipcRenderer.on('processing-end', () => {
-        spinner.classList.add('hidden');
-        waveform.classList.remove('hidden');
-    });
+      // Idle breathing animation when no mic data
+      function idleAnimation() {
+        if (!isRecording) return;
 
-    ipcRenderer.on('set-ai-status', (event, enabled) => {
-        const aiIcon = document.getElementById('ai-icon');
-        if (enabled) {
-            aiIcon.classList.remove('hidden');
-        } else {
-            aiIcon.classList.add('hidden');
+        const now = Date.now();
+        const timeSinceUpdate = now - lastMicUpdate;
+
+        // If no mic data for 100ms, show idle animation
+        if (timeSinceUpdate > 100) {
+          const t = now / 1000;
+          const idleVolumes =
+            bars.length === 5
+              ? [
+                  0.15 + 0.1 * Math.sin(t * 3 + 0),
+                  0.2 + 0.15 * Math.sin(t * 3.5 + 0.5),
+                  0.25 + 0.2 * Math.sin(t * 4 + 1),
+                  0.2 + 0.15 * Math.sin(t * 3.5 + 1.5),
+                  0.15 + 0.1 * Math.sin(t * 3 + 2),
+                ]
+              : [0.2, 0.25, 0.3, 0.25, 0.2];
+
+          updateBars(idleVolumes);
         }
-    });
-  </script>
-</body>
+
+        animationFrame = requestAnimationFrame(idleAnimation);
+      }
+
+      // Start idle animation when overlay shows
+      function startIdleAnimation() {
+        isRecording = true;
+        lastMicUpdate = 0;
+        if (!animationFrame) {
+          idleAnimation();
+        }
+      }
+
+      // Stop animation
+      function stopIdleAnimation() {
+        isRecording = false;
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame);
+          animationFrame = null;
+        }
+      }
+
+      // Listen for mic volume data
+      ipcRenderer.on("mic-volume", (event, volumes) => {
+        lastMicUpdate = Date.now();
+
+        if (Array.isArray(volumes)) {
+          updateBars(volumes);
+        } else {
+          // Single value fallback
+          const v = Math.max(volumes, 0.1);
+          const singleVolumes = centerWeight.map((w, i) => {
+            const jitter = 0.9 + Math.random() * 0.2;
+            return v * w * jitter;
+          });
+          updateBars(singleVolumes);
+        }
+      });
+
+      // Start animation when overlay becomes visible
+      // The overlay is shown via showInactive(), detect visibility
+      const observer = new MutationObserver(() => {
+        if (
+          document.visibilityState === "visible" ||
+          !waveform.classList.contains("hidden")
+        ) {
+          startIdleAnimation();
+        }
+      });
+
+      // Auto-start animation on load (overlay is shown when recording starts)
+      startIdleAnimation();
+
+      // Processing states
+      ipcRenderer.on("processing-start", () => {
+        waveform.classList.add("hidden");
+        spinner.classList.remove("hidden");
+      });
+
+      ipcRenderer.on("processing-end", () => {
+        spinner.classList.add("hidden");
+        waveform.classList.remove("hidden");
+      });
+
+      ipcRenderer.on("set-ai-status", (event, enabled) => {
+        const aiIcon = document.getElementById("ai-icon");
+        if (enabled) {
+          aiIcon.classList.remove("hidden");
+        } else {
+          aiIcon.classList.add("hidden");
+        }
+      });
+    </script>
+  </body>
 </html>
