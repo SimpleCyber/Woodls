@@ -428,9 +428,40 @@ function saveNotes(notes) {
 // Normalize key names to a stable canonical form.
 function normalizeKeyName(raw) {
   if (!raw) return "";
-  return String(raw)
+
+  // Remove all non-alphanumeric characters and convert to uppercase
+  let normalized = String(raw)
     .replace(/[^a-z0-9]/gi, "")
     .toUpperCase();
+
+  // Handle word order variations: "LEFT ALT" vs "ALT LEFT" -> both become "LEFTALT"
+  // Common patterns: LEFT/RIGHT + modifier (ALT, CTRL, SHIFT, META)
+  const modifiers = [
+    "ALT",
+    "CTRL",
+    "CONTROL",
+    "SHIFT",
+    "META",
+    "SUPER",
+    "WIN",
+    "WINDOWS",
+  ];
+  const positions = ["LEFT", "RIGHT"];
+
+  for (const pos of positions) {
+    for (const mod of modifiers) {
+      // Check both orders
+      const pattern1 = pos + mod; // e.g., LEFTALT
+      const pattern2 = mod + pos; // e.g., ALTLEFT
+
+      if (normalized === pattern1 || normalized === pattern2) {
+        // Standardize to LEFT/RIGHT + modifier format
+        return pos + (mod === "CONTROL" ? "CTRL" : mod);
+      }
+    }
+  }
+
+  return normalized;
 }
 
 let overlayWin;
