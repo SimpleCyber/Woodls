@@ -52,7 +52,8 @@ contextBridge.exposeInMainWorld("api", {
   onSaveComplete: (cb) => ipcRenderer.on("save-complete", cb),
 
   // Speech to text
-  transcribeAudio: (buffer) => ipcRenderer.invoke("transcribe-audio", buffer),
+  transcribeAudio: (buffer, context) =>
+    ipcRenderer.invoke("transcribe-audio", buffer, context),
   retranscribeAudio: (id) => ipcRenderer.invoke("retranscribe-audio", id),
 
   // Auto type

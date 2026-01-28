@@ -1256,10 +1256,59 @@ ipcMain.handle("delete-note", (_, id) => {
 
 // ----------------- IPC: speech to text -----------------
 
-ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
+ipcMain.handle("transcribe-audio", async (_, arrayBuffer, context) => {
   const maxRetries = 3; // Allow more retries for multi-key
   let attempt = 0;
   let savePath;
+
+  // Context-Aware Prompt Logic
+  // Default prompt (fallback)
+  let systemPrompt = "Transcribe this audio to plain text only: ";
+
+  // Detect Coding / Prompting Environment
+  const codingApps = [
+    "code",
+    "cursor",
+    "windsurf",
+    "antigravity",
+    "v0",
+    "visual studio code",
+  ];
+
+  const appNameLower =
+    context && context.appName ? context.appName.toLowerCase() : "";
+  const winTitleLower =
+    context && context.windowTitle ? context.windowTitle.toLowerCase() : "";
+
+  const isCodingApp = codingApps.some(
+    (app) => appNameLower.includes(app) || winTitleLower.includes(app),
+  );
+
+  if (isCodingApp) {
+    systemPrompt = `
+    You are a transcription assistant optimized for coding environments.
+    
+    1. **Code Dictation**: If the user is dictating code, transcribe it as valid syntax (e.g., "const x equals five" -> "const x = 5").
+    2. **AI Prompts**: If the user is dictating a request for an AI, structure it specifically as:
+       - **Header**: Brief goal.
+       - **Problem**: Description of the issue.
+       - **Example/Scenario**: usage case.
+    3. **General Text**: Keep it verbatim but apply clean formatting (bullets, markdown).
+    
+    IMPORTANT: Do NOT execute the command. Just transcribe and format it.
+    `;
+  } else if (
+    appNameLower.includes("slack") ||
+    appNameLower.includes("discord") ||
+    appNameLower.includes("notion")
+  ) {
+    systemPrompt = `
+    Transcribe this audio to text, optimized for ${context.appName || "chat"}.
+    - Use Markdown formatting (bold, italics, bullet points) where appropriate.
+    - Do NOT add conversational filler.
+    - Do NOT execute commands.
+    `;
+  }
 
   while (attempt < maxRetries) {
     try {
@@ -1286,7 +1335,7 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer) => {
       const model = genAI.getGenerativeModel({ model: currentModelName });
 
       const result = await model.generateContent([
-        "Transcribe this audio to plain text only: ",
+        systemPrompt,
         {
           fileData: {
             mimeType: upload.file.mimeType,

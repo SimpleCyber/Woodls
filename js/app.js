@@ -659,7 +659,17 @@ function setupRecordingEvents() {
           lastArrayBuffer = await blob.arrayBuffer();
 
           addLog("Transcribing...", "purple");
-          const result = await window.api.transcribeAudio(lastArrayBuffer);
+
+          // Context for Normal Mode Enhancement
+          const context = {
+            appName: activeWindowInfo?.owner?.name || "Unknown App",
+            windowTitle: activeWindowInfo?.title || "",
+          };
+
+          const result = await window.api.transcribeAudio(
+            lastArrayBuffer,
+            context,
+          );
           const text = result.text;
           const historyId = result.id;
 
