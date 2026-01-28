@@ -94,9 +94,9 @@ steps to follow for the new releases
 2. commit the changes
 3. <!-- Build releases command -->
 
-   git tag -d v1.7.0
-   git tag v1.7.0
-   git push origin v1.7.0 --force
+   git tag -d v1.8.0
+   git tag v1.8.0
+   git push origin v1.8.0 --force
 
 4. now update the relsease -> draft to publish changes
 5. Great Good to go now users will see the update info
