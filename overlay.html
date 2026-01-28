@@ -26,88 +26,111 @@
   <body>
     <!-- Pill Container -->
     <div
-      class="bg-black rounded-full px-4 py-2 flex items-center justify-center gap-1 shadow-2xl transition-transform duration-100 h-full w-full"
+      class="bg-[#181818] rounded-full px-2 py-1 flex items-center justify-between gap-1 shadow-2xl transition-all duration-200 h-full w-full border border-white/10"
       id="pill"
     >
-      <!-- Waveform Bars - Voice Responsive -->
-      <div id="waveform" class="flex items-center gap-[3px] h-full">
-        <div
-          class="bar w-[4px] rounded-full h-2"
-          style="
-            background: linear-gradient(
-              to top,
-              #fff 0%,
-              rgba(255, 255, 255, 0.8) 100%
-            );
-            transition:
-              height 50ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 50ms ease-out;
-          "
-        ></div>
-        <div
-          class="bar w-[4px] rounded-full h-3"
-          style="
-            background: linear-gradient(
-              to top,
-              #fff 0%,
-              rgba(255, 255, 255, 0.85) 100%
-            );
-            transition:
-              height 50ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 50ms ease-out;
-          "
-        ></div>
-        <div
-          class="bar w-[4px] rounded-full h-5"
-          style="
-            background: linear-gradient(
-              to top,
-              #fff 0%,
-              rgba(255, 255, 255, 0.9) 100%
-            );
-            transition:
-              height 50ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 50ms ease-out;
-          "
-        ></div>
-        <div
-          class="bar w-[4px] rounded-full h-3"
-          style="
-            background: linear-gradient(
-              to top,
-              #fff 0%,
-              rgba(255, 255, 255, 0.85) 100%
-            );
-            transition:
-              height 50ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 50ms ease-out;
-          "
-        ></div>
-        <div
-          class="bar w-[4px] rounded-full h-2"
-          style="
-            background: linear-gradient(
-              to top,
-              #fff 0%,
-              rgba(255, 255, 255, 0.8) 100%
-            );
-            transition:
-              height 50ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 50ms ease-out;
-          "
-        ></div>
+      <!-- Cancel Button (X) - Left Side -->
+      <div
+        id="cancel-btn"
+        class="hidden h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-red-500/80 text-white transition-all cursor-pointer flex-shrink-0 shadow-sm"
+        style="-webkit-app-region: no-drag"
+        title="Cancel Transcription"
+      >
+        <i class="fa-solid fa-xmark text-xs"></i>
       </div>
 
-      <!-- Spinner (Hidden by default) -->
-      <div id="spinner" class="hidden">
-        <i
-          class="fa-solid fa-circle-notch text-white/50 text-sm animate-spin"
-        ></i>
+      <!-- Center Content: Waveform + Spinner + AI -->
+      <div class="flex-1 flex items-center justify-center relative">
+        <!-- Waveform Bars - Voice Responsive -->
+        <div id="waveform" class="flex items-center gap-[3px] h-full">
+          <div
+            class="bar w-[3px] rounded-full h-2"
+            style="
+              background: linear-gradient(
+                to top,
+                #fff 0%,
+                rgba(255, 255, 255, 0.8) 100%
+              );
+              transition:
+                height 50ms cubic-bezier(0.4, 0, 0.2, 1),
+                transform 50ms ease-out;
+            "
+          ></div>
+          <div
+            class="bar w-[3px] rounded-full h-3"
+            style="
+              background: linear-gradient(
+                to top,
+                #fff 0%,
+                rgba(255, 255, 255, 0.85) 100%
+              );
+              transition:
+                height 50ms cubic-bezier(0.4, 0, 0.2, 1),
+                transform 50ms ease-out;
+            "
+          ></div>
+          <div
+            class="bar w-[3px] rounded-full h-5"
+            style="
+              background: linear-gradient(
+                to top,
+                #fff 0%,
+                rgba(255, 255, 255, 0.9) 100%
+              );
+              transition:
+                height 50ms cubic-bezier(0.4, 0, 0.2, 1),
+                transform 50ms ease-out;
+            "
+          ></div>
+          <div
+            class="bar w-[3px] rounded-full h-3"
+            style="
+              background: linear-gradient(
+                to top,
+                #fff 0%,
+                rgba(255, 255, 255, 0.85) 100%
+              );
+              transition:
+                height 50ms cubic-bezier(0.4, 0, 0.2, 1),
+                transform 50ms ease-out;
+            "
+          ></div>
+          <div
+            class="bar w-[3px] rounded-full h-2"
+            style="
+              background: linear-gradient(
+                to top,
+                #fff 0%,
+                rgba(255, 255, 255, 0.8) 100%
+              );
+              transition:
+                height 50ms cubic-bezier(0.4, 0, 0.2, 1),
+                transform 50ms ease-out;
+            "
+          ></div>
+        </div>
+
+        <!-- Spinner (Hidden by default) -->
+        <div id="spinner" class="hidden absolute">
+          <i
+            class="fa-solid fa-circle-notch text-white/50 text-sm animate-spin"
+          ></i>
+        </div>
+
+        <!-- AI Status Icon (🤖) -->
+        <div id="ai-icon" class="hidden absolute right-[-14px]">
+          <span class="text-[10px]">🤖</span>
+        </div>
       </div>
 
-      <!-- AI Status Icon (🤖) -->
-      <div id="ai-icon" class="hidden ml-1">
-        <span class="text-xs">🤖</span>
+      <!-- Confirm Button (Tick) - Right Side -->
+      <div
+        id="confirm-btn"
+        class="hidden h-7 w-7 flex items-center justify-center rounded-full bg-white hover:bg-green-50 text-black transition-all cursor-pointer shadow-lg flex-shrink-0"
+        style="-webkit-app-region: no-drag"
+        title="Finish and Transcribe"
+      >
+        <i class="fa-solid fa-check text-xs"></i>
       </div>
     </div>
 
@@ -220,11 +243,16 @@
       ipcRenderer.on("processing-start", () => {
         waveform.classList.add("hidden");
         spinner.classList.remove("hidden");
+        // Hide control buttons during processing
+        document.getElementById("cancel-btn").classList.add("hidden");
+        document.getElementById("confirm-btn").classList.add("hidden");
       });
 
       ipcRenderer.on("processing-end", () => {
         spinner.classList.add("hidden");
         waveform.classList.remove("hidden");
+        // Final close is handled by renderer calling hideOverlay or similar
+        ipcRenderer.send("hide-overlay");
       });
 
       ipcRenderer.on("set-ai-status", (event, enabled) => {
@@ -235,6 +263,28 @@
           aiIcon.classList.add("hidden");
         }
       });
+
+      ipcRenderer.on("show-cancel", (event, show) => {
+        const cancelBtn = document.getElementById("cancel-btn");
+        const confirmBtn = document.getElementById("confirm-btn");
+        if (show) {
+          cancelBtn.classList.remove("hidden");
+          confirmBtn.classList.remove("hidden");
+          ipcRenderer.send("set-overlay-clickable", true);
+        } else {
+          cancelBtn.classList.add("hidden");
+          confirmBtn.classList.add("hidden");
+          ipcRenderer.send("set-overlay-clickable", false);
+        }
+      });
+
+      document.getElementById("cancel-btn").onclick = () => {
+        ipcRenderer.send("cancel-recording");
+      };
+
+      document.getElementById("confirm-btn").onclick = () => {
+        ipcRenderer.send("confirm-recording");
+      };
     </script>
   </body>
 </html>

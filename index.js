@@ -238,6 +238,9 @@ let keyboard;
 let requiredKeys = []; // single-key expected (array but we use index 0)
 let running = false;
 let pressStart = null;
+let isPersistent = false;
+let lastReleaseTime = 0;
+let holdTimeout = null;
 
 let tray = null;
 let isQuitting = false;
@@ -756,8 +759,8 @@ function createOverlayWindow() {
   const { width, height } =
     require("electron").screen.getPrimaryDisplay().workAreaSize;
 
-  // Pill size (Smaller & Narrower)
-  const w = 100;
+  // Pill size (Responsive for buttons)
+  const w = 140;
   const h = 40;
   const x = Math.round((width - w) / 2);
   const y = height - h - 10; // 10px from bottom
@@ -804,9 +807,54 @@ function startActiveWindowMonitor() {
 // ----------------- Overlay IPC -----------------
 ipcMain.on("show-overlay", (event, aiEnabled) => {
   if (overlayWin && !overlayWin.isDestroyed()) {
+    const { width: screenWidth } =
+      require("electron").screen.getPrimaryDisplay().workAreaSize;
+
+    // Adjust width based on mode
+    const w = isPersistent ? 140 : 80;
+    const x = Math.round((screenWidth - w) / 2);
+
+    overlayWin.setBounds({ width: w, x: x });
     overlayWin.showInactive();
     overlayWin.setAlwaysOnTop(true, "screen-saver");
     overlayWin.webContents.send("set-ai-status", !!aiEnabled);
+
+    if (isPersistent) {
+      overlayWin.webContents.send("show-cancel", true);
+    } else {
+      overlayWin.webContents.send("show-cancel", false);
+    }
+  }
+});
+
+ipcMain.on("set-overlay-clickable", (event, clickable) => {
+  if (overlayWin && !overlayWin.isDestroyed()) {
+    overlayWin.setIgnoreMouseEvents(!clickable);
+  }
+});
+
+ipcMain.on("cancel-recording", () => {
+  if (running) {
+    running = false;
+    isPersistent = false;
+    if (holdTimeout) {
+      clearTimeout(holdTimeout);
+      holdTimeout = null;
+    }
+    // Notify renderer to discard recording
+    if (win && !win.isDestroyed()) {
+      win.webContents.send("recording-cancelled");
+    }
+    // Hide overlay
+    if (overlayWin && !overlayWin.isDestroyed()) {
+      overlayWin.hide();
+    }
+  }
+});
+
+ipcMain.on("confirm-recording", () => {
+  if (running) {
+    stopAndTranscribe();
   }
 });
 
@@ -838,27 +886,81 @@ function setupGlobalKeyboard() {
 
     if (!HOTKEY) return;
 
-    if (event.state === "DOWN" && key === HOTKEY && !running) {
-      running = true;
-      pressStart = Date.now();
-      win.webContents.send("record-start");
-      win.webContents.send("hotkey-pressed", { key: HOTKEY, time: pressStart });
+    if (event.state === "DOWN" && key === HOTKEY) {
+      const now = Date.now();
+
+      // Double-Tap Logic
+      if (now - lastReleaseTime < 300 && !running && !isPersistent) {
+        if (holdTimeout) {
+          clearTimeout(holdTimeout);
+          holdTimeout = null;
+        }
+        isPersistent = true;
+        running = true;
+        pressStart = now;
+        win.webContents.send("record-start", { persistent: true });
+        win.webContents.send("hotkey-pressed", {
+          key: HOTKEY,
+          time: pressStart,
+        });
+        return;
+      }
+
+      // Already recording in persistent mode -> Stop it
+      if (isPersistent && running) {
+        stopAndTranscribe();
+        return;
+      }
+
+      // Standard Hold-to-Record Logic (with delay to prevent accidental taps)
+      if (!running) {
+        holdTimeout = setTimeout(() => {
+          running = true;
+          pressStart = Date.now();
+          win.webContents.send("record-start", { persistent: false });
+          win.webContents.send("hotkey-pressed", {
+            key: HOTKEY,
+            time: pressStart,
+          });
+        }, 200);
+      }
     }
 
-    if (event.state === "UP" && key === HOTKEY && running) {
-      running = false;
-      const releaseTime = Date.now();
-      const duration = releaseTime - (pressStart || releaseTime);
-      lastDuration = duration;
-      pressStart = null;
-      win.webContents.send("record-stop");
-      win.webContents.send("hotkey-released", {
-        key: HOTKEY,
-        releaseTime,
-        duration,
-      });
+    if (event.state === "UP" && key === HOTKEY) {
+      if (holdTimeout) {
+        clearTimeout(holdTimeout);
+        holdTimeout = null;
+      }
+
+      lastReleaseTime = Date.now();
+
+      if (running && !isPersistent) {
+        stopAndTranscribe();
+      }
     }
   });
+}
+
+function stopAndTranscribe() {
+  running = false;
+  isPersistent = false;
+
+  const releaseTime = Date.now();
+  const duration = releaseTime - (pressStart || releaseTime);
+  lastDuration = duration;
+  pressStart = null;
+
+  const HOTKEY =
+    requiredKeys && requiredKeys[0] ? normalizeKeyName(requiredKeys[0]) : null;
+
+  win.webContents.send("record-stop");
+  win.webContents.send("hotkey-released", {
+    key: HOTKEY,
+    releaseTime,
+    duration,
+  });
+
+  // DO NOT hide overlay here - let processing-start/end handle it in renderer
 }
 
 // ----------------- IPC: Hotkey management -----------------
@@ -1250,7 +1352,7 @@ Your primary goal is to help me with the task I dictate or refine the text I pro
 3. **Platform Context**:
    - If the platform is an **Email Client** (e.g., Gmail, Outlook), use formal or professional email formatting (Subject, Salutation) if it seems like a new message.
    - If the platform is **Notion**, **Slack**, or **Discord**, use appropriate formatting (bullet points, bolding) to make the text scannable.
-   - If the platform is a **Code Editor** (e.g., VS Code, Cursor), provide clean code blocks or technical descriptions.
+   - If the platform is a **Code Editor** (e.g., VS Code, Cursor, Antigravity), provide clean code blocks or technical descriptions with proper formatting like u are an prompt enhancer dont deviate but make it accurate.
 4. Return **ONLY the final result**. No conversational filler, no "Here is your text...", no explanations, no quotes. 
 5. Use Markdown ONLY if it improves structural clarity (e.g., for code blocks, headers, or bullet points).
 6. **CRITICAL**: Do NOT include any timestamps (e.g., (00:00)) or video tracking metadata.

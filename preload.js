@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld("api", {
   // Recording events from main
   onRecordStart: (cb) => ipcRenderer.on("record-start", cb),
   onRecordStop: (cb) => ipcRenderer.on("record-stop", cb),
+  onRecordingCancelled: (cb) => ipcRenderer.on("recording-cancelled", cb),
   onHotkeyPressed: (cb) => ipcRenderer.on("hotkey-pressed", cb),
   onHotkeyReleased: (cb) => ipcRenderer.on("hotkey-released", cb),
 
@@ -71,6 +72,10 @@ contextBridge.exposeInMainWorld("api", {
   showOverlay: (...args) => ipcRenderer.send("show-overlay", ...args),
   hideOverlay: () => ipcRenderer.send("hide-overlay"),
   sendMicVolume: (vol) => ipcRenderer.send("mic-volume", vol),
+  cancelRecording: () => ipcRenderer.send("cancel-recording"),
+  confirmRecording: () => ipcRenderer.send("confirm-recording"),
+  setOverlayClickable: (clickable) =>
+    ipcRenderer.send("set-overlay-clickable", clickable),
 
   // Auth
   login: (creds) => ipcRenderer.invoke("auth-login", creds),

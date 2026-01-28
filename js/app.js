@@ -44,6 +44,7 @@ let audioSource = null;
 let animationFrameId = null;
 let chunks = [];
 let lastArrayBuffer = null;
+let recordingCancelled = false;
 
 // Settings
 let useBackspace = true;
@@ -636,62 +637,73 @@ function setupRecordingEvents() {
         if (mediaStream)
           mediaStream.getTracks().forEach((track) => track.stop());
 
+        if (recordingCancelled) {
+          addLog("Recording cancelled", "red");
+          recordingCancelled = false;
+          window.api.hideOverlay();
+          return;
+        }
+
         window.api.processingStart();
 
-        const blob = new Blob(chunks, { type: "audio/webm" });
-        lastArrayBuffer = await blob.arrayBuffer();
+        try {
+          const blob = new Blob(chunks, { type: "audio/webm" });
+          lastArrayBuffer = await blob.arrayBuffer();
 
-        addLog("Transcribing...", "purple");
-        const result = await window.api.transcribeAudio(lastArrayBuffer);
-        const text = result.text;
-        const historyId = result.id;
+          addLog("Transcribing...", "purple");
+          const result = await window.api.transcribeAudio(lastArrayBuffer);
+          const text = result.text;
+          const historyId = result.id;
 
-        let finalOutput = text;
+          let finalOutput = text;
 
-        if (aiEnhanced) {
-          addLog("Processing AI task...", "green");
-          finalOutput = await window.api.generateText({
-            info: text,
-            assistantName: assistantName ? assistantName.value : "Assistant",
-            appName: appName ? appName.value : "Desktop App",
-          });
+          if (aiEnhanced) {
+            addLog("Processing AI task...", "green");
+            finalOutput = await window.api.generateText({
+              info: text,
+              assistantName: assistantName ? assistantName.value : "Assistant",
+              appName: appName ? appName.value : "Desktop App",
+            });
 
-          // Update history with enhanced text
-          await window.api.updateHistoryItem({
-            id: historyId,
-            text: finalOutput,
-            isAI: true,
-          });
-        } else {
-          addLog("Refinement disabled, using raw transcript", "gray");
-        }
-
-        // Check if Notes is active
-        const isNotesActive = document.querySelector(
-          '[data-page="notes"].active',
-        );
-
-        if (isNotesActive) {
-          // Delegate to Notes module
-          Notes.handleVoiceInput(finalOutput);
-        } else {
-          // Default: Auto-type
-          if (useBackspace) {
-            await window.api.sendBackspace();
-            await new Promise((r) => setTimeout(r, 50));
-          }
-          if (instantPaste) {
-            await window.api.pasteString(finalOutput);
-            addLog("Pasted", "green");
+            // Update history with enhanced text
+            await window.api.updateHistoryItem({
+              id: historyId,
+              text: finalOutput,
+              isAI: true,
+            });
           } else {
-            await window.api.autoType(finalOutput);
-            addLog("Auto-typed", "green");
+            addLog("Refinement disabled, using raw transcript", "gray");
           }
-        }
 
-        window.api.processingEnd();
-        loadStats(); // Update dashboard stats immediately after transcription
-        setTimeout(() => window.api.hideOverlay(), 1000);
+          // Check if Notes is active
+          const isNotesActive = document.querySelector(
+            '[data-page="notes"].active',
+          );
+
+          if (isNotesActive) {
+            // Delegate to Notes module
+            Notes.handleVoiceInput(finalOutput);
+          } else {
+            // Default: Auto-type
+            if (useBackspace) {
+              await window.api.sendBackspace();
+              await new Promise((r) => setTimeout(r, 50));
+            }
+            if (instantPaste) {
+              await window.api.pasteString(finalOutput);
+              addLog("Pasted", "green");
+            } else {
+              await window.api.autoType(finalOutput);
+              addLog("Auto-typed", "green");
+            }
+          }
+        } catch (err) {
+          console.error("Transcription error:", err);
+          addLog("Error: " + err.message, "red");
+        } finally {
+          window.api.processingEnd();
+          loadStats(); // Update dashboard stats immediately after transcription
+        }
       };
 
       mediaRecorder.start();
@@ -710,6 +722,13 @@ function setupRecordingEvents() {
       // Cleanup handled in onstop
     } catch (err) {
       console.error(err);
+    }
+  });
+
+  window.api.onRecordingCancelled(() => {
+    recordingCancelled = true;
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      mediaRecorder.stop();
     }
   });
 }
