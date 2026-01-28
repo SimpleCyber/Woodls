@@ -74,8 +74,9 @@ contextBridge.exposeInMainWorld("api", {
   sendMicVolume: (vol) => ipcRenderer.send("mic-volume", vol),
   cancelRecording: () => ipcRenderer.send("cancel-recording"),
   confirmRecording: () => ipcRenderer.send("confirm-recording"),
-  setOverlayClickable: (clickable) =>
-    ipcRenderer.send("set-overlay-clickable", clickable),
+  // Copy Popup
+  showCopyPopup: (text) => ipcRenderer.send("show-copy-popup", text),
+  hideCopyPopup: () => ipcRenderer.send("hide-copy-popup"),
 
   // Auth
   login: (creds) => ipcRenderer.invoke("auth-login", creds),

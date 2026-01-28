@@ -7,6 +7,7 @@ const {
   Tray,
   Menu,
   nativeImage,
+  clipboard,
 } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const path = require("path");
@@ -433,6 +434,7 @@ function normalizeKeyName(raw) {
 }
 
 let overlayWin;
+let copyOverlayWin;
 
 let lastDuration = 0;
 
@@ -788,6 +790,41 @@ function createOverlayWindow() {
   overlayWin.setIgnoreMouseEvents(true);
   overlayWin.loadFile("overlay.html");
   overlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  createCopyOverlayWindow();
+}
+
+function createCopyOverlayWindow() {
+  const { width, height } =
+    require("electron").screen.getPrimaryDisplay().workAreaSize;
+
+  const w = 300;
+  const h = 140;
+  // Position it centered, slightly above the main overlay
+  const x = Math.round((width - w) / 2);
+  const y = height - h - 80; // 80px from bottom
+
+  copyOverlayWin = new BrowserWindow({
+    width: w,
+    height: h,
+    x: x,
+    y: y,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    show: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+    focusable: true,
+    hasShadow: true, // Shadow for toast
+    type: "toolbar",
+  });
+
+  copyOverlayWin.loadFile("copy_popup.html");
+  copyOverlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 }
 
 // ----------------- Active Window Monitor -----------------
@@ -855,6 +892,31 @@ ipcMain.on("cancel-recording", () => {
 ipcMain.on("confirm-recording", () => {
   if (running) {
     stopAndTranscribe();
+  }
+});
+
+ipcMain.on("show-copy-popup", (event, text) => {
+  if (copyOverlayWin && !copyOverlayWin.isDestroyed()) {
+    copyOverlayWin.webContents.send("set-text", text);
+    copyOverlayWin.showInactive();
+    copyOverlayWin.setAlwaysOnTop(true, "screen-saver");
+  }
+});
+
+ipcMain.on("hide-copy-popup", () => {
+  if (copyOverlayWin && !copyOverlayWin.isDestroyed()) {
+    copyOverlayWin.hide();
+  }
+});
+
+ipcMain.on("copy-text", (event, text) => {
+  clipboard.writeText(text);
+  if (copyOverlayWin && !copyOverlayWin.isDestroyed()) {
+    copyOverlayWin.hide();
+  }
+  // Also hide main overlay when copy is done
+  if (overlayWin && !overlayWin.isDestroyed()) {
+    overlayWin.hide();
   }
 });
 
@@ -1354,8 +1416,6 @@ Your primary goal is to help me with the task I dictate or refine the text I pro
    - If the platform is **Notion**, **Slack**, or **Discord**, use appropriate formatting (bullet points, bolding) to make the text scannable.
    - If the platform is a **Code Editor** (e.g., VS Code, Cursor, Antigravity), provide clean code blocks or technical descriptions with proper formatting like u are an prompt enhancer dont deviate but make it accurate.
 4. Return **ONLY the final result**. No conversational filler, no "Here is your text...", no explanations, no quotes. 
-5. Use Markdown ONLY if it improves structural clarity (e.g., for code blocks, headers, or bullet points).
-6. **CRITICAL**: Do NOT include any timestamps (e.g., (00:00)) or video tracking metadata.
 
 Context:
 App: ${appName}

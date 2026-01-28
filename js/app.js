@@ -67,7 +67,15 @@ let activeKeyIndex = 0; // The key currently used by rotation logic
 
 // ---------- Initialization ----------
 
+// Active Window Tracking
+let activeWindowInfo = null;
+
 export function initApp() {
+  // Listen for active window updates
+  window.api.onActiveWindow((_event, info) => {
+    activeWindowInfo = info;
+  });
+
   setupTheme();
   setupSettings();
   setupHotkeyUI();
@@ -684,17 +692,41 @@ function setupRecordingEvents() {
             // Delegate to Notes module
             Notes.handleVoiceInput(finalOutput);
           } else {
-            // Default: Auto-type
-            if (useBackspace) {
-              await window.api.sendBackspace();
-              await new Promise((r) => setTimeout(r, 50));
+            // Smart Logic: Check active window
+            // If explorer (Desktop/Taskbar) or Search -> Show Copy Popup
+            // Else -> Auto-type
+            let showPopup = false;
+
+            if (activeWindowInfo && activeWindowInfo.owner) {
+              const procName = activeWindowInfo.owner.name; // e.g. "explorer.exe", "SearchApp.exe"
+              // Windows specific check
+              if (
+                procName === "Windows Explorer" ||
+                procName === "explorer.exe" ||
+                procName === "SearchApp.exe" ||
+                procName === "SearchHost.exe" ||
+                procName === "LockApp.exe"
+              ) {
+                showPopup = true;
+              }
             }
-            if (instantPaste) {
-              await window.api.pasteString(finalOutput);
-              addLog("Pasted", "green");
+
+            if (showPopup) {
+              window.api.showCopyPopup(finalOutput);
+              addLog("Ready to copy", "cyan");
             } else {
-              await window.api.autoType(finalOutput);
-              addLog("Auto-typed", "green");
+              // Default: Auto-type
+              if (useBackspace) {
+                await window.api.sendBackspace();
+                await new Promise((r) => setTimeout(r, 50));
+              }
+              if (instantPaste) {
+                await window.api.pasteString(finalOutput);
+                addLog("Pasted", "green");
+              } else {
+                await window.api.autoType(finalOutput);
+                addLog("Auto-typed", "green");
+              }
             }
           }
         } catch (err) {
