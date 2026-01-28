@@ -28,6 +28,9 @@ const {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  signInWithCustomToken,
+  signInWithCredential,
+  GoogleAuthProvider,
 } = require("firebase/auth");
 const { getFirestore } = require("firebase/firestore");
 
@@ -240,7 +243,16 @@ let tray = null;
 let isQuitting = false;
 let server = null; // Store server reference for cleanup
 
-// ----------------- Single Instance Lock -----------------
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient("woodls", process.execPath, [
+      path.resolve(process.argv[1]),
+    ]);
+  }
+} else {
+  app.setAsDefaultProtocolClient("woodls");
+}
+
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -256,7 +268,50 @@ if (!gotTheLock) {
       win.show();
       win.focus();
     }
+    // Handle Deep Link
+    const url = commandLine.find((arg) => arg.startsWith("woodls://"));
+    if (url) handleDeepLink(url);
   });
+}
+
+// Handle Deep Link on macOS
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  handleDeepLink(url);
+});
+
+async function handleDeepLink(url) {
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.protocol === "woodls:" && urlObj.hostname === "auth") {
+      const token = urlObj.searchParams.get("token"); // Custom Token
+      const idToken = urlObj.searchParams.get("idToken"); // Google ID Token
+
+      if (token) {
+        console.log("Received Custom Auth Token via Deep Link");
+        await signInWithCustomToken(auth, token);
+      } else if (idToken) {
+        console.log("Received ID Token via Deep Link");
+        const credential = GoogleAuthProvider.credential(idToken);
+        await signInWithCredential(auth, credential);
+      }
+
+      // User state will be updated by onAuthStateChanged
+      if (win && !win.isDestroyed()) {
+        win.show();
+        win.focus();
+      }
+    }
+  } catch (e) {
+    console.error("Deep link error:", e);
+  }
+}
+
+// Check for deep link at startup (Windows)
+const deepLinkUrl = process.argv.find((arg) => arg.startsWith("woodls://"));
+if (deepLinkUrl) {
+  // We might not be ready yet, defer it
+  app.whenReady().then(() => handleDeepLink(deepLinkUrl));
 }
 
 // ----------------- helpers -----------------
