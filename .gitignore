@@ -1,3 +1,6 @@
+website/.env
+website/node_modules
+
 # Logs
 logs
 *.log
