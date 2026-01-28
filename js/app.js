@@ -693,6 +693,46 @@ function setupRecordingEvents() {
             addLog("Refinement disabled, using raw transcript", "gray");
           }
 
+          // Helper: Detect if likely in an input field based on window info
+          function isLikelyInputField(windowInfo) {
+            if (!windowInfo) return false;
+
+            const title = (windowInfo.title || "").toLowerCase();
+            const appName = (windowInfo.owner?.name || "").toLowerCase();
+
+            // Apps that are always input-focused
+            const inputApps = [
+              "code",
+              "cursor",
+              "windsurf",
+              "antigravity",
+              "notion",
+              "slack",
+              "discord",
+              "teams",
+              "obsidian",
+              "notepad",
+            ];
+            if (inputApps.some((app) => appName.includes(app))) return true;
+
+            // Title keywords suggesting input
+            const inputKeywords = [
+              "sign in",
+              "login",
+              "search",
+              "comment",
+              "reply",
+              "message",
+              "edit",
+              "write",
+              "compose",
+              "new message",
+            ];
+            if (inputKeywords.some((kw) => title.includes(kw))) return true;
+
+            return false;
+          }
+
           // Check if Notes is active
           const isNotesActive = document.querySelector(
             '[data-page="notes"].active',
@@ -704,7 +744,7 @@ function setupRecordingEvents() {
           } else {
             // Smart Logic: Check active window
             // If explorer (Desktop/Taskbar) or Search -> Show Copy Popup
-            // Else -> Auto-type
+            // But if likely in an input field -> Auto-type instead
             let showPopup = false;
 
             if (activeWindowInfo && activeWindowInfo.owner) {
@@ -719,6 +759,12 @@ function setupRecordingEvents() {
               ) {
                 showPopup = true;
               }
+            }
+
+            // Override: Don't show popup if likely in an input field
+            if (showPopup && isLikelyInputField(activeWindowInfo)) {
+              showPopup = false;
+              addLog("Input field detected, auto-typing instead", "blue");
             }
 
             if (showPopup) {
