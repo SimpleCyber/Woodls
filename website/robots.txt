@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://woodls.vercel.app/sitemap.xml
