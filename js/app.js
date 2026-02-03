@@ -30,7 +30,11 @@ const closeBtn = document.getElementById("close-btn");
 
 if (minBtn) minBtn.onclick = () => window.api.minimizeWindow();
 if (maxBtn) maxBtn.onclick = () => window.api.maximizeWindow();
-if (closeBtn) closeBtn.onclick = () => window.api.closeWindow();
+if (closeBtn)
+  closeBtn.onclick = () => {
+    stopActiveAudio();
+    window.api.closeWindow();
+  };
 
 // Global State
 let capturing = false;
@@ -45,6 +49,20 @@ let animationFrameId = null;
 let chunks = [];
 let lastArrayBuffer = null;
 let recordingCancelled = false;
+let activeAudioElement = null;
+let activePlayBtn = null;
+
+function stopActiveAudio() {
+  if (activeAudioElement) {
+    activeAudioElement.pause();
+    activeAudioElement = null;
+  }
+  if (activePlayBtn) {
+    activePlayBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+    activePlayBtn.title = "Play Recording";
+    activePlayBtn = null;
+  }
+}
 
 // Settings
 let useBackspace = true;
@@ -163,7 +181,7 @@ export function initApp() {
             "border-slate-200",
             "border-green-200",
           );
-          checkUpdatesBtn.onclick = () => window.api.closeWindow(); // This will trigger the quitAndInstall dialog if it popped up, or just close and let main handle it
+          checkUpdatesBtn.onclick = () => window.api.quitAndInstall(); // This will trigger the quitAndInstall dialog if it popped up, or just close and let main handle it
         }
       } else if (status === "error") {
         updateStats.textContent = details
@@ -220,6 +238,8 @@ export function initApp() {
       item.onclick = (e) => {
         if (e.currentTarget.tagName === "A" && e.currentTarget.href !== "#")
           return;
+
+        stopActiveAudio();
 
         document
           .querySelectorAll(".sidebar-item")
@@ -934,45 +954,41 @@ function renderHistory(items) {
       };
     }
     if (playBtn) {
-      let currentAudio = null;
-      let isPlaying = false;
-
       playBtn.onclick = async () => {
         if (!item.audioPath) return alert("No audio file found.");
 
-        // If audio is currently playing, pause it
-        if (isPlaying && currentAudio) {
-          currentAudio.pause();
-          isPlaying = false;
-          playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
-          playBtn.title = "Play Recording";
+        // If clicking the currently active one
+        if (activeAudioElement && activePlayBtn === playBtn) {
+          if (activeAudioElement.paused) {
+            activeAudioElement.play();
+            playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            playBtn.title = "Pause Recording";
+          } else {
+            activeAudioElement.pause();
+            playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            playBtn.title = "Play Recording";
+          }
           return;
         }
 
-        // If audio exists but is paused, resume it
-        if (currentAudio && !isPlaying) {
-          currentAudio.play();
-          isPlaying = true;
-          playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-          playBtn.title = "Pause Recording";
-          return;
-        }
+        // If another audio is playing, stop it
+        stopActiveAudio();
 
         // Load and play new audio
         try {
           const b64 = await window.api.readAudioFile(item.audioPath);
           if (b64) {
-            currentAudio = new Audio("data:audio/webm;base64," + b64);
+            activeAudioElement = new Audio("data:audio/webm;base64," + b64);
+            activePlayBtn = playBtn;
 
-            // Update button when audio ends
-            currentAudio.onended = () => {
-              isPlaying = false;
+            activeAudioElement.onended = () => {
               playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
               playBtn.title = "Play Recording";
+              activeAudioElement = null;
+              activePlayBtn = null;
             };
 
-            currentAudio.play();
-            isPlaying = true;
+            activeAudioElement.play();
             playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
             playBtn.title = "Pause Recording";
           } else {

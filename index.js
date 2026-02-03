@@ -983,7 +983,7 @@ function setupGlobalKeyboard() {
       const now = Date.now();
 
       // Double-Tap Logic
-      if (now - lastReleaseTime < 300 && !running && !isPersistent) {
+      if (now - lastReleaseTime < 800 && !running && !isPersistent) {
         if (holdTimeout) {
           clearTimeout(holdTimeout);
           holdTimeout = null;
