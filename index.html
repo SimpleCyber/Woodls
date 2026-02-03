@@ -721,7 +721,6 @@
                 <span class="text-xs font-medium text-slate-600">Notion</span>
               </a>
             </div>
-
           </div>
 
           <!-- HISTORY -->
@@ -1098,6 +1097,22 @@
                         class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"
                       ></div>
                     </label>
+                  </div>
+                  <div class="p-4 flex items-center justify-between">
+                    <div>
+                      <div class="text-sm font-medium text-slate-800">
+                        Onboarding
+                      </div>
+                      <div class="text-xs text-slate-500">
+                        Run the guided setup again.
+                      </div>
+                    </div>
+                    <button
+                      id="test-onboarding-btn"
+                      class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors"
+                    >
+                      Run Setup
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2113,6 +2128,13 @@
           </div>
         </div>
       </div>
+    </div>
+    <!-- ONBOARDING MODAL OVERLAY -->
+    <div
+      id="onboarding-modal"
+      class="hidden fixed inset-0 z-[100] bg-white flex flex-col animate-in fade-in duration-300"
+    >
+      <!-- Content injected by onboarding.js -->
     </div>
   </body>
 </html>

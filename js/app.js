@@ -2,7 +2,7 @@
 import { addLog, $ } from "./utils.js";
 import * as Notes from "./notes.js";
 import { initAuth, logout } from "./auth.js";
-import { initOnboarding } from "./onboarding.js";
+import { initOnboarding, startOnboarding } from "./onboarding.js";
 import { initHelpDeck, syncHelpDeckUser } from "./helpdeck.js";
 
 // ---------- LLM UI / Settings References ----------
@@ -66,10 +66,10 @@ function stopActiveAudio() {
 
 // Settings
 let useBackspace = true;
-let instantPaste = false;
-let aiEnhanced = true;
-let runOnStartup = false;
-let startHidden = false;
+let instantPaste = true;
+let aiEnhanced = false;
+let runOnStartup = true;
+let startHidden = true;
 
 const backspaceToggle = document.getElementById("backspaceToggle");
 const pasteToggle = document.getElementById("pasteToggle");
@@ -98,6 +98,17 @@ export function initApp() {
   setupSettings();
   setupHotkeyUI();
   setupRecordingEvents();
+
+  const testOnboardingBtn = document.getElementById("test-onboarding-btn");
+  if (testOnboardingBtn) {
+    testOnboardingBtn.onclick = () => {
+      startOnboarding();
+      // Switch back to home or just show modal
+      // We'll leave them on settings but show the modal
+    };
+  }
+
+  // Load History
   setupHistory();
   setupAccount();
   setupUpgradeModal();
@@ -786,6 +797,13 @@ function setupRecordingEvents() {
               showPopup = false;
               addLog("Input field detected, auto-typing instead", "blue");
             }
+
+            // Broadcast for Onboarding (or other listeners)
+            document.dispatchEvent(
+              new CustomEvent("woodls-transcription", {
+                detail: { text: finalOutput },
+              }),
+            );
 
             if (showPopup) {
               window.api.showCopyPopup(finalOutput);

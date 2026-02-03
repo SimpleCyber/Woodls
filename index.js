@@ -1113,7 +1113,10 @@ ipcMain.on("get-startup-settings", (event) => {
       globalSettings.openAtLogin !== undefined
         ? globalSettings.openAtLogin
         : openAtLogin,
-    startHidden: globalSettings.startHidden || false,
+    startHidden:
+      globalSettings.startHidden !== undefined
+        ? globalSettings.startHidden
+        : true,
   });
 });
 
