@@ -982,6 +982,21 @@ function setupGlobalKeyboard() {
     if (event.state === "DOWN" && key === HOTKEY) {
       const now = Date.now();
 
+      // Fix: Swallow key via Backspace if it's a printable character
+      // This prevents "1111..." spam when holding the hotkey
+      const isPrintable =
+        key.length === 1 || // A-Z, 0-9
+        key.startsWith("NUMPAD") ||
+        ["SPACE", "TAB", "ENTER", "RETURN"].includes(key);
+
+      if (isPrintable && key !== "BACKSPACE" && key !== "DELETE") {
+        try {
+          robot.keyTap("backspace");
+        } catch (e) {
+          // ignore robot error
+        }
+      }
+
       // Double-Tap Logic
       if (now - lastReleaseTime < 800 && !running && !isPersistent) {
         if (holdTimeout) {
@@ -1015,7 +1030,7 @@ function setupGlobalKeyboard() {
             key: HOTKEY,
             time: pressStart,
           });
-        }, 200);
+        }, 600);
       }
     }
 
