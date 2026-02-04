@@ -58,6 +58,9 @@ contextBridge.exposeInMainWorld("api", {
 
   // Auto type
 
+  // System
+  openExternal: (url) => require("electron").shell.openExternal(url),
+
   // Notes
   getNotes: () => ipcRenderer.invoke("get-notes"),
   saveNote: (note) => ipcRenderer.invoke("save-note", note),

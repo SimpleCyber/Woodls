@@ -43,6 +43,14 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     },
+    "protocols": [
+      {
+        "name": "Woodls",
+        "schemes": [
+          "woodls"
+        ]
+      }
+    ],
     "publish": [
       {
         "provider": "github",

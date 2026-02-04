@@ -295,15 +295,19 @@ async function handleDeepLink(url) {
         console.log("Received Custom Auth Token via Deep Link");
         await signInWithCustomToken(auth, token);
       } else if (idToken) {
-        console.log("Received ID Token via Deep Link");
-        const credential = GoogleAuthProvider.credential(idToken);
-        await signInWithCredential(auth, credential);
-      }
+        const accessToken = urlObj.searchParams.get("accessToken");
+        console.log("Received ID Token via Deep Link. Length:", idToken.length);
+        console.log("Access Token present:", !!accessToken);
 
-      // User state will be updated by onAuthStateChanged
-      if (win && !win.isDestroyed()) {
-        win.show();
-        win.focus();
+        const credential = GoogleAuthProvider.credential(idToken, accessToken);
+        await signInWithCredential(auth, credential);
+        console.log("Successfully signed in with ID Token");
+
+        // ONLY show and focus on success
+        if (win && !win.isDestroyed()) {
+          win.show();
+          win.focus();
+        }
       }
     }
   } catch (e) {

@@ -339,12 +339,21 @@ function setupGoogleAuth() {
   if (googleBtn) {
     googleBtn.onclick = async () => {
       const originalText = googleBtn.innerHTML;
-      googleBtn.innerHTML =
-        '<i class="fa-solid fa-spinner fa-spin"></i> Connecting...';
-      const res = await signInWithGoogle();
-      if (!res.success) {
-        showError("Google Sign-In Failed", res.error);
+      try {
+        googleBtn.innerHTML =
+          '<i class="fa-solid fa-spinner fa-spin"></i> Connecting...';
+        googleBtn.disabled = true;
+        const res = await signInWithGoogle();
+        if (!res.success) {
+          showError("Google Sign-In Failed", res.error);
+          googleBtn.innerHTML = originalText;
+          googleBtn.disabled = false;
+        }
+        // Success is handled by onAuthStateChanged which hides the whole page
+      } catch (err) {
+        showError("Google Sign-In Error", err.message);
         googleBtn.innerHTML = originalText;
+        googleBtn.disabled = false;
       }
     };
   }
