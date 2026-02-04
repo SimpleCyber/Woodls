@@ -571,6 +571,7 @@ function createWindow() {
         displayName: cred.user.displayName,
         photoURL: cred.user.photoURL,
       };
+      saveGlobalSettings({ lastUser: currentUser });
       // Reload settings for this user
       onUserChanged();
       // Notify renderer of state change
@@ -592,6 +593,7 @@ function createWindow() {
         displayName: name,
         photoURL: null,
       };
+      saveGlobalSettings({ lastUser: currentUser });
       // Reload settings for this user
       onUserChanged();
       win.webContents.send("auth-state-changed", currentUser);
@@ -610,8 +612,10 @@ function createWindow() {
         displayName: user.displayName,
         photoURL: user.photoURL,
       };
+      saveGlobalSettings({ lastUser: currentUser });
     } else {
       currentUser = null;
+      saveGlobalSettings({ lastUser: null });
     }
     // Reload settings for this user
     onUserChanged();
@@ -624,6 +628,7 @@ function createWindow() {
     try {
       await signOut(auth); // Sign out of Main process auth if any
       currentUser = null;
+      saveGlobalSettings({ lastUser: null });
       // Reload settings for guest user
       onUserChanged();
       win.webContents.send("auth-state-changed", null);
@@ -773,8 +778,11 @@ function createWindow() {
           displayName: user.displayName,
           photoURL: user.photoURL,
         };
+        saveGlobalSettings({ lastUser: currentUser });
       } else {
-        currentUser = null;
+        // Only clear if it was a firebase login, to avoid clearing synced user
+        // but normally sign out happens via handlers
+        // currentUser = null;
       }
       // Reload settings for this user
       onUserChanged();
@@ -1563,6 +1571,13 @@ Input: "${info}"
 
 // ----------------- app lifecycle -----------------
 app.whenReady().then(() => {
+  // Restore User State
+  const globalSettings = readGlobalSettings();
+  if (globalSettings.lastUser) {
+    currentUser = globalSettings.lastUser;
+    console.log(`[Auth] Restored user: ${currentUser.email}`);
+  }
+
   initGenAI();
   createWindow();
 
