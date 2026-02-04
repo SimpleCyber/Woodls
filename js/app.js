@@ -139,6 +139,9 @@ export function initApp() {
       updateProfileUI(user);
       syncHelpDeckUser(user);
 
+      // Check onboarding for this user
+      import("./onboarding.js").then((m) => m.checkAndTriggerOnboarding(user));
+
       // Re-trigger stats when app starts and user is authorized
       loadStats();
       renderStatsFromCache();

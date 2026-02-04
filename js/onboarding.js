@@ -8,21 +8,25 @@ let userHotkey = null;
 // DOM Elements for Onboarding
 let modal, contentArea;
 
+// Store current onboarding user ID
+let onboardingUserId = "guest";
+
 export function initOnboarding() {
   setupAuthForms();
   setupGoogleAuth();
+  // Note: We no longer auto-trigger here for global.
+  // We wait for app.js to call checkAndTriggerOnboarding after auth check.
+}
 
-  // Check if we need to run onboarding (using localStorage as simple flag)
-  const hasCompletedOnboarding = localStorage.getItem(
-    "hasCompletedOnboarding_v2",
-  );
+export function checkAndTriggerOnboarding(user) {
+  onboardingUserId = user ? user.uid : "guest";
+  const storageKey = `hasCompletedOnboarding_${onboardingUserId}`;
+  const hasCompleted = localStorage.getItem(storageKey);
 
-  // Wait for App to be ready
-  setTimeout(() => {
-    if (!hasCompletedOnboarding) {
-      startOnboarding();
-    }
-  }, 1000);
+  // If user is new (or hasn't done onboarding), start it
+  if (!hasCompleted) {
+    startOnboarding();
+  }
 }
 
 export function startOnboarding() {
@@ -325,7 +329,8 @@ function setupSettingsReview() {
 }
 
 function completeOnboarding() {
-  localStorage.setItem("hasCompletedOnboarding_v2", "true");
+  const storageKey = `hasCompletedOnboarding_${onboardingUserId}`;
+  localStorage.setItem(storageKey, "true");
 
   // Animate out
   modal.classList.add("animate-out", "fade-out", "duration-500");
