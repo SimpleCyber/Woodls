@@ -994,27 +994,26 @@ function setupGlobalKeyboard() {
     if (event.state === "DOWN" && key === HOTKEY) {
       const now = Date.now();
 
-      // Fix: Swallow key via Backspace if it's a printable character
-      // This prevents "1111..." spam when holding the hotkey
-      const isPrintable =
-        key.length === 1 || // A-Z, 0-9
-        key.startsWith("NUMPAD") ||
-        ["SPACE", "TAB", "ENTER", "RETURN"].includes(key);
-
-      if (isPrintable && key !== "BACKSPACE" && key !== "DELETE") {
-        try {
-          robot.keyTap("backspace");
-        } catch (e) {
-          // ignore robot error
-        }
-      }
-
       // Double-Tap Logic
       if (now - lastReleaseTime < 800 && !running && !isPersistent) {
         if (holdTimeout) {
           clearTimeout(holdTimeout);
           holdTimeout = null;
         }
+
+        // Send 2 backspaces to clear the two taps (for printable keys)
+        const isPrintable =
+          key.length === 1 ||
+          key.startsWith("NUMPAD") ||
+          ["SPACE", "TAB", "ENTER", "RETURN"].includes(key);
+
+        if (isPrintable && key !== "BACKSPACE" && key !== "DELETE") {
+          try {
+            robot.keyTap("backspace");
+            robot.keyTap("backspace");
+          } catch (e) {}
+        }
+
         isPersistent = true;
         running = true;
         pressStart = now;
@@ -1037,6 +1036,22 @@ function setupGlobalKeyboard() {
         holdTimeout = setTimeout(() => {
           running = true;
           pressStart = Date.now();
+
+          // Clear characters typed while holding (auto-repeat spam)
+          const isPrintable =
+            key.length === 1 ||
+            key.startsWith("NUMPAD") ||
+            ["SPACE", "TAB", "ENTER", "RETURN"].includes(key);
+
+          if (isPrintable && key !== "BACKSPACE" && key !== "DELETE") {
+            try {
+              // Send several backspaces to clear the initial tap + any auto-repeat spam
+              for (let i = 0; i < 5; i++) {
+                robot.keyTap("backspace");
+              }
+            } catch (e) {}
+          }
+
           win.webContents.send("record-start", { persistent: false });
           win.webContents.send("hotkey-pressed", {
             key: HOTKEY,
