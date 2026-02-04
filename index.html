@@ -2058,7 +2058,12 @@
               <div class="mt-6 text-center text-sm text-slate-500">
                 Don't have an account?
                 <button
-                  id="to-signup-btn"
+                  id="to-signup-btn-ext"
+                  onclick="
+                    window.api.openExternal(
+                      'https://woodls.vercel.app/auth-desktop',
+                    )
+                  "
                   class="text-primary-600 font-medium hover:underline"
                 >
                   Sign up

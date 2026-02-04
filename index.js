@@ -271,6 +271,8 @@ if (!gotTheLock) {
       if (win.isMinimized()) win.restore();
       win.show();
       win.focus();
+      // Ensure it's in the taskbar
+      win.setSkipTaskbar(false);
     }
     // Handle Deep Link
     const url = commandLine.find((arg) => arg.startsWith("woodls://"));
@@ -1731,6 +1733,23 @@ autoUpdater.on("download-progress", (progressObj) => {
 autoUpdater.on("update-downloaded", (info) => {
   console.log("[Updater] Update downloaded:", info.version);
   sendUpdateStatus("downloaded", info.version);
+
+  // Default Standard Native Popup for Restart
+  dialog
+    .showMessageBox({
+      type: "info",
+      title: "Update Ready",
+      message: `A new version (${info.version}) of Woodls has been downloaded.`,
+      detail: "Restart the application to apply the update.",
+      buttons: ["Restart to Update", "Later"],
+      defaultId: 0,
+      cancelId: 1,
+    })
+    .then((result) => {
+      if (result.response === 0) {
+        autoUpdater.quitAndInstall();
+      }
+    });
 });
 
 autoUpdater.on("error", (err) => {
