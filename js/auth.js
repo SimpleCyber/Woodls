@@ -39,7 +39,7 @@ export async function signInWithGoogle() {
   try {
     // Browser Login Flow
     // Open the Next.js auth page in default browser
-    const AUTH_URL = "http://localhost:3000/auth-desktop";
+    const AUTH_URL = "https://woodls.vercel.app/auth-desktop";
 
     await window.api.openExternal(AUTH_URL);
 
