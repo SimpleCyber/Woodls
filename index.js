@@ -308,6 +308,36 @@ async function handleDeepLink(url) {
           win.show();
           win.focus();
         }
+      } else if (
+        urlObj.searchParams.has("email") &&
+        urlObj.searchParams.has("password")
+      ) {
+        const encodedEmail = urlObj.searchParams.get("email");
+        const encodedPassword = urlObj.searchParams.get("password");
+
+        const email = Buffer.from(encodedEmail, "base64").toString("utf8");
+        const password = Buffer.from(encodedPassword, "base64").toString(
+          "utf8",
+        );
+
+        console.log("Received Email Credentials via Deep Link");
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+
+        currentUser = {
+          uid: cred.user.uid,
+          email: cred.user.email,
+          displayName: cred.user.displayName,
+          photoURL: cred.user.photoURL,
+        };
+        saveGlobalSettings({ lastUser: currentUser });
+        onUserChanged();
+
+        if (win && !win.isDestroyed()) {
+          win.webContents.send("auth-state-changed", currentUser);
+          win.show();
+          win.focus();
+        }
+        console.log("Successfully signed in with Email Credentials");
       }
     }
   } catch (e) {
