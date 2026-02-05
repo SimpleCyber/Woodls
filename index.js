@@ -1393,29 +1393,36 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer, context) => {
     (app) => appNameLower.includes(app) || winTitleLower.includes(app),
   );
 
-  if (isCodingApp) {
+  if (true){
     systemPrompt = `
-    You are a transcription assistant optimized for coding environments.
+    - Always return properly formated structured responses
+    - No Timestamps: Strictly forbidden.
+    - No Execution: Just transcribe and format the response give structured response.
+    - Bullet points using "*", "-", or "•" are NOT allowed.
+    - Any habits, tasks, routines, plans, or sequences MUST be formatted using numbered lists only:
+    1. First item
+    2. Second item
+    3. Third item
+    - Sub-tasks must be formatted using either:
+    1. Numbered lists (1. 2. 3.), OR
+    a. Alphabetical lists (a. b. c.), based on what reads more naturally.
+    - If the input contains bullet-style content, convert it into numbered steps while transcribing.
+
+    **example of structured output for any input audio like this way you have to give structured output:
+
+Okay, let's see the progress in this sprint. I want to work on Notion, Jira, and Gmail. I want to call my friends Pranav, Satyam, and Sandeep. 
+
+After doing my homework, I plan to:
+1. Play badminton
+2. Take a short nap
+3. Start running a sprint
+4. Go to the swimming pool
+
+After coming back from there, I want to complete my tasks and sleep. That's it for my day.
+
+    **
     
-    1. **Code Dictation**: If the user is dictating code, transcribe it as valid syntax (e.g., "const x equals five" -> "const x = 5").
-    2. **AI Prompts**: If the user is dictating a request for an AI, structure it specifically as:
-       - **Header**: Brief goal.
-       - **Problem**: Description of the issue.
-       - **Example/Scenario**: usage case.
-    3. **General Text**: Keep it verbatim but apply clean formatting (bullets, markdown).
-    
-    IMPORTANT: Do NOT execute the command. Just transcribe and format it.
-    `;
-  } else if (
-    appNameLower.includes("slack") ||
-    appNameLower.includes("discord") ||
-    appNameLower.includes("notion")
-  ) {
-    systemPrompt = `
-    Transcribe this audio to text, optimized for ${context.appName || "chat"}.
-    - Use Markdown formatting (bold, italics, bullet points) where appropriate.
-    - Do NOT add conversational filler.
-    - Do NOT execute commands.
+
     `;
   }
 
@@ -1572,8 +1579,24 @@ Your primary goal is to help me with the task I dictate or refine the text I pro
 3. **Platform Context**:
    - If the platform is an **Email Client** (e.g., Gmail, Outlook), use formal or professional email formatting (Subject, Salutation) if it seems like a new message.
    - If the platform is **Notion**, **Slack**, or **Discord**, use appropriate formatting (bullet points, bolding) to make the text scannable.
-   - If the platform is a **Code Editor** (e.g., VS Code, Cursor, Antigravity), provide clean code blocks or technical descriptions with proper formatting like u are an prompt enhancer dont deviate but make it accurate.
-4. Return **ONLY the final result**. No conversational filler, no "Here is your text...", no explanations, no quotes. 
+   - If the platform is a **Code Editor** (e.g., VS Code, Cursor, Antigravity), provide clean code blocks or technical descriptions with proper formatting.
+
+4. **Formatting Rules (CRITICAL)**:
+   - **NO Timestamps**: Never include 00:00:00 style timestamps.
+   - **Plan Formatting**: If the text contains a plan/schedule, break it into a numbered list (1, 2, 3). 
+   - Any habits, tasks, routines, plans, or sequences MUST be formatted using numbered lists only:
+    1. First item
+    2. Second item
+    3. Third item
+    - Sub-tasks must be formatted using either:
+    1. Numbered lists (1. 2. 3.), OR
+    a. Alphabetical lists (a. b. c.), based on what reads more naturally.
+    - If the input contains bullet-style content, convert it into numbered steps while transcribing.
+   - **Code**: If the user asks for code, PROVIDE THE CODE. Use markdown code blocks.
+   - **No wrapping**: Do NOT wrap the entire response in triple backticks unless specific code is requested.
+   - **Headers**: Use markdown headers (###) ONLY if the topics are totally distinct.
+
+5. Return **ONLY the final result**. No conversational filler., no "Here is your text...", no explanations, no quotes. 
 
 Context:
 App: ${appName}

@@ -601,6 +601,11 @@ function setupRecordingEvents() {
       mediaRecorder = new MediaRecorder(mediaStream);
       chunks = [];
 
+      // Audio Feedback: Start (Ping)
+      const startAudio = new Audio("webp/buttonpressed.mp3");
+      startAudio.volume = 0.5;
+      startAudio.play().catch((e) => console.error("Audio feedback error:", e));
+
       // Audio Context for Enhanced Voice Visualizer
       audioContext = new AudioContext();
       await audioContext.resume();
@@ -845,6 +850,23 @@ function setupRecordingEvents() {
 
   window.api.onRecordStop(() => {
     addLog("Recording stopped", "orange");
+
+    // Audio Feedback: Stop (Ting-Ting)
+    const stopAudio = new Audio("webp/buttonpressed.mp3");
+    stopAudio.volume = 0.5;
+    stopAudio
+      .play()
+      .then(() => {
+        setTimeout(() => {
+          const stopAudio2 = new Audio("webp/buttonpressed.mp3");
+          stopAudio2.volume = 0.5;
+          stopAudio2
+            .play()
+            .catch((e) => console.error("Audio feedback 2 error:", e));
+        }, 150); // 150ms delay for double tap effect
+      })
+      .catch((e) => console.error("Audio feedback error:", e));
+
     try {
       if (mediaRecorder && mediaRecorder.state !== "inactive") {
         mediaRecorder.stop();
