@@ -1657,6 +1657,10 @@ ipcMain.handle("check-for-updates", async () => {
   }
 });
 
+ipcMain.handle("get-app-version", () => {
+  return app.getVersion();
+});
+
 // Developer email for debug logs
 const DEV_EMAIL = "satyamyadav9uv@gmail.com";
 

@@ -97,4 +97,5 @@ contextBridge.exposeInMainWorld("api", {
   checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
   quitAndInstall: () => ipcRenderer.send("restart-app"),
   testUpdateUI: () => ipcRenderer.send("test-update-ui"),
+  getAppVersion: () => ipcRenderer.invoke("get-app-version"),
 });

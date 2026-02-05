@@ -98,6 +98,7 @@ export function initApp() {
   setupSettings();
   setupHotkeyUI();
   setupRecordingEvents();
+  fetchAndDisplayVersion();
 
   const testOnboardingBtn = document.getElementById("test-onboarding-btn");
   if (testOnboardingBtn) {
@@ -1365,4 +1366,12 @@ function animateValue(el, start, end, duration) {
     }
   };
   window.requestAnimationFrame(step);
+}
+
+async function fetchAndDisplayVersion() {
+  const version = await window.api.getAppVersion();
+  const display = document.getElementById("app-version-display");
+  if (display) {
+    display.textContent = `Version ${version}`;
+  }
 }
