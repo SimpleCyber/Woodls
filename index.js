@@ -40,10 +40,8 @@ require("dotenv").config();
 
 // Asset Path Helper for Production (app.asar support)
 const getAssetPath = (...paths) => {
-  return path.join(
-    app.isPackaged ? process.resourcesPath : __dirname,
-    ...paths,
-  );
+  // Always use __dirname because assets are inside the ASAR with the code
+  return path.join(__dirname, ...paths);
 };
 
 let win; // Moved to top to avoid TDZ issues
@@ -533,16 +531,15 @@ function createWindow() {
   }
 
   // Tray Setup
-  const iconPath = getAssetPath("webp", "woodls.png"); // Use woodls icon
-  // better to use a dedicated icon but user has webp files.
-  // Let's try to load one. If not, maybe just use empty string which might fail or show generic.
-  // We'll use the one from webp folder for now.
   try {
-    // Resize to 32x32 for better visibility on high DPI, or let OS handle it if we remove resize?
-    // Windows standard is 16x16 small, 32x32 large. Let's try 32 for "bigger".
-    const icon = nativeImage
-      .createFromPath(iconPath)
-      .resize({ width: 32, height: 32 });
+    // Windows standard is 16x16 small, 32x32 large.
+    // Use .ico for Windows tray if available for best compatibility
+    const trayIconPath =
+      process.platform === "win32"
+        ? getAssetPath("build", "woodls.ico")
+        : getAssetPath("webp", "woodls.png");
+
+    const icon = nativeImage.createFromPath(trayIconPath);
     tray = new Tray(icon);
     const contextMenu = Menu.buildFromTemplate([
       { label: "Open Woodls", click: () => win.show() },
@@ -1154,6 +1151,10 @@ ipcMain.on("save-setting", (event, { key, value }) => {
 });
 
 ipcMain.on("set-startup-settings", (event, { openAtLogin, startHidden }) => {
+  applyStartupSettings(openAtLogin, startHidden);
+});
+
+function applyStartupSettings(openAtLogin, startHidden) {
   app.setLoginItemSettings({
     openAtLogin: openAtLogin,
     path: app.getPath("exe"),
@@ -1161,7 +1162,7 @@ ipcMain.on("set-startup-settings", (event, { openAtLogin, startHidden }) => {
   });
   // Save to global settings so it persists before user login
   saveGlobalSettings({ openAtLogin, startHidden });
-});
+}
 
 ipcMain.on("get-startup-settings", (event) => {
   const { openAtLogin } = app.getLoginItemSettings();
@@ -1625,6 +1626,14 @@ app.whenReady().then(() => {
     console.log(`[Auth] Restored user: ${currentUser.email}`);
   }
 
+  // Apply Startup Settings
+  if (globalSettings.openAtLogin !== undefined) {
+    applyStartupSettings(
+      globalSettings.openAtLogin,
+      globalSettings.startHidden || false,
+    );
+  }
+
   initGenAI();
   createWindow();
 
@@ -1760,7 +1769,11 @@ autoUpdater.on("error", (err) => {
 });
 
 app.on("window-all-closed", (e) => {
-  if (!isQuitting) e.preventDefault();
+  if (!isQuitting) {
+    e.preventDefault();
+  } else if (process.platform !== "darwin") {
+    app.quit();
+  }
 });
 
 app.on("before-quit", () => {
@@ -1774,9 +1787,7 @@ app.on("before-quit", () => {
 });
 
 app.on("activate", () => {
-  if (win === null) {
+  if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
-  } else {
-    win.show();
   }
 });
