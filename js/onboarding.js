@@ -2,8 +2,9 @@ import { initAuth, login, signup, logout, signInWithGoogle } from "./auth.js";
 import { addLog, showError } from "./utils.js";
 
 let isRecording = false;
-let onboardingStep = 0; // 0=Intro, 1=Hotkey, 2=Test, 3=Review
+let onboardingStep = 0; // 0=Intro, 1=Hotkey, 2=AIHotkey, 3=Test, 4=Review
 let userHotkey = null;
+let userAIHotkey = null;
 
 // DOM Elements for Onboarding
 let modal, contentArea;
@@ -86,11 +87,37 @@ function renderStep(step) {
             `;
       break;
 
-    case 2: // Test Drive
+    case 2: // AI Hotkey
+      html = `
+                <div class="flex-1 flex flex-col items-center justify-center p-10 text-center animate-in slide-in-from-right-8 duration-300">
+                    <h2 class="text-2xl font-bold text-purple-600 mb-2">Power up with AI</h2>
+                    <p class="text-slate-500 mb-8 max-w-sm mx-auto">Set a dedicated key for AI commands. Use it to create lists, draft emails, or fix grammar instantly.</p>
+                    
+                    <div id="ob-ai-capture-area" class="w-full max-w-sm h-32 bg-purple-50 border-2 border-purple-200 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 hover:bg-purple-100 transition-all group shadow-sm">
+                         <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-sm">
+                            <i class="fa-solid fa-wand-magic-sparkles text-purple-400 group-hover:text-purple-600"></i>
+                         </div>
+                         <span class="text-purple-700 font-medium group-hover:text-purple-800 transition-colors">Click to Set AI Key</span>
+                         <span id="ob-ai-hotkey-display" class="text-3xl font-bold text-purple-800 mt-2 hidden"></span>
+                    </div>
+                    
+                    <div class="mt-8 flex gap-3">
+                         <button id="ob-skip-btn" class="px-6 py-3 text-slate-400 font-medium hover:text-slate-600 transition-colors">
+                            Skip
+                        </button>
+                        <button id="ob-next-btn" class="px-8 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-200 opacity-50 cursor-not-allowed" disabled>
+                            Continue <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+      break;
+
+    case 3: // Test Drive
       html = `
                 <div class="flex-1 flex flex-col items-center justify-center p-10 text-center animate-in slide-in-from-right-8 duration-300">
                     <h2 class="text-2xl font-bold text-slate-800 mb-2">Let's test it out</h2>
-                    <p class="text-slate-500 mb-6">Hold / Doubble press <span class="font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-900 mx-1 border border-slate-200">${
+                    <p class="text-slate-500 mb-6">Hold <span class="font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-900 mx-1 border border-slate-200">${
                       userHotkey || "Hotkey"
                     }</span> to dictate.</p>
                     
@@ -121,12 +148,11 @@ function renderStep(step) {
             `;
       break;
 
-    case 3: // Review
+    case 4: // Review
       // Get current defaults (assuming defaults)
       const isPaste = true;
       const isStartup = true;
       const isHidden = true;
-      const isAI = false;
 
       const toggleItem = (id, label, sub, checked) => `
         <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
@@ -150,7 +176,6 @@ function renderStep(step) {
                         ${toggleItem("ob-paste", "Paste Automatically", "Insert text immediately", isPaste)}
                         ${toggleItem("ob-startup", "Run on Startup", "Ready when you login", isStartup)}
                         ${toggleItem("ob-hidden", "Start Hidden", "Launch silently in tray", isHidden)}
-                        ${toggleItem("ob-ai", "AI Enhancement", "Refine text with AI", isAI)}
                      </div>
                      
                      <div class="mt-8">
@@ -163,6 +188,7 @@ function renderStep(step) {
       break;
   }
 
+
   modal.innerHTML = html;
 
   // Attach Listeners
@@ -172,9 +198,13 @@ function renderStep(step) {
   const finishBtn = document.getElementById("ob-finish-btn");
   if (finishBtn) finishBtn.onclick = completeOnboarding;
 
+  const skipBtn = document.getElementById("ob-skip-btn");
+  if (skipBtn) skipBtn.onclick = () => renderStep(step + 1);
+
   if (step === 1) setupHotkeyCapture();
-  if (step === 2) setupDictationTest();
-  if (step === 3) setupSettingsReview();
+  if (step === 2) setupAIHotkeyCapture();
+  if (step === 3) setupDictationTest();
+  if (step === 4) setupSettingsReview();
 }
 
 function setupHotkeyCapture() {
@@ -252,13 +282,71 @@ function setupHotkeyCapture() {
   }
 }
 
+function setupAIHotkeyCapture() {
+  const area = document.getElementById("ob-ai-capture-area");
+  const display = document.getElementById("ob-ai-hotkey-display");
+  const nextBtn = document.getElementById("ob-next-btn");
+  const span = area.querySelector("span");
+
+  let listening = false;
+
+  area.onclick = () => {
+    listening = true;
+    area.classList.add("border-purple-500", "bg-purple-50");
+    area.classList.remove("border-purple-200");
+    span.textContent = "Listening... Press a key";
+    display.classList.add("hidden");
+  };
+
+  const handler = (e) => {
+    if (!listening) return;
+    e.preventDefault();
+
+    const rawKey = e.key.toUpperCase();
+    let displayKey = rawKey;
+    let backendKey = rawKey;
+
+     if (e.location === 3) {
+      displayKey = `Numpad ${e.key}`; 
+      backendKey = `NUMPAD${e.key.toUpperCase()}`; 
+    }
+
+    if (e.code === "Space") {
+      displayKey = "Space";
+      backendKey = "SPACE";
+    }
+
+    userAIHotkey = backendKey;
+
+    display.textContent = displayKey;
+    display.classList.remove("hidden");
+    span.textContent = "Active AI Hotkey";
+
+    area.classList.remove("border-purple-500", "bg-purple-50");
+    area.classList.add("border-purple-500", "bg-purple-100"); // keep it purple
+
+    nextBtn.disabled = false;
+    nextBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    nextBtn.classList.add("bg-purple-600", "hover:bg-purple-700");
+
+    if (window.api && window.api.saveAIHotkey) {
+      window.api.saveAIHotkey([userAIHotkey]);
+    }
+
+    listening = false;
+    window.removeEventListener("keydown", handler);
+  };
+
+  window.addEventListener("keydown", handler);
+}
+
 function setupDictationTest() {
   const testArea = document.getElementById("ob-test-area");
   const recStatus = document.getElementById("ob-rec-status");
 
   // Show "Recording..." state
   window.api.onRecordStart(() => {
-    if (onboardingStep === 2 && recStatus) {
+    if (onboardingStep === 3 && recStatus) {
       recStatus.classList.remove("opacity-0");
       recStatus.innerHTML =
         '<div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div> Recording...';
@@ -269,7 +357,7 @@ function setupDictationTest() {
 
   // Show "Processing..." state
   window.api.onRecordStop(() => {
-    if (onboardingStep === 2 && recStatus) {
+    if (onboardingStep === 3 && recStatus) {
       recStatus.innerHTML =
         '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
       recStatus.className =
@@ -281,7 +369,7 @@ function setupDictationTest() {
   document.addEventListener(
     "woodls-transcription",
     (e) => {
-      if (onboardingStep === 2 && testArea) {
+      if (onboardingStep === 3 && testArea) {
         const text = e.detail.text;
         testArea.innerHTML = text;
         testArea.classList.add("text-slate-800");
