@@ -19,6 +19,12 @@ const captureArea = document.getElementById("captureArea");
 const capturedKeysSpan = document.getElementById("capturedKeys");
 const hotkeyDisplay = document.getElementById("hotkeyDisplay");
 
+// ---------- AI Hotkey UI ----------
+const startAIHotkeyCaptureBtn = document.getElementById("startAIHotkeyCapture");
+const clearAIHotkeyBtn = document.getElementById("clearAIHotkey");
+const aiHotkeyDisplay = document.getElementById("aiHotkeyDisplay");
+let currentAIHotkey = [];
+
 // ---------- Audio / History ----------
 const historyList = document.getElementById("history-list");
 const historyTabBtn = document.querySelector('[data-page="history"]');
@@ -97,6 +103,7 @@ export function initApp() {
   setupTheme();
   setupSettings();
   setupHotkeyUI();
+  setupAIHotkeyUI(); // New
   setupRecordingEvents();
   fetchAndDisplayVersion();
 
@@ -281,6 +288,7 @@ export function initApp() {
 
   // Initial Fetch
   window.api.getHotkey();
+  window.api.getAIHotkey(); // New
 }
 
 function setupSettings() {
@@ -533,7 +541,14 @@ function setupHotkeyUI() {
       if (captured.size === 0) return alert("No key captured.");
       const arr = Array.from(captured);
       const keyToSave = arr[arr.length - 1];
-      window.api.saveHotkey([keyToSave]);
+
+      if (window.capturingAI) {
+        window.api.saveAIHotkey([keyToSave]);
+        window.capturingAI = false;
+      } else {
+        window.api.saveHotkey([keyToSave]);
+      }
+
       captureArea.classList.add("hidden");
       captureArea.style.display = "";
       capturing = false;
@@ -571,6 +586,59 @@ function setupHotkeyUI() {
   });
 }
 
+function setupAIHotkeyUI() {
+  if (startAIHotkeyCaptureBtn) {
+    startAIHotkeyCaptureBtn.onclick = () => {
+      // Re-use existing capture overlay logic but targeting AI Hotkey
+      capturing = true;
+      captured.clear();
+      capturedKeysSpan.textContent = "[]";
+      captureArea.classList.remove("hidden");
+      captureArea.style.display = "flex";
+      addLog("Capturing AI hotkey...", "purple");
+      window.focus();
+
+      // Temporarily override save button behavior?
+      // Better: check which button launched capture? or just use a flag
+      window.capturingAI = true;
+    };
+  }
+
+  // Update save logic in setupHotkeyUI to handle flag
+  if (clearAIHotkeyBtn) {
+    clearAIHotkeyBtn.onclick = () => window.api.clearAIHotkey();
+  }
+
+  window.api.onAIHotkeyLoaded((_, keys) => {
+    currentAIHotkey = keys || [];
+    updateAIHotkeyDisplay(currentAIHotkey);
+  });
+  window.api.onAIHotkeySaved((_, keys) => {
+    currentAIHotkey = keys || [];
+    updateAIHotkeyDisplay(currentAIHotkey);
+    addLog("AI Hotkey saved", "purple");
+  });
+  window.api.onAIHotkeyCleared(() => {
+    currentAIHotkey = [];
+    updateAIHotkeyDisplay([]);
+    addLog("AI Hotkey cleared", "red");
+  });
+}
+
+function updateAIHotkeyDisplay(keys) {
+  if (aiHotkeyDisplay) {
+    if (keys && keys.length > 0) {
+      aiHotkeyDisplay.textContent = keys[0];
+      aiHotkeyDisplay.classList.remove("text-slate-500", "italic");
+      aiHotkeyDisplay.classList.add("text-purple-600", "font-bold");
+    } else {
+      aiHotkeyDisplay.textContent = "Set AI Hotkey";
+      aiHotkeyDisplay.classList.remove("text-purple-600", "font-bold");
+      aiHotkeyDisplay.classList.add("text-slate-500", "italic");
+    }
+  }
+}
+
 function updateHotkeyDisplay(keys) {
   const targets = document.querySelectorAll(".hotkey-dynamic-text");
   targets.forEach((el) => {
@@ -586,15 +654,36 @@ function updateHotkeyDisplay(keys) {
   });
   if (hotkeyDisplay) {
     hotkeyDisplay.textContent = keys.length
-      ? "Hotkey: " + keys.join(" + ")
+      ? keys.join(" + ")
       : "No hotkey set";
   }
 }
 
 function setupRecordingEvents() {
-  window.api.onRecordStart(async () => {
+  window.api.onRecordStart(async (_, params) => {
     addLog("Recording started", "green");
-    window.api.showOverlay(aiEnhanced);
+
+    // Determine AI Mode for this session
+    // If params.aiMode is explicitly set (true/false), use it.
+    // Otherwise fallback to global setting `aiEnhanced`
+    let sessionAIMode = aiEnhanced;
+    if (params && typeof params.aiMode === "boolean") {
+      sessionAIMode = params.aiMode;
+    }
+
+    // Pass session mode to overlay?
+    // The main process handles overlay visual mode via show-overlay(aiEnabled)
+    // We should probably rely on main's logic for overlay toggle,
+    // but we need to know for transcription/generation.
+
+    // Wait, the main process calls show-overlay with specific flags.
+    // We don't control the overlay show here, checking index.js...
+    // Actually index.js sends 'record-start' AND calls `win.webContents.send("set-ai-status", ...)` in show-overlay IPC
+    // But wait, the main process calls `win.webContents.send("record-start")`
+    // And WE call `window.api.showOverlay(aiEnhanced)` here on line 597!
+
+    // Correction: We need to pass the determined mode to showOverlay
+    window.api.showOverlay(sessionAIMode);
 
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -715,7 +804,7 @@ function setupRecordingEvents() {
 
           let finalOutput = text;
 
-          if (aiEnhanced) {
+          if (sessionAIMode) {
             addLog("Processing AI task...", "green");
             finalOutput = await window.api.generateText({
               info: text,

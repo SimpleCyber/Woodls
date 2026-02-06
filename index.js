@@ -234,7 +234,9 @@ if (!fs.existsSync(RECORDINGS_DIR)) {
 }
 
 let keyboard;
+
 let requiredKeys = []; // single-key expected (array but we use index 0)
+let requiredAIKeys = []; // single-key for AI mode
 let running = false;
 let pressStart = null;
 let isPersistent = false;
@@ -356,11 +358,12 @@ if (deepLinkUrl) {
 function readSettings() {
   try {
     const p = getUserPaths().settings;
-    if (!fs.existsSync(p)) return { hotkey: [] };
+
+    if (!fs.existsSync(p)) return { hotkey: [], aiHotkey: [] };
     const raw = fs.readFileSync(p, "utf8");
     return JSON.parse(raw);
   } catch (e) {
-    return { hotkey: [] };
+    return { hotkey: [], aiHotkey: [] };
   }
 }
 
@@ -403,10 +406,13 @@ let currentUser = null; // { uid, email, displayName, photoURL }
 function onUserChanged() {
   initGenAI(); // Reload with current user's settings
   const settings = readSettings();
+
   requiredKeys = Array.isArray(settings.hotkey) ? settings.hotkey : [];
+  requiredAIKeys = Array.isArray(settings.aiHotkey) ? settings.aiHotkey : [];
   if (win && !win.isDestroyed()) {
     win.webContents.send("settings-loaded", settings);
     win.webContents.send("hotkey-loaded", requiredKeys);
+    win.webContents.send("ai-hotkey-loaded", requiredAIKeys);
   }
 }
 
@@ -778,9 +784,11 @@ function createWindow() {
 
   const settings = readSettings();
   requiredKeys = Array.isArray(settings.hotkey) ? settings.hotkey : [];
+  requiredAIKeys = Array.isArray(settings.aiHotkey) ? settings.aiHotkey : [];
 
   win.webContents.on("did-finish-load", () => {
     win.webContents.send("hotkey-loaded", requiredKeys);
+    win.webContents.send("ai-hotkey-loaded", requiredAIKeys);
     win.webContents.send("settings-loaded", settings);
     sendAIInfoToRenderer();
   });
@@ -1017,10 +1025,29 @@ function setupGlobalKeyboard() {
       requiredKeys && requiredKeys[0]
         ? normalizeKeyName(requiredKeys[0])
         : null;
+    const AI_HOTKEY =
+      requiredAIKeys && requiredAIKeys[0]
+        ? normalizeKeyName(requiredAIKeys[0])
+        : null;
 
-    if (!HOTKEY) return;
+    if (!HOTKEY && !AI_HOTKEY) return;
 
-    if (event.state === "DOWN" && key === HOTKEY) {
+    // Determine which key was pressed and set mode
+    let isAIMode = false;
+    let isActiveKey = false;
+    let targetHotkey = null;
+
+    if (key === HOTKEY) {
+      isActiveKey = true;
+      isAIMode = false;
+      targetHotkey = HOTKEY;
+    } else if (key === AI_HOTKEY) {
+      isActiveKey = true;
+      isAIMode = true;
+      targetHotkey = AI_HOTKEY;
+    }
+
+    if (event.state === "DOWN" && isActiveKey) {
       const now = Date.now();
 
       // Double-Tap Logic
@@ -1046,9 +1073,15 @@ function setupGlobalKeyboard() {
         isPersistent = true;
         running = true;
         pressStart = now;
-        win.webContents.send("record-start", { persistent: true });
+        isPersistent = true;
+        running = true;
+        pressStart = now;
+        win.webContents.send("record-start", {
+          persistent: true,
+          aiMode: isAIMode,
+        });
         win.webContents.send("hotkey-pressed", {
-          key: HOTKEY,
+          key: targetHotkey,
           time: pressStart,
         });
         return;
@@ -1081,16 +1114,19 @@ function setupGlobalKeyboard() {
             } catch (e) {}
           }
 
-          win.webContents.send("record-start", { persistent: false });
+          win.webContents.send("record-start", {
+            persistent: false,
+            aiMode: isAIMode,
+          });
           win.webContents.send("hotkey-pressed", {
-            key: HOTKEY,
+            key: targetHotkey,
             time: pressStart,
           });
         }, 600);
       }
     }
 
-    if (event.state === "UP" && key === HOTKEY) {
+    if (event.state === "UP" && isActiveKey) {
       if (holdTimeout) {
         clearTimeout(holdTimeout);
         holdTimeout = null;
@@ -1118,8 +1154,9 @@ function stopAndTranscribe() {
     requiredKeys && requiredKeys[0] ? normalizeKeyName(requiredKeys[0]) : null;
 
   win.webContents.send("record-stop");
+
   win.webContents.send("hotkey-released", {
-    key: HOTKEY,
+    key: null,
     releaseTime,
     duration,
   });
@@ -1182,6 +1219,24 @@ ipcMain.on("get-startup-settings", (event) => {
 
 ipcMain.on("get-hotkey", (event) => {
   event.reply("hotkey-loaded", requiredKeys);
+});
+
+// ----------------- IPC: AI Hotkey management -----------------
+ipcMain.on("save-ai-hotkey", (event, keys) => {
+  const normalized = (keys || []).map((k) => normalizeKeyName(k));
+  requiredAIKeys = normalized;
+  saveSettings({ aiHotkey: normalized });
+  event.reply("ai-hotkey-saved", normalized);
+});
+
+ipcMain.on("clear-ai-hotkey", (event) => {
+  requiredAIKeys = [];
+  saveSettings({ aiHotkey: [] });
+  event.reply("ai-hotkey-cleared");
+});
+
+ipcMain.on("get-ai-hotkey", (event) => {
+  event.reply("ai-hotkey-loaded", requiredAIKeys);
 });
 
 // ----------------- IPC: Save recorded audio -----------------
@@ -1393,7 +1448,7 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer, context) => {
     (app) => appNameLower.includes(app) || winTitleLower.includes(app),
   );
 
-  if (true){
+  if (true) {
     systemPrompt = `
     - Always return properly formated structured responses
     - Timestamps: Strictly forbidden.

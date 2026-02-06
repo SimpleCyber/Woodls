@@ -40,6 +40,13 @@ contextBridge.exposeInMainWorld("api", {
   onHotkeySaved: (cb) => ipcRenderer.on("hotkey-saved", cb),
   onHotkeyCleared: (cb) => ipcRenderer.on("hotkey-cleared", cb),
 
+  saveAIHotkey: (keys) => ipcRenderer.send("save-ai-hotkey", keys),
+  clearAIHotkey: () => ipcRenderer.send("clear-ai-hotkey"),
+  getAIHotkey: () => ipcRenderer.send("get-ai-hotkey"),
+  onAIHotkeyLoaded: (cb) => ipcRenderer.on("ai-hotkey-loaded", cb),
+  onAIHotkeySaved: (cb) => ipcRenderer.on("ai-hotkey-saved", cb),
+  onAIHotkeyCleared: (cb) => ipcRenderer.on("ai-hotkey-cleared", cb),
+
   // Recording events from main
   onRecordStart: (cb) => ipcRenderer.on("record-start", cb),
   onRecordStop: (cb) => ipcRenderer.on("record-stop", cb),
