@@ -82,6 +82,7 @@ const pasteToggle = document.getElementById("pasteToggle");
 const aiToggle = document.getElementById("aiToggle");
 const startupToggle = document.getElementById("startupToggle");
 const hiddenToggle = document.getElementById("hiddenToggle");
+const offlineAIToggle = document.getElementById("offlineAIToggle");
 
 const newKeyInput = document.getElementById("newKeyInput");
 const addKeyBtn = document.getElementById("addKeyBtn");
@@ -304,6 +305,9 @@ function setupSettings() {
       if (backspaceToggle) backspaceToggle.checked = useBackspace;
       if (pasteToggle) pasteToggle.checked = instantPaste;
       if (aiToggle) aiToggle.checked = aiEnhanced;
+      if (offlineAIToggle && typeof settings.offlineAI === "boolean") {
+        offlineAIToggle.checked = settings.offlineAI;
+      }
 
       // Load API Settings
       if (Array.isArray(settings.apiKey)) {
@@ -369,8 +373,14 @@ function setupSettings() {
   }
   if (aiToggle) {
     aiToggle.onchange = () => {
-      aiEnhanced = aiEnhanced = aiToggle.checked;
+      aiEnhanced = aiToggle.checked;
       window.api.saveSetting("aiEnhanced", aiEnhanced);
+    };
+  }
+
+  if (offlineAIToggle) {
+    offlineAIToggle.onchange = () => {
+      window.api.saveSetting("offlineAI", offlineAIToggle.checked);
     };
   }
 
@@ -785,9 +795,57 @@ function setupRecordingEvents() {
 
         try {
           const blob = new Blob(chunks, { type: "audio/webm" });
+          console.log("[AudioDebug] WebM Blob size:", blob.size);
           lastArrayBuffer = await blob.arrayBuffer();
 
           addLog("Transcribing...", "purple");
+
+          // Decode audio for Offline AI if needed (or just always provide samples for robustness)
+          let audioSamples = null;
+          try {
+            const tempCtx = new (
+              window.AudioContext || window.webkitAudioContext
+            )();
+            const decodedBuffer = await tempCtx.decodeAudioData(
+              lastArrayBuffer.slice(0),
+            );
+            console.log(
+              "[AudioDebug] Decoded duration:",
+              decodedBuffer.duration,
+              "channels:",
+              decodedBuffer.numberOfChannels,
+            );
+
+            // Resample to 16kHz Mono using OfflineAudioContext
+            const offlineCtx = new OfflineAudioContext(
+              1,
+              Math.ceil(decodedBuffer.duration * 16000),
+              16000,
+            );
+            const source = offlineCtx.createBufferSource();
+            source.buffer = decodedBuffer;
+            source.connect(offlineCtx.destination);
+            source.start();
+            const resampledBuffer = await offlineCtx.startRendering();
+            audioSamples = resampledBuffer.getChannelData(0);
+
+            // Audit samples
+            let maxVol = 0;
+            for (let i = 0; i < Math.min(audioSamples.length, 10000); i++) {
+              if (Math.abs(audioSamples[i]) > maxVol)
+                maxVol = Math.abs(audioSamples[i]);
+            }
+            console.log(
+              "[AudioDebug] Samples length:",
+              audioSamples.length,
+              "Max vol (first 10k):",
+              maxVol,
+            );
+
+            await tempCtx.close();
+          } catch (e) {
+            console.warn("Could not decode audio in renderer:", e);
+          }
 
           // Context for Normal Mode Enhancement
           const context = {
@@ -798,6 +856,7 @@ function setupRecordingEvents() {
           const result = await window.api.transcribeAudio(
             lastArrayBuffer,
             context,
+            audioSamples,
           );
           const text = result.text;
           const historyId = result.id;

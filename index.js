@@ -20,6 +20,7 @@ let activeWin;
 const { GlobalKeyboardListener } = require("node-global-key-listener");
 const { GoogleGenerativeAI } = require("@google/generative-ai"); // keep as placeholder
 const { GoogleAIFileManager } = require("@google/generative-ai/server");
+const OfflineAI = require("./offline-ai");
 const robot = require("@jitsi/robotjs");
 const { initializeApp } = require("firebase/app");
 const {
@@ -1420,36 +1421,89 @@ ipcMain.handle("delete-note", (_, id) => {
 
 // ----------------- IPC: speech to text -----------------
 
-ipcMain.handle("transcribe-audio", async (_, arrayBuffer, context) => {
-  const maxRetries = 3; // Allow more retries for multi-key
-  let attempt = 0;
-  let savePath;
+ipcMain.handle(
+  "transcribe-audio",
+  async (_, arrayBuffer, context, audioSamples) => {
+    console.log("[Main] --- New Transcription Request ---");
+    console.log(
+      "[Main] arrayBuffer size:",
+      arrayBuffer ? arrayBuffer.byteLength : 0,
+    );
+    console.log("[Main] audioSamples present:", !!audioSamples);
+    if (audioSamples) {
+      console.log("[Main] audioSamples length:", audioSamples.length);
+      console.log("[Main] audioSamples type:", typeof audioSamples);
+      console.log(
+        "[Main] audioSamples constructor:",
+        audioSamples.constructor?.name,
+      );
+    }
+    const settings = readSettings();
+    if (settings.offlineAI) {
+      // Force offline for now as requested, or check a flag
+      try {
+        const path = require("path");
+        const fs = require("fs");
 
-  // Context-Aware Prompt Logic
-  // Default prompt (fallback)
-  let systemPrompt = "Transcribe this audio to plain text only: ";
+        // 1. Save audio for history
+        const savePath = path.join(RECORDINGS_DIR, `rec_${Date.now()}.webm`);
+        const buffer = Buffer.from(arrayBuffer);
+        fs.writeFileSync(savePath, buffer);
 
-  // Detect Coding / Prompting Environment
-  const codingApps = [
-    "code",
-    "cursor",
-    "windsurf",
-    "antigravity",
-    "v0",
-    "visual studio code",
-  ];
+        // 2. Transcribe & Rewrite
+        let text = await OfflineAI.transcribe(buffer, audioSamples);
+        text = await OfflineAI.rewrite(text);
 
-  const appNameLower =
-    context && context.appName ? context.appName.toLowerCase() : "";
-  const winTitleLower =
-    context && context.windowTitle ? context.windowTitle.toLowerCase() : "";
+        // 3. Save History
+        const historyItem = {
+          id: Date.now().toString(),
+          timestamp: Date.now(),
+          text: text,
+          audioPath: savePath,
+          duration: lastDuration,
+        };
+        lastDuration = 0;
 
-  const isCodingApp = codingApps.some(
-    (app) => appNameLower.includes(app) || winTitleLower.includes(app),
-  );
+        const history = readHistory();
+        history.push(historyItem);
+        saveHistory(history);
 
-  if (true) {
-    systemPrompt = `
+        return { text: text, id: historyItem.id };
+      } catch (err) {
+        console.error("Offline AI Error:", err);
+        return "Error: " + err.message;
+      }
+    }
+
+    const maxRetries = 3; // Allow more retries for multi-key
+    let attempt = 0;
+    let savePath;
+
+    // Context-Aware Prompt Logic
+    // Default prompt (fallback)
+    let systemPrompt = "Transcribe this audio to plain text only: ";
+
+    // Detect Coding / Prompting Environment
+    const codingApps = [
+      "code",
+      "cursor",
+      "windsurf",
+      "antigravity",
+      "v0",
+      "visual studio code",
+    ];
+
+    const appNameLower =
+      context && context.appName ? context.appName.toLowerCase() : "";
+    const winTitleLower =
+      context && context.windowTitle ? context.windowTitle.toLowerCase() : "";
+
+    const isCodingApp = codingApps.some(
+      (app) => appNameLower.includes(app) || winTitleLower.includes(app),
+    );
+
+    if (true) {
+      systemPrompt = `
     - Always return properly formated structured responses
     - Timestamps: Strictly forbidden.
     - No Execution: Just transcribe and format the response give structured response.
@@ -1478,97 +1532,120 @@ After coming back from there, I want to complete my tasks and sleep. That's it f
     **
 
     `;
-  }
-
-  while (attempt < maxRetries) {
-    try {
-      if (!genAI) throw new Error("AI not initialized. Check API Key.");
-
-      const settings = readSettings();
-      // fileManager needs a valid key. Use currentApiKey.
-      const fileManager = new GoogleAIFileManager(currentApiKey);
-
-      // 1. Save to recordings folder for history (only once)
-      if (attempt === 0) {
-        savePath = path.join(RECORDINGS_DIR, `rec_${Date.now()}.webm`);
-        const buffer = Buffer.from(arrayBuffer);
-        fs.writeFileSync(savePath, buffer);
-      }
-
-      // upload the audio
-      const upload = await fileManager.uploadFile(savePath, {
-        mimeType: "audio/webm",
-        displayName: "hotkey-recording",
-      });
-
-      // now transcribe
-      const model = genAI.getGenerativeModel({ model: currentModelName });
-
-      const result = await model.generateContent([
-        systemPrompt,
-        {
-          fileData: {
-            mimeType: upload.file.mimeType,
-            fileUri: upload.file.uri,
-          },
-        },
-      ]);
-
-      const text = result.response.text();
-
-      // SUCCESS: Update usage for this specific Key + Model
-      updateAIUsage(currentKeyIndex, currentModelName);
-
-      const historyItem = {
-        id: Date.now().toString(),
-        timestamp: Date.now(),
-        text: text, // Raw transcript
-        audioPath: savePath,
-        duration: lastDuration,
-      };
-
-      // Reset lastDuration to avoid reuse
-      lastDuration = 0;
-
-      const history = readHistory();
-      history.push(historyItem);
-      saveHistory(history);
-
-      return { text: text, id: historyItem.id };
-    } catch (err) {
-      console.error(
-        `Transcription error (Attempt ${attempt + 1}/${maxRetries}):`,
-        err,
-      );
-
-      if (attempt < maxRetries - 1) {
-        console.warn(
-          `[AI] Error encountered. Rotating key/model for robust retry...`,
-        );
-        // Mark this pair as exhausted for the current session to force rotation
-        const usageData = readAIUsage();
-        if (!usageData.keys[currentKeyIndex])
-          usageData.keys[currentKeyIndex] = {};
-        // Temporarily set to max to push rotation
-        usageData.keys[currentKeyIndex][currentModelName] = MAX_DAILY_CALLS;
-        saveAIUsage(usageData);
-
-        // Re-init with next best key/model pair
-        initGenAI();
-        attempt++;
-        continue;
-      }
-
-      return "Error: " + err.message;
     }
-  }
-});
+
+    while (attempt < maxRetries) {
+      try {
+        if (!genAI) throw new Error("AI not initialized. Check API Key.");
+
+        const settings = readSettings();
+        // fileManager needs a valid key. Use currentApiKey.
+        const fileManager = new GoogleAIFileManager(currentApiKey);
+
+        // 1. Save to recordings folder for history (only once)
+        if (attempt === 0) {
+          savePath = path.join(RECORDINGS_DIR, `rec_${Date.now()}.webm`);
+          const buffer = Buffer.from(arrayBuffer);
+          fs.writeFileSync(savePath, buffer);
+        }
+
+        // upload the audio
+        const upload = await fileManager.uploadFile(savePath, {
+          mimeType: "audio/webm",
+          displayName: "hotkey-recording",
+        });
+
+        // now transcribe
+        const model = genAI.getGenerativeModel({ model: currentModelName });
+
+        const result = await model.generateContent([
+          systemPrompt,
+          {
+            fileData: {
+              mimeType: upload.file.mimeType,
+              fileUri: upload.file.uri,
+            },
+          },
+        ]);
+
+        const text = result.response.text();
+
+        // SUCCESS: Update usage for this specific Key + Model
+        updateAIUsage(currentKeyIndex, currentModelName);
+
+        const historyItem = {
+          id: Date.now().toString(),
+          timestamp: Date.now(),
+          text: text, // Raw transcript
+          audioPath: savePath,
+          duration: lastDuration,
+        };
+
+        // Reset lastDuration to avoid reuse
+        lastDuration = 0;
+
+        const history = readHistory();
+        history.push(historyItem);
+        saveHistory(history);
+
+        return { text: text, id: historyItem.id };
+      } catch (err) {
+        console.error(
+          `Transcription error (Attempt ${attempt + 1}/${maxRetries}):`,
+          err,
+        );
+
+        if (attempt < maxRetries - 1) {
+          console.warn(
+            `[AI] Error encountered. Rotating key/model for robust retry...`,
+          );
+          // Mark this pair as exhausted for the current session to force rotation
+          const usageData = readAIUsage();
+          if (!usageData.keys[currentKeyIndex])
+            usageData.keys[currentKeyIndex] = {};
+          // Temporarily set to max to push rotation
+          usageData.keys[currentKeyIndex][currentModelName] = MAX_DAILY_CALLS;
+          saveAIUsage(usageData);
+
+          // Re-init with next best key/model pair
+          initGenAI();
+          attempt++;
+          continue;
+        }
+
+        return "Error: " + err.message;
+      }
+    }
+  },
+);
 
 ipcMain.handle("retranscribe-audio", async (_, id) => {
+  const settings = readSettings();
   const history = readHistory();
   const item = history.find((i) => i.id === id);
   if (!item || !item.audioPath || !fs.existsSync(item.audioPath)) {
     return "Error: File not found";
+  }
+
+  if (settings.offlineAI) {
+    try {
+      const buffer = fs.readFileSync(item.audioPath);
+      let text = await OfflineAI.transcribe(buffer);
+      text = await OfflineAI.rewrite(text);
+
+      // Update history item
+      const historyUpdate = readHistory();
+      const idx = historyUpdate.findIndex((i) => i.id === id);
+      if (idx >= 0) {
+        historyUpdate[idx].text = text;
+        saveHistory(historyUpdate);
+        return text;
+      }
+      return "Error: History item not found during update";
+    } catch (err) {
+      console.error("Offline Retranscription error:", err);
+      return "Error: " + err.message;
+    }
   }
 
   const maxRetries = 3;
@@ -1620,6 +1697,11 @@ ipcMain.handle("retranscribe-audio", async (_, id) => {
 
 // ----------------- IPC: LLM generation (placeholder) -----------------
 ipcMain.handle("generate-text", async (_, { info, assistantName, appName }) => {
+  const settings = readSettings();
+  if (settings.offlineAI) {
+    return await OfflineAI.rewrite(info);
+  }
+
   const maxRetries = 3;
   let attempt = 0;
 
@@ -1742,6 +1824,13 @@ app.whenReady().then(() => {
   }
 
   initGenAI();
+  // Initialize Offline AI in background for fast first response
+  setTimeout(() => {
+    OfflineAI.init().catch((err) =>
+      console.error("Failed to init OfflineAI:", err),
+    );
+  }, 1000);
+
   createWindow();
 
   // Check for updates after a short delay to ensure windows are ready

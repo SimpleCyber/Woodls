@@ -1175,6 +1175,29 @@
                 <div
                   class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100"
                 >
+                  <div class="p-4 flex items-center justify-between">
+                    <div>
+                      <div class="text-sm font-medium text-slate-800">
+                        Offline AI Mode
+                      </div>
+                      <div class="text-xs text-slate-500">
+                        Use local models for transcription and rewriting
+                        (Privacy first, no internet required).
+                      </div>
+                    </div>
+                    <label
+                      class="relative inline-flex items-center cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        id="offlineAIToggle"
+                        class="sr-only peer"
+                      />
+                      <div
+                        class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"
+                      ></div>
+                    </label>
+                  </div>
                   <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label
@@ -1354,8 +1377,6 @@
                       ></div>
                     </label>
                   </div>
-
-                 
                 </div>
               </div>
             </div>
