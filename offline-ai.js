@@ -128,34 +128,131 @@ class OfflineAI {
     }
   }
 
-  async rewrite(text) {
+  async rewrite(text, customPrompt = null) {
     if (!this.isInitialized) await this.init();
     if (!text || text.trim().length === 0) return text;
 
     try {
-      // Small models like flan-t5-small often echo the prompt label.
-      const prompt = `Rewrite: ${text}`;
+      // Small models like flan-t5-small need very direct, short instructions.
+      // Long prompts cause them to hallucinate identity ("a symphony").
+      let prompt;
+      if (customPrompt) {
+        // Condensed prompt for T5
+        prompt = `${customPrompt.trim()}: ${text}`;
+      } else {
+        prompt = `Fix grammar and format: ${text}`;
+      }
 
       console.group("[OfflineAI] Rewriting...");
-      const result = await this.rewriter(prompt, {
-        max_new_tokens: 128,
-        temperature: 0.1,
-        repetition_penalty: 1.2,
-      });
-      const output = result[0].generated_text.trim();
-      console.log("[OfflineAI] Raw result:", output);
-      console.groupEnd();
+      console.log("[OfflineAI] Prompt:", prompt);
 
-      // Aggressive cleaning of common echoed labels
-      let final = output
+      const result = await this.rewriter(prompt, {
+        max_new_tokens: 512,
+        temperature: 0.1, // Lower for stability
+        repetition_penalty: 1.5, // Increased
+        no_repeat_ngram_size: 3, // Prevent Looping
+        num_beams: 2, // Better search
+        do_sample: false,
+      });
+
+      let output = result[0].generated_text.trim();
+      console.log("[OfflineAI] Raw result:", output);
+
+      // 1. Remove systemic labels
+      output = output
         .replace(/^Rewrite:\s*/i, "")
-        .replace(/^Rewrite and fix grammar:\s*/i, "")
+        .replace(/^Rewrite and format:\s*/i, "")
+        .replace(/^Formatted Output:\s*/i, "")
+        .replace(/^Output:\s*/i, "")
         .trim();
-      return final;
+
+      // 2. Repetition cleaning
+      output = this.removeRepetitions(output);
+
+      // 3. Hallucination Guard
+      if (this.isHallucination(text, output)) {
+        console.warn(
+          "[OfflineAI] Hallucination detected, falling back to original text.",
+        );
+        console.groupEnd();
+        return text;
+      }
+
+      console.groupEnd();
+      return output;
     } catch (error) {
       console.error("[OfflineAI] Rewriting failed:", error);
       return text;
     }
+  }
+
+  // Detects if the model completely changed the subject (hallucinated)
+  isHallucination(original, generated) {
+    if (!generated || generated.length < 2) return true;
+
+    const origWords = new Set(
+      original
+        .toLowerCase()
+        .split(/\W+/)
+        .filter((w) => w.length > 2),
+    );
+    const genWords = generated
+      .toLowerCase()
+      .split(/\W+/)
+      .filter((w) => w.length > 2);
+
+    if (origWords.size === 0) return false; // Hard to judge empty/very short input
+    if (genWords.length === 0) return true;
+
+    // Check for "Identity Hallucinations" common in small T5
+    const identityTriggers = [
+      "symphony",
+      "video game",
+      "audio file",
+      "syncing",
+      "ipod",
+    ];
+    if (
+      identityTriggers.some((t) => generated.toLowerCase().includes(t)) &&
+      !identityTriggers.some((t) => original.toLowerCase().includes(t))
+    ) {
+      return true;
+    }
+
+    // Measure overlap
+    let overlapCount = 0;
+    for (const word of genWords) {
+      if (origWords.has(word)) overlapCount++;
+    }
+
+    const overlapRatio =
+      overlapCount / Math.min(origWords.size, genWords.length);
+    console.log(`[OfflineAI] Overlap Ratio: ${overlapRatio.toFixed(2)}`);
+
+    // If less than 15% overlap and input was decent length, it's likely a hallucination
+    if (overlapRatio < 0.15 && original.length > 15) return true;
+
+    return false;
+  }
+
+  removeRepetitions(text) {
+    // Basic sentence-level deduplication
+    const sentences = text
+      .split(/[.!?]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    const seen = new Set();
+    const result = [];
+
+    for (const s of sentences) {
+      const normalized = s.toLowerCase();
+      if (!seen.has(normalized)) {
+        seen.add(normalized);
+        result.push(s);
+      }
+    }
+
+    return result.join(". ") + (result.length > 0 ? "." : "");
   }
 
   async preprocessAudio(audioBuffer) {

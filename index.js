@@ -1452,7 +1452,10 @@ ipcMain.handle(
 
         // 2. Transcribe & Rewrite
         let text = await OfflineAI.transcribe(buffer, audioSamples);
-        text = await OfflineAI.rewrite(text);
+
+        // Use a very condensed prompt for the small offline model
+        const offlinePrompt = "Fix grammar and format";
+        text = await OfflineAI.rewrite(text, offlinePrompt);
 
         // 3. Save History
         const historyItem = {
@@ -1631,7 +1634,8 @@ ipcMain.handle("retranscribe-audio", async (_, id) => {
     try {
       const buffer = fs.readFileSync(item.audioPath);
       let text = await OfflineAI.transcribe(buffer);
-      text = await OfflineAI.rewrite(text);
+      const offlinePrompt = "Fix grammar and format";
+      text = await OfflineAI.rewrite(text, offlinePrompt);
 
       // Update history item
       const historyUpdate = readHistory();
@@ -1699,7 +1703,8 @@ ipcMain.handle("retranscribe-audio", async (_, id) => {
 ipcMain.handle("generate-text", async (_, { info, assistantName, appName }) => {
   const settings = readSettings();
   if (settings.offlineAI) {
-    return await OfflineAI.rewrite(info);
+    const offlineAIPrompt = "Rewrite input with better grammar and structure";
+    return await OfflineAI.rewrite(info, offlineAIPrompt);
   }
 
   const maxRetries = 3;
