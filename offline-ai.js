@@ -186,51 +186,74 @@ class OfflineAI {
     }
   }
 
-  // Detects if the model completely changed the subject (hallucinated)
+  // Detects if the model completely changed the subject (hallucinated) or lost too much content
   isHallucination(original, generated) {
     if (!generated || generated.length < 2) return true;
 
-    const origWords = new Set(
-      original
-        .toLowerCase()
-        .split(/\W+/)
-        .filter((w) => w.length > 2),
-    );
-    const genWords = generated
+    const origWordsList = original
+      .toLowerCase()
+      .split(/\W+/)
+      .filter((w) => w.length > 2);
+    const genWordsList = generated
       .toLowerCase()
       .split(/\W+/)
       .filter((w) => w.length > 2);
 
-    if (origWords.size === 0) return false; // Hard to judge empty/very short input
-    if (genWords.length === 0) return true;
+    const origWordSet = new Set(origWordsList);
+    const genWordSet = new Set(genWordsList);
 
-    // Check for "Identity Hallucinations" common in small T5
+    if (origWordSet.size === 0) return false; // Too short to judge
+
+    // 1. Coverage Check: How many unique original words are preserved?
+    let coverageCount = 0;
+    for (const word of origWordSet) {
+      if (genWordSet.has(word)) coverageCount++;
+    }
+
+    const coverageRatio = coverageCount / origWordSet.size;
+
+    // 2. Hallucination Check: How many gen words are actually from the original?
+    let overlapCount = 0;
+    for (const word of genWordsList) {
+      if (origWordSet.has(word)) overlapCount++;
+    }
+    const internalRatio =
+      genWordsList.length > 0 ? overlapCount / genWordsList.length : 1.0;
+
+    console.log(
+      `[OfflineAI] Coverage: ${coverageRatio.toFixed(2)}, Accuracy: ${internalRatio.toFixed(2)}`,
+    );
+
+    // Identity Hallucination Guard (T5 small specific)
     const identityTriggers = [
       "symphony",
       "video game",
       "audio file",
       "syncing",
       "ipod",
+      "record audio",
     ];
+    const genLower = generated.toLowerCase();
+    const origLower = original.toLowerCase();
     if (
-      identityTriggers.some((t) => generated.toLowerCase().includes(t)) &&
-      !identityTriggers.some((t) => original.toLowerCase().includes(t))
+      identityTriggers.some((t) => genLower.includes(t)) &&
+      !identityTriggers.some((t) => origLower.includes(t))
     ) {
+      console.warn("[OfflineAI] Identity hallucination detected.");
       return true;
     }
 
-    // Measure overlap
-    let overlapCount = 0;
-    for (const word of genWords) {
-      if (origWords.has(word)) overlapCount++;
+    // High Content Loss: Model summarized/dropped > 60% of original words
+    if (coverageRatio < 0.4 && original.length > 40) {
+      console.warn("[OfflineAI] High content loss detected.");
+      return true;
     }
 
-    const overlapRatio =
-      overlapCount / Math.min(origWords.size, genWords.length);
-    console.log(`[OfflineAI] Overlap Ratio: ${overlapRatio.toFixed(2)}`);
-
-    // If less than 15% overlap and input was decent length, it's likely a hallucination
-    if (overlapRatio < 0.15 && original.length > 15) return true;
+    // High Hallucination: Model added too much "new" text not in original
+    if (internalRatio < 0.2 && generated.length > 20) {
+      console.warn("[OfflineAI] High hallucination detected.");
+      return true;
+    }
 
     return false;
   }

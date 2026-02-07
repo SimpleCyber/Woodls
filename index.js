@@ -1453,8 +1453,8 @@ ipcMain.handle(
         // 2. Transcribe & Rewrite
         let text = await OfflineAI.transcribe(buffer, audioSamples);
 
-        // Use a very condensed prompt for the small offline model
-        const offlinePrompt = "Fix grammar and format";
+        // Use a very condensed, conservative prompt for the small offline model
+        const offlinePrompt = "Fix grammar and spelling";
         text = await OfflineAI.rewrite(text, offlinePrompt);
 
         // 3. Save History
@@ -1634,7 +1634,7 @@ ipcMain.handle("retranscribe-audio", async (_, id) => {
     try {
       const buffer = fs.readFileSync(item.audioPath);
       let text = await OfflineAI.transcribe(buffer);
-      const offlinePrompt = "Fix grammar and format";
+      const offlinePrompt = "Fix grammar and spelling";
       text = await OfflineAI.rewrite(text, offlinePrompt);
 
       // Update history item
