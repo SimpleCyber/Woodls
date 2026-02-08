@@ -117,6 +117,14 @@
           ></i>
         </div>
 
+        <!-- Status Text (Hidden by default) -->
+        <div
+          id="status-text"
+          class="hidden absolute text-[10px] text-white/80 font-medium tracking-tight truncate px-1 whitespace-nowrap"
+        >
+          Just thinking and working.
+        </div>
+
         <!-- AI Status Icon (🤖) -->
         <div id="ai-icon" class="hidden absolute right-2">
           <span class="text-[10px]">🤖</span>
@@ -140,11 +148,13 @@
       const pill = document.getElementById("pill");
       const waveform = document.getElementById("waveform");
       const spinner = document.getElementById("spinner");
+      const statusText = document.getElementById("status-text");
 
       // Track last update time for idle animation
       let lastMicUpdate = 0;
       let isRecording = false;
       let animationFrame = null;
+      let statusCycleTimeout = null;
 
       // Wave-like center emphasis pattern
       const centerWeight = [0.7, 0.9, 1.0, 0.9, 0.7];
@@ -240,20 +250,74 @@
       startIdleAnimation();
 
       // Processing states
-      ipcRenderer.on("processing-start", () => {
-        waveform.classList.add("hidden");
-        spinner.classList.remove("hidden");
-        // Hide all control buttons during processing as requested
-        document.getElementById("cancel-btn").classList.add("hidden");
-        document.getElementById("confirm-btn").classList.add("hidden");
-        // Disable mouse events so users can't click hidden buttons during generation
-        ipcRenderer.send("set-overlay-clickable", false);
+      ipcRenderer.on("processing-start", (event, data) => {
+        try {
+          const { hasSelection } = data || {};
+          console.log("Processing started, selection:", hasSelection);
+
+          waveform.classList.add("hidden");
+          document.getElementById("cancel-btn").classList.add("hidden");
+          document.getElementById("confirm-btn").classList.add("hidden");
+          ipcRenderer.send("set-overlay-clickable", false);
+
+          if (statusCycleTimeout) clearTimeout(statusCycleTimeout);
+
+          const thinkingMsgs = [
+            "Just thinking and working.",
+            "Working on it...",
+            "AI thinking...",
+            "Formatting result...",
+            "Polishing response...",
+          ];
+          const webMsgs = [
+            "Searching on the web...",
+            "Analyzing selection...",
+            "Reading your context...",
+            "Synthesizing answer...",
+            "Finding references...",
+          ];
+
+          const msgs = hasSelection ? webMsgs : thinkingMsgs;
+          let msgIndex = 0;
+
+          function runCycle() {
+            // Stage 1: Spinner (1s)
+            if (spinner) spinner.classList.remove("hidden");
+            if (statusText) statusText.classList.add("hidden");
+
+            statusCycleTimeout = setTimeout(() => {
+              // Stage 2: Message (1.5s)
+              if (spinner) spinner.classList.add("hidden");
+              if (statusText) {
+                statusText.classList.remove("hidden");
+                statusText.textContent = msgs[msgIndex % msgs.length];
+                msgIndex++;
+              }
+
+              statusCycleTimeout = setTimeout(() => {
+                runCycle();
+              }, 1500);
+            }, 1000);
+          }
+
+          runCycle();
+        } catch (err) {
+          console.error("Error in processing-start:", err);
+          // Fallback visibility
+          if (spinner) spinner.classList.remove("hidden");
+        }
       });
 
       ipcRenderer.on("processing-end", () => {
-        spinner.classList.add("hidden");
-        waveform.classList.remove("hidden");
-        // Final close is handled by renderer calling hideOverlay or similar
+        console.log("Processing ended");
+        if (statusCycleTimeout) {
+          clearTimeout(statusCycleTimeout);
+          statusCycleTimeout = null;
+        }
+
+        if (spinner) spinner.classList.add("hidden");
+        if (statusText) statusText.classList.add("hidden");
+        if (waveform) waveform.classList.remove("hidden");
         ipcRenderer.send("hide-overlay");
       });
 

@@ -994,25 +994,30 @@ function startActiveWindowMonitor() {
 
 // ----------------- Overlay IPC -----------------
 ipcMain.on("show-overlay", (event, aiEnabled) => {
+  console.log(
+    `[IPC] show-overlay called. AI: ${aiEnabled}, isPersistent: ${isPersistent}`,
+  );
   if (overlayWin && !overlayWin.isDestroyed()) {
-    const { width: screenWidth } =
+    const { width: screenWidth, height: screenHeight } =
       require("electron").screen.getPrimaryDisplay().workAreaSize;
 
-    // Use consistent width to accommodate control buttons
     const w = 140;
+    const h = 40;
     const x = Math.round((screenWidth - w) / 2);
+    const y = screenHeight - h - 10;
 
-    overlayWin.setBounds({ width: w, x: x });
+    overlayWin.setBounds({ width: w, height: h, x: x, y: y });
     overlayWin.showInactive();
     overlayWin.setAlwaysOnTop(true, "screen-saver");
-    overlayWin.setIgnoreMouseEvents(false); // Make it clickable so buttons work
+    overlayWin.setIgnoreMouseEvents(false);
     overlayWin.webContents.send("set-ai-status", !!aiEnabled);
 
-    // Show cancel for all recording modes. Show confirm only for persistent mode.
     overlayWin.webContents.send("set-controls", {
       showCancel: true,
       showConfirm: isPersistent,
     });
+  } else {
+    console.warn("[IPC] show-overlay failed: overlayWin is null or destroyed");
   }
 });
 
@@ -1085,6 +1090,7 @@ ipcMain.on("mic-volume", (event, volume) => {
 });
 
 // ----------------- global keyboard listener -----------------
+// ... (rest of keyboard listener)
 function setupGlobalKeyboard() {
   if (keyboard) return;
   keyboard = new GlobalKeyboardListener();
@@ -1325,7 +1331,11 @@ ipcMain.on("save-audio", async (event, arrayBuffer) => {
 });
 
 ipcMain.on("processing-start", () => {
-  if (overlayWin) overlayWin.webContents.send("processing-start");
+  if (overlayWin) {
+    overlayWin.webContents.send("processing-start", {
+      hasSelection: !!capturedSelection,
+    });
+  }
 });
 ipcMain.on("processing-end", () => {
   if (overlayWin) overlayWin.webContents.send("processing-end");
