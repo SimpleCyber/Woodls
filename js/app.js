@@ -799,6 +799,13 @@ function setupRecordingEvents() {
             lastArrayBuffer,
             context,
           );
+
+          if (recordingCancelled) {
+            addLog("Processing cancelled", "red");
+            recordingCancelled = false;
+            return;
+          }
+
           const text = result.text;
           const historyId = result.id;
 
@@ -811,6 +818,12 @@ function setupRecordingEvents() {
               assistantName: assistantName ? assistantName.value : "Assistant",
               appName: appName ? appName.value : "Desktop App",
             });
+
+            if (recordingCancelled) {
+              addLog("Processing cancelled", "red");
+              recordingCancelled = false;
+              return;
+            }
 
             // Update history with enhanced text
             await window.api.updateHistoryItem({

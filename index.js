@@ -241,6 +241,7 @@ let running = false;
 let pressStart = null;
 let isPersistent = false;
 let lastReleaseTime = 0;
+let lastReleaseKey = null;
 let holdTimeout = null;
 
 let tray = null;
@@ -469,39 +470,28 @@ function saveNotes(notes) {
 function normalizeKeyName(raw) {
   if (!raw) return "";
 
-  // Remove all non-alphanumeric characters and convert to uppercase
-  let normalized = String(raw)
-    .replace(/[^a-z0-9]/gi, "")
-    .toUpperCase();
+  const base = String(raw).toUpperCase().trim();
+  // Remove all non-alphanumeric characters
+  const normalized = base.replace(/[^A-Z0-9]/gi, "");
+
+  // If normalized is empty (e.g. for symbols), fallback to base
+  const final = normalized || base;
 
   // Handle word order variations: "LEFT ALT" vs "ALT LEFT" -> both become "LEFTALT"
-  // Common patterns: LEFT/RIGHT + modifier (ALT, CTRL, SHIFT, META)
-  const modifiers = [
-    "ALT",
-    "CTRL",
-    "CONTROL",
-    "SHIFT",
-    "META",
-    "SUPER",
-    "WIN",
-    "WINDOWS",
-  ];
+  const modifiers = ["ALT", "CTRL", "CONTROL", "SHIFT", "META", "SUPER", "WIN"];
   const positions = ["LEFT", "RIGHT"];
 
   for (const pos of positions) {
     for (const mod of modifiers) {
-      // Check both orders
-      const pattern1 = pos + mod; // e.g., LEFTALT
-      const pattern2 = mod + pos; // e.g., ALTLEFT
-
-      if (normalized === pattern1 || normalized === pattern2) {
-        // Standardize to LEFT/RIGHT + modifier format
+      const pattern1 = pos + mod;
+      const pattern2 = mod + pos;
+      if (final === pattern1 || final === pattern2) {
         return pos + (mod === "CONTROL" ? "CTRL" : mod);
       }
     }
   }
 
-  return normalized;
+  return final;
 }
 
 let overlayWin;
@@ -927,20 +917,21 @@ ipcMain.on("show-overlay", (event, aiEnabled) => {
     const { width: screenWidth } =
       require("electron").screen.getPrimaryDisplay().workAreaSize;
 
-    // Adjust width based on mode
-    const w = isPersistent ? 140 : 80;
+    // Use consistent width to accommodate control buttons
+    const w = 140;
     const x = Math.round((screenWidth - w) / 2);
 
     overlayWin.setBounds({ width: w, x: x });
     overlayWin.showInactive();
     overlayWin.setAlwaysOnTop(true, "screen-saver");
+    overlayWin.setIgnoreMouseEvents(false); // Make it clickable so buttons work
     overlayWin.webContents.send("set-ai-status", !!aiEnabled);
 
-    if (isPersistent) {
-      overlayWin.webContents.send("show-cancel", true);
-    } else {
-      overlayWin.webContents.send("show-cancel", false);
-    }
+    // Show cancel for all recording modes. Show confirm only for persistent mode.
+    overlayWin.webContents.send("set-controls", {
+      showCancel: true,
+      showConfirm: isPersistent,
+    });
   }
 });
 
@@ -1018,9 +1009,10 @@ function setupGlobalKeyboard() {
   keyboard = new GlobalKeyboardListener();
 
   keyboard.addListener((event) => {
-    // event: { state: "DOWN"|"UP", name: "A"|"NUMPAD8"|... }
     const rawName = event && event.name ? String(event.name) : "";
-    const key = normalizeKeyName(rawName); // e.g. NUMPAD8 -> "NUMPAD8"
+    if (!rawName) return;
+
+    const key = normalizeKeyName(rawName);
     const HOTKEY =
       requiredKeys && requiredKeys[0]
         ? normalizeKeyName(requiredKeys[0])
@@ -1037,11 +1029,11 @@ function setupGlobalKeyboard() {
     let isActiveKey = false;
     let targetHotkey = null;
 
-    if (key === HOTKEY) {
+    if (key && key === HOTKEY) {
       isActiveKey = true;
       isAIMode = false;
       targetHotkey = HOTKEY;
-    } else if (key === AI_HOTKEY) {
+    } else if (key && key === AI_HOTKEY) {
       isActiveKey = true;
       isAIMode = true;
       targetHotkey = AI_HOTKEY;
@@ -1050,29 +1042,18 @@ function setupGlobalKeyboard() {
     if (event.state === "DOWN" && isActiveKey) {
       const now = Date.now();
 
-      // Double-Tap Logic
-      if (now - lastReleaseTime < 800 && !running && !isPersistent) {
+      // Double-Tap Logic: Must be the SAME key
+      if (
+        now - lastReleaseTime < 600 &&
+        !running &&
+        !isPersistent &&
+        lastReleaseKey === key
+      ) {
         if (holdTimeout) {
           clearTimeout(holdTimeout);
           holdTimeout = null;
         }
 
-        // Send 2 backspaces to clear the two taps (for printable keys)
-        const isPrintable =
-          key.length === 1 ||
-          key.startsWith("NUMPAD") ||
-          ["SPACE", "TAB", "ENTER", "RETURN"].includes(key);
-
-        if (isPrintable && key !== "BACKSPACE" && key !== "DELETE") {
-          try {
-            robot.keyTap("backspace");
-            robot.keyTap("backspace");
-          } catch (e) {}
-        }
-
-        isPersistent = true;
-        running = true;
-        pressStart = now;
         isPersistent = true;
         running = true;
         pressStart = now;
@@ -1084,35 +1065,20 @@ function setupGlobalKeyboard() {
           key: targetHotkey,
           time: pressStart,
         });
-        return;
+        return true; // Block double tap
       }
 
       // Already recording in persistent mode -> Stop it
       if (isPersistent && running) {
         stopAndTranscribe();
-        return;
+        return true; // Block stop tap
       }
 
-      // Standard Hold-to-Record Logic (with delay to prevent accidental taps)
+      // Standard Hold-to-Record Logic
       if (!running) {
         holdTimeout = setTimeout(() => {
           running = true;
           pressStart = Date.now();
-
-          // Clear characters typed while holding (auto-repeat spam)
-          const isPrintable =
-            key.length === 1 ||
-            key.startsWith("NUMPAD") ||
-            ["SPACE", "TAB", "ENTER", "RETURN"].includes(key);
-
-          if (isPrintable && key !== "BACKSPACE" && key !== "DELETE") {
-            try {
-              // Send several backspaces to clear the initial tap + any auto-repeat spam
-              for (let i = 0; i < 5; i++) {
-                robot.keyTap("backspace");
-              }
-            } catch (e) {}
-          }
 
           win.webContents.send("record-start", {
             persistent: false,
@@ -1122,7 +1088,7 @@ function setupGlobalKeyboard() {
             key: targetHotkey,
             time: pressStart,
           });
-        }, 600);
+        }, 500);
       }
     }
 
@@ -1133,10 +1099,16 @@ function setupGlobalKeyboard() {
       }
 
       lastReleaseTime = Date.now();
+      lastReleaseKey = key;
 
       if (running && !isPersistent) {
         stopAndTranscribe();
       }
+    }
+
+    // Explicitly block the trigger key events
+    if (isActiveKey) {
+      return true;
     }
   });
 }
@@ -1298,10 +1270,15 @@ ipcMain.handle("paste-string", async (_, text) => {
   try {
     const { clipboard } = require("electron");
     clipboard.writeText(text);
-    await new Promise((res) => setTimeout(res, 50));
+    // Increase delay to ensure target app is focused and ready
+    await new Promise((res) => setTimeout(res, 150));
     // Ctrl+V or Cmd+V
     const mod = process.platform === "darwin" ? "command" : "control";
     robot.keyTap("v", mod);
+    // Extra safety release for control key
+    if (process.platform !== "darwin") {
+      robot.keyToggle("control", "up");
+    }
     return true;
   } catch (e) {
     return false;
