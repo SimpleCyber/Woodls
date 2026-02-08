@@ -1425,57 +1425,25 @@ ipcMain.handle("transcribe-audio", async (_, arrayBuffer, context) => {
   let attempt = 0;
   let savePath;
 
-  // Context-Aware Prompt Logic
   // Default prompt (fallback)
   let systemPrompt = "Transcribe this audio to plain text only: ";
 
-  // Detect Coding / Prompting Environment
-  const codingApps = [
-    "code",
-    "cursor",
-    "windsurf",
-    "antigravity",
-    "v0",
-    "visual studio code",
-  ];
-
-  const appNameLower =
-    context && context.appName ? context.appName.toLowerCase() : "";
-  const winTitleLower =
-    context && context.windowTitle ? context.windowTitle.toLowerCase() : "";
-
-  const isCodingApp = codingApps.some(
-    (app) => appNameLower.includes(app) || winTitleLower.includes(app),
-  );
-
   if (true) {
     systemPrompt = `
-    - Always return properly formated structured responses
-    - Timestamps: Strictly forbidden.
-    - No Execution: Just transcribe and format the response give structured response.
-    - Bullet points using "*", "-", or "•" are Strictly forbidden.
-    - Any habits, tasks, routines, plans, or sequences MUST be formatted using numbered lists only:
-    1. First item
-    2. Second item
-    3. Third item
-    - Sub-tasks must be formatted using either:
-    1. Numbered lists (1. 2. 3.), OR
-    a. Alphabetical lists (a. b. c.), based on what reads more naturally.
-    - If the input contains bullet-style content, convert it into numbered steps while transcribing.
+You are a versatile AI Assistant. 
+Your primary goal is to help me with the task I dictate, tailored to the platform I am currently using.
 
-    **example of structured output for any input audio like this way you have to give structured output and this is just for the refrence not the exact output:
+1. If the input is just conversational or descriptive text, rewrite it with proper punctuation, grammar, formatting, and clarity.
+2. **Formatting Rules (CRITICAL)**:
+    - NO Timestamps: Never include 00:00:00 style timestamps.
+    - Numbered lists (1. 2. 3.), OR
+    - Alphabetical lists (a. b. c.), based on what reads more naturally.
+3. Return **ONLY the final result**. No conversational filler., no "Here is your text...", no explanations, no quotes. 
 
-Okay, let's see the progress in this sprint. I want to work on Notion, Jira, and Gmail. I want to call my friends Pranav, Satyam, and Sandeep. 
-
-After doing my homework, I plan to:
-1. Play badminton
-2. Take a short nap
-3. Start running a sprint
-4. Go to the swimming pool
-
-After coming back from there, I want to complete my tasks and sleep. That's it for my day.
-
-    **
+Context:
+App: ${context.appName}
+Window: ${context.windowTitle}
+Input: "${context.info}"
 
     `;
   }
@@ -1515,6 +1483,10 @@ After coming back from there, I want to complete my tasks and sleep. That's it f
       ]);
 
       const text = result.response.text();
+
+      // Log transcription details
+      sendDevLog(`[Transcription Post-Prompt]: ${systemPrompt}`);
+      sendDevLog(`[Transcribed Audio / Final Result]: ${text}`);
 
       // SUCCESS: Update usage for this specific Key + Model
       updateAIUsage(currentKeyIndex, currentModelName);
@@ -1595,6 +1567,13 @@ ipcMain.handle("retranscribe-audio", async (_, id) => {
       ]);
 
       const text = result.response.text();
+
+      // Log transcription details
+      sendDevLog(
+        `[Transcription Post-Prompt]: Transcribe this audio to plain text only: `,
+      );
+      sendDevLog(`[Transcribed Audio / Final Result]: ${text}`);
+
       updateAIUsage(currentKeyIndex, currentModelName);
 
       // Update history item
@@ -1625,66 +1604,29 @@ ipcMain.handle("generate-text", async (_, { info, assistantName, appName }) => {
 
   while (attempt < maxRetries) {
     const prompt = `
-You are a versatile AI Assistant.
+You are a versatile AI Assistant. 
+Your primary goal is to follow my given instructions and perform that task, tailored to the platform I am currently using.
 
-Your primary goal is to process dictated voice input or provided text and return a clean, structured, final result based on intent.
+1. If the input is a specific request or command execute that task as requested.
+2. If the input is just conversational or descriptive text, rewrite it with proper punctuation, grammar, formatting, and clarity.
+4. **Formatting Rules (CRITICAL)**:
+   - **NO Timestamps**: Never include 00:00:00 style timestamps.
+   - **Plan Formatting**: If the text contains a plan/schedule, break it into a numbered list (1, 2, 3). 
+    1. Numbered lists (1. 2. 3.), OR
+    a. Alphabetical lists (a. b. c.), based on what reads more naturally.
+    - If the input contains bullet-style content, convert it into numbered steps while transcribing.
+   - **Code**: If the user asks for code, PROVIDE THE CODE
+   - **Headers**: Use markdown headers (###) ONLY if the topics are totally distinct.
+5. Return **ONLY the final result**. No conversational filler., no "Here is your text...", no explanations, no quotes. 
 
-────────────────────────
-INTENT HANDLING (ORDERED)
-────────────────────────
-1. If the input is a clear command (e.g., "write an email", "create a JS function", "summarize this"), EXECUTE the task.
-2. If the input is conversational, descriptive, or reflective, REWRITE it with proper grammar, clarity, and structure.
-3. If the input mixes narration and plans/tasks, PRESERVE meaning while STRUCTURING clearly.
-
-────────────────────────
-GLOBAL FORMATTING RULES (OVERRIDE ALL)
-────────────────────────
-- NO timestamps of any kind.
-- Bullet symbols "*", "-", "•" are STRICTLY FORBIDDEN.
-- Do NOT use emojis.
-- Do NOT include explanations, filler, or meta commentary.
-- Return ONLY the final output.
-
-────────────────────────
-STRUCTURE RULES (MANDATORY)
-────────────────────────
-- Any habits, tasks, routines, plans, schedules, or sequences MUST be formatted using NUMBERED LISTS ONLY:
-  1. First item
-  2. Second item
-  3. Third item
-
-- Sub-items must be formatted using:
-  a. Alphabetical lists (a, b, c), OR
-  b. Numbered lists (1, 2, 3),
-  whichever reads more naturally.
-
-- If the input contains bullet-style content, CONVERT it into numbered lists.
-
-────────────────────────
-PLATFORM CONTEXT (SECONDARY)
-────────────────────────
-Apply platform tone ONLY after obeying all structure rules above.
-
-- Email Clients:
-  - Use subject and professional email structure if it’s a new email.
-- Notion / Slack / Discord:
-  - Use clean paragraphs and numbered lists only.
-- Code Editors:
-  - Provide correct, runnable code using markdown code blocks.
-  - Do NOT wrap non-code text in code blocks.
-
-────────────────────────
-HEADERS
-────────────────────────
-- Use markdown headers (###) ONLY if topics are clearly distinct.
-- Do NOT overuse headers.
-
-────────────────────────
-CONTEXT
-────────────────────────
+Context:
 App: ${appName}
 Input: "${info}"
 `;
+
+    // Log input and prompt
+    sendDevLog(`[Transcribed Audio / Input]: ${info}`);
+    sendDevLog(`[Generation Post-Prompt]: ${prompt}`);
 
     try {
       if (!genAI) throw new Error("AI not initialized.");
@@ -1697,6 +1639,10 @@ Input: "${info}"
 
       // Extra safety cleanup for hallucinations
       txt = txt.replace(/\(\d{2}:\d{2}\)/g, "").trim();
+
+      // Log final result
+      sendDevLog(`[Final Result]: ${txt}`);
+
       return txt;
     } catch (err) {
       console.error(
