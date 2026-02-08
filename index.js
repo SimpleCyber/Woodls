@@ -242,6 +242,9 @@ let pressStart = null;
 let isPersistent = false;
 let lastReleaseTime = 0;
 let lastReleaseKey = null;
+let capturedSelection = "";
+let selectionMemory = ""; // Background persistent memory for selection
+let isCapturing = false; // Prevents overlapping capture calls
 let holdTimeout = null;
 
 let tray = null;
@@ -492,6 +495,84 @@ function normalizeKeyName(raw) {
   }
 
   return final;
+}
+
+// Helper to get conditional context block
+function getContextPrompt(isTranscription = false) {
+  if (!capturedSelection) return "";
+
+  if (isTranscription) {
+    return `
+[BACKGROUND CONTEXT (OPTIONAL)]
+The user has the following text selected on their screen. ONLY use this to help with the spelling of technical terms or names mentioned in the audio. DO NOT answer questions based on this text.
+Selected Text: "${capturedSelection}"
+`;
+  }
+
+  return `
+[BACKGROUND CONTEXT]
+The user has the following text selected on its screen. Use this context if the user's request references it (e.g., "Summarize this").
+Selected Text: "${capturedSelection}"
+`;
+}
+
+// Helper to capture currently selected text
+async function captureSelection() {
+  if (isCapturing) return;
+  isCapturing = true;
+
+  const { clipboard } = require("electron");
+  const originalClipboard = clipboard.readText();
+
+  // Trigger Copy (Ctrl+C or Cmd+C)
+  const mod = process.platform === "darwin" ? "command" : "control";
+  try {
+    robot.keyTap("c", mod);
+
+    // Sync delay (300ms for Windows stability)
+    await new Promise((res) => setTimeout(res, 300));
+
+    const newCaptured = clipboard.readText();
+
+    // Logic: Is this genuinely "new" background data?
+    // 1. Must be different from what was already in clipboard (originalClipboard)
+    // 2. Must be different from what we last successfully used (selectionMemory)
+    if (
+      newCaptured &&
+      newCaptured !== originalClipboard &&
+      newCaptured !== selectionMemory
+    ) {
+      capturedSelection = newCaptured.trim();
+      selectionMemory = capturedSelection; // Update memory
+
+      sendDevLog(
+        `❌ Last copied: "${originalClipboard.substring(0, 30)}${originalClipboard.length > 30 ? "..." : ""}"`,
+      );
+      sendDevLog(
+        `✅ Current copied: "${capturedSelection.substring(0, 50)}${capturedSelection.length > 50 ? "..." : ""}"`,
+      );
+    } else {
+      capturedSelection = "";
+      sendDevLog(
+        `❌ Last copied: "${originalClipboard.substring(0, 30)}${originalClipboard.length > 30 ? "..." : ""}"`,
+      );
+      sendDevLog(
+        `✅ Current copied: NOTHING (Matches previous memory or clipboard)`,
+      );
+    }
+
+    // Step 7: SMART RESTORATION
+    // ONLY write back if the clipboard actually changed during capture
+    // This prevents creating duplicate history entries when nothing new is selected.
+    if (newCaptured !== originalClipboard) {
+      clipboard.writeText(originalClipboard);
+    }
+  } catch (e) {
+    console.error("Capture selection error:", e);
+    capturedSelection = "";
+  } finally {
+    isCapturing = false;
+  }
 }
 
 let overlayWin;
@@ -1042,6 +1123,11 @@ function setupGlobalKeyboard() {
     if (event.state === "DOWN" && isActiveKey) {
       const now = Date.now();
 
+      // Start capturing selection immediately when key is pressed (ensure only once)
+      if (!running && !holdTimeout) {
+        captureSelection();
+      }
+
       // Double-Tap Logic: Must be the SAME key
       if (
         now - lastReleaseTime < 600 &&
@@ -1417,10 +1503,15 @@ Your primary goal is to help me with the task I dictate, tailored to the platfor
     - Alphabetical lists (a. b. c.), based on what reads more naturally.
 3. Return **ONLY the final result**. No conversational filler., no "Here is your text...", no explanations, no quotes. 
 
-Context:
-App: ${context.appName}
-Window: ${context.windowTitle}
-Input: "${context.info}"
+${getContextPrompt(true)}
+
+[TASK]
+Transcribe the provided audio recording into clear, natural text. 
+Follow these formatting rules:
+1. Rewrite conversational or descriptive text with proper punctuation and grammar.
+2. NO Timestamps: Never include 00:00:00 style timestamps.
+3. Formatting: Use numbered lists (1. 2. 3.) or alphabetical lists (a. b. c.) if the content dictates structure.
+4. Return ONLY the final result. No explanations, no quotes, no intros.
 
     `;
   }
@@ -1596,9 +1687,22 @@ Your primary goal is to follow my given instructions and perform that task, tail
    - **Headers**: Use markdown headers (###) ONLY if the topics are totally distinct.
 5. Return **ONLY the final result**. No conversational filler., no "Here is your text...", no explanations, no quotes. 
 
-Context:
-App: ${appName}
-Input: "${info}"
+${getContextPrompt(false)}
+
+[TASK/USER INPUT]
+Main Request: "${info}"
+
+[INSTRUCTIONS]
+Your goal is to follow the user's main request above. Only reference background material if the request is clearly about it.
+
+1. If the request is a specific command, execute it faithfully.
+2. If the request is for transcription/formatting, clean it up for clarity and grammar.
+3. Formatting Rules:
+   - NO Timestamps.
+   - Use numbered lists (1. 2. 3.) for steps or schedules.
+   - Provide code if requested.
+   - Use ### headers ONLY for distinct topics.
+4. Return ONLY the final result. No conversational filler, no intros.
 `;
 
     // Log input and prompt

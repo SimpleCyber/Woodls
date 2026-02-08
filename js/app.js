@@ -767,7 +767,12 @@ function setupRecordingEvents() {
         if (e.data && e.data.size > 0) chunks.push(e.data);
       };
 
+      let isProcessing = false;
+
       mediaRecorder.onstop = async () => {
+        if (isProcessing) return;
+        isProcessing = true;
+
         // Cleanup Audio Context & Stream here to ensure recording finishes
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
         if (audioContext) audioContext.close();
