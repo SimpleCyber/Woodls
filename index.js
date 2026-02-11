@@ -1148,6 +1148,9 @@ function setupGlobalKeyboard() {
       // Always block if AI is thinking
       if (isProcessingAI) {
         sendDevLog("⚠️ Activity blocked: AI is thinking.");
+        if (overlayWin && !overlayWin.isDestroyed()) {
+          overlayWin.webContents.send("show-busy");
+        }
         return true;
       }
 
@@ -1155,6 +1158,9 @@ function setupGlobalKeyboard() {
       // BUT allow if isPersistent is true (allows the "Stop" click below)
       if (running && !isPersistent) {
         sendDevLog("⚠️ Activity blocked: Already recording.");
+        if (overlayWin && !overlayWin.isDestroyed()) {
+          overlayWin.webContents.send("show-busy");
+        }
         return true;
       }
 

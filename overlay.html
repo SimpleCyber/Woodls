@@ -129,6 +129,17 @@
         <div id="ai-icon" class="hidden absolute right-2">
           <span class="text-[10px]">🤖</span>
         </div>
+
+        <!-- Busy Indicator (hidden by default) -->
+        <div
+          id="busy-indicator"
+          class="hidden absolute inset-0 flex items-center justify-center gap-1.5 z-10"
+        >
+          <span class="text-sm">⏳</span>
+          <span class="text-[11px] text-white font-semibold tracking-wide"
+            >Busy</span
+          >
+        </div>
       </div>
 
       <!-- Confirm Button (Tick) - Right Side -->
@@ -155,6 +166,35 @@
       let isRecording = false;
       let animationFrame = null;
       let statusCycleTimeout = null;
+      const busyIndicator = document.getElementById("busy-indicator");
+      let busyTimeout = null;
+
+      // Show "Busy" indicator briefly when user tries to interact during AI processing
+      ipcRenderer.on("show-busy", () => {
+        // Hide other center content
+        waveform.classList.add("hidden");
+        if (spinner) spinner.classList.add("hidden");
+        if (statusText) statusText.classList.add("hidden");
+
+        // Show busy indicator
+        busyIndicator.classList.remove("hidden");
+
+        // Clear previous timeout if spamming the key
+        if (busyTimeout) clearTimeout(busyTimeout);
+
+        busyTimeout = setTimeout(() => {
+          busyIndicator.classList.add("hidden");
+          // Restore whatever was showing before (spinner/status cycle if processing)
+          if (statusCycleTimeout) {
+            // Processing is still active, let the cycle continue
+            if (spinner) spinner.classList.remove("hidden");
+          } else {
+            // Recording mode, restore waveform
+            waveform.classList.remove("hidden");
+          }
+          busyTimeout = null;
+        }, 800);
+      });
 
       // Wave-like center emphasis pattern
       const centerWeight = [0.7, 0.9, 1.0, 0.9, 0.7];
