@@ -168,6 +168,7 @@
       let statusCycleTimeout = null;
       const busyIndicator = document.getElementById("busy-indicator");
       let busyTimeout = null;
+      let activeRunCycle = null; // Reference to the current processing cycle function
 
       // Show "Busy" indicator briefly when user tries to interact during AI processing
       ipcRenderer.on("show-busy", () => {
@@ -175,6 +176,12 @@
         waveform.classList.add("hidden");
         if (spinner) spinner.classList.add("hidden");
         if (statusText) statusText.classList.add("hidden");
+
+        // Pause the processing cycle to prevent overlap
+        if (statusCycleTimeout) {
+          clearTimeout(statusCycleTimeout);
+          statusCycleTimeout = null;
+        }
 
         // Show busy indicator
         busyIndicator.classList.remove("hidden");
@@ -184,10 +191,9 @@
 
         busyTimeout = setTimeout(() => {
           busyIndicator.classList.add("hidden");
-          // Restore whatever was showing before (spinner/status cycle if processing)
-          if (statusCycleTimeout) {
-            // Processing is still active, let the cycle continue
-            if (spinner) spinner.classList.remove("hidden");
+          // Resume the processing cycle if it was active
+          if (activeRunCycle) {
+            activeRunCycle();
           } else {
             // Recording mode, restore waveform
             waveform.classList.remove("hidden");
@@ -340,6 +346,7 @@
             }, 1000);
           }
 
+          activeRunCycle = runCycle;
           runCycle();
         } catch (err) {
           console.error("Error in processing-start:", err);
@@ -350,11 +357,17 @@
 
       ipcRenderer.on("processing-end", () => {
         console.log("Processing ended");
+        activeRunCycle = null;
         if (statusCycleTimeout) {
           clearTimeout(statusCycleTimeout);
           statusCycleTimeout = null;
         }
+        if (busyTimeout) {
+          clearTimeout(busyTimeout);
+          busyTimeout = null;
+        }
 
+        busyIndicator.classList.add("hidden");
         if (spinner) spinner.classList.add("hidden");
         if (statusText) statusText.classList.add("hidden");
         if (waveform) waveform.classList.remove("hidden");
