@@ -247,6 +247,7 @@ let selectionMemory = ""; // Background persistent memory for selection
 let isCapturing = false; // Prevents overlapping capture calls
 let holdTimeout = null;
 
+let isProcessingAI = false; // Prevents concurrent AI tasks
 let tray = null;
 let isQuitting = false;
 let server = null; // Store server reference for cleanup
@@ -516,9 +517,12 @@ Selected Text: "${capturedSelection}"
 `;
 }
 
+let lastCaptureTime = 0;
 // Helper to capture currently selected text
 async function captureSelection() {
-  if (isCapturing) return;
+  const now = Date.now();
+  if (isCapturing || isProcessingAI || now - lastCaptureTime < 800) return;
+  lastCaptureTime = now;
   isCapturing = true;
 
   const { clipboard } = require("electron");
@@ -526,53 +530,52 @@ async function captureSelection() {
 
   // Trigger Copy (Ctrl+C or Cmd+C)
   const mod = process.platform === "darwin" ? "command" : "control";
-  try {
-    robot.keyTap("c", mod);
 
-    // Sync delay (300ms for Windows stability)
-    await new Promise((res) => setTimeout(res, 300));
+  // Use setTimeout to ensure the keyboard hook returns true and blocks the hotkey BEFORE robot sends commands.
+  // This definitively fixes the race condition that causes "Ctrl + [Hotkey]" on first press.
+  setTimeout(async () => {
+    try {
+      // --- SAFETY RELEASE ---
+      // Release ALL modifier keys to prevent leaks to other apps (e.g., Ctrl+1 in browser)
+      robot.keyToggle("control", "up");
+      robot.keyToggle("shift", "up");
+      robot.keyToggle("alt", "up");
+      robot.keyToggle("command", "up"); // This is the Windows/Meta key
 
-    const newCaptured = clipboard.readText();
+      // Explicit sequence for better reliability on Windows
+      robot.keyToggle(mod, "down");
+      robot.keyTap("c");
+      robot.keyToggle(mod, "up");
 
-    // Logic: Is this genuinely "new" background data?
-    // 1. Must be different from what was already in clipboard (originalClipboard)
-    // 2. Must be different from what we last successfully used (selectionMemory)
-    if (
-      newCaptured &&
-      newCaptured !== originalClipboard &&
-      newCaptured !== selectionMemory
-    ) {
-      capturedSelection = newCaptured.trim();
-      selectionMemory = capturedSelection; // Update memory
+      // Sync delay (300ms for Windows stability)
+      await new Promise((res) => setTimeout(res, 300));
 
-      sendDevLog(
-        `❌ Last copied: "${originalClipboard.substring(0, 30)}${originalClipboard.length > 30 ? "..." : ""}"`,
-      );
-      sendDevLog(
-        `✅ Current copied: "${capturedSelection.substring(0, 50)}${capturedSelection.length > 50 ? "..." : ""}"`,
-      );
-    } else {
+      const newCaptured = clipboard.readText();
+
+      // ... same logic as before ...
+      if (
+        newCaptured &&
+        newCaptured !== originalClipboard &&
+        newCaptured !== selectionMemory
+      ) {
+        capturedSelection = newCaptured.trim();
+        selectionMemory = capturedSelection;
+        sendDevLog(`✅ Captured: "${capturedSelection.substring(0, 50)}..."`);
+      } else {
+        capturedSelection = "";
+        sendDevLog(`❌ Nothing new captured`);
+      }
+
+      if (newCaptured !== originalClipboard) {
+        clipboard.writeText(originalClipboard);
+      }
+    } catch (e) {
+      console.error("Capture selection error:", e);
       capturedSelection = "";
-      sendDevLog(
-        `❌ Last copied: "${originalClipboard.substring(0, 30)}${originalClipboard.length > 30 ? "..." : ""}"`,
-      );
-      sendDevLog(
-        `✅ Current copied: NOTHING (Matches previous memory or clipboard)`,
-      );
+    } finally {
+      isCapturing = false;
     }
-
-    // Step 7: SMART RESTORATION
-    // ONLY write back if the clipboard actually changed during capture
-    // This prevents creating duplicate history entries when nothing new is selected.
-    if (newCaptured !== originalClipboard) {
-      clipboard.writeText(originalClipboard);
-    }
-  } catch (e) {
-    console.error("Capture selection error:", e);
-    capturedSelection = "";
-  } finally {
-    isCapturing = false;
-  }
+  }, 50);
 }
 
 let overlayWin;
@@ -909,6 +912,8 @@ function createWindow() {
 }
 
 function createOverlayWindow() {
+  if (overlayWin && !overlayWin.isDestroyed()) return;
+
   const { width, height } =
     require("electron").screen.getPrimaryDisplay().workAreaSize;
 
@@ -945,6 +950,8 @@ function createOverlayWindow() {
 }
 
 function createCopyOverlayWindow() {
+  if (copyOverlayWin && !copyOverlayWin.isDestroyed()) return;
+
   const { width, height } =
     require("electron").screen.getPrimaryDisplay().workAreaSize;
 
@@ -1043,7 +1050,16 @@ ipcMain.on("cancel-recording", () => {
     if (overlayWin && !overlayWin.isDestroyed()) {
       overlayWin.hide();
     }
+    isProcessingAI = false; // Reset blocking state
   }
+});
+
+ipcMain.on("processing-start", () => {
+  isProcessingAI = true;
+});
+
+ipcMain.on("processing-end", () => {
+  isProcessingAI = false;
 });
 
 ipcMain.on("confirm-recording", () => {
@@ -1129,6 +1145,19 @@ function setupGlobalKeyboard() {
     if (event.state === "DOWN" && isActiveKey) {
       const now = Date.now();
 
+      // Always block if AI is thinking
+      if (isProcessingAI) {
+        sendDevLog("⚠️ Activity blocked: AI is thinking.");
+        return true;
+      }
+
+      // Block if hold-to-record is active (prevents overlapping triggers)
+      // BUT allow if isPersistent is true (allows the "Stop" click below)
+      if (running && !isPersistent) {
+        sendDevLog("⚠️ Activity blocked: Already recording.");
+        return true;
+      }
+
       // Start capturing selection immediately when key is pressed (ensure only once)
       if (!running && !holdTimeout) {
         captureSelection();
@@ -1198,7 +1227,7 @@ function setupGlobalKeyboard() {
       }
     }
 
-    // Explicitly block the trigger key events
+    // BLOCK the hotkey from reaching other applications (e.g., to prevent browser shortcuts like Ctrl+1)
     if (isActiveKey) {
       return true;
     }
