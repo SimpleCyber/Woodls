@@ -246,6 +246,7 @@ let capturedSelection = "";
 let selectionMemory = ""; // Background persistent memory for selection
 let isCapturing = false; // Prevents overlapping capture calls
 let holdTimeout = null;
+let captureTimeout = null; // Debounce for capture
 
 let isProcessingAI = false; // Prevents concurrent AI tasks
 let tray = null;
@@ -1164,11 +1165,6 @@ function setupGlobalKeyboard() {
         return true;
       }
 
-      // Start capturing selection immediately when key is pressed (ensure only once)
-      if (!running && !holdTimeout) {
-        captureSelection();
-      }
-
       // Double-Tap Logic: Must be the SAME key
       if (
         now - lastReleaseTime < 600 &&
@@ -1180,6 +1176,15 @@ function setupGlobalKeyboard() {
           clearTimeout(holdTimeout);
           holdTimeout = null;
         }
+
+        // Cancel any pending capture from the first tap to prevent conflict
+        if (captureTimeout) {
+          clearTimeout(captureTimeout);
+          captureTimeout = null;
+        }
+
+        // Capture now for the persistent session
+        captureSelection();
 
         isPersistent = true;
         running = true;
@@ -1195,6 +1200,15 @@ function setupGlobalKeyboard() {
         return true; // Block double tap
       }
 
+      // Start capturing selection with a DELAY to avoid interfering with double-tap
+      if (!running && !holdTimeout) {
+        if (captureTimeout) clearTimeout(captureTimeout);
+        captureTimeout = setTimeout(() => {
+          captureSelection();
+          captureTimeout = null;
+        }, 250); // 250ms delay
+      }
+
       // Already recording in persistent mode -> Stop it
       if (isPersistent && running) {
         stopAndTranscribe();
@@ -1206,6 +1220,9 @@ function setupGlobalKeyboard() {
         holdTimeout = setTimeout(() => {
           running = true;
           pressStart = Date.now();
+
+          // Ensure capture happens if it hasn't yet (e.g. if we set delay > 500ms, which we didn't)
+          // But with 250ms, it should have run.
 
           win.webContents.send("record-start", {
             persistent: false,
