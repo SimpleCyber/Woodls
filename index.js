@@ -1485,6 +1485,80 @@ ipcMain.on("show-chat", () => {
   chatWin.focus();
 });
 
+ipcMain.on("toggle-chat-compact", (event, isCompact) => {
+  if (chatWin && !chatWin.isDestroyed()) {
+    const bounds = chatWin.getBounds();
+
+    if (isCompact) {
+      const w = 260; // Trimming down width from 320 to 260
+      const h = 48;
+      // Maintain top-left position (or adjust so it stays "in place")
+      // If we want it to stay at the same location, we'll keep x and y.
+      chatWin.setBounds(
+        {
+          x: bounds.x,
+          y: bounds.y,
+          width: w,
+          height: h,
+        },
+        true,
+      );
+      chatWin.setResizable(false);
+    } else {
+      const w = 550;
+      const h = 450;
+      chatWin.setBounds(
+        {
+          x: bounds.x,
+          y: bounds.y,
+          width: w,
+          height: h,
+        },
+        true,
+      );
+      chatWin.setResizable(true);
+    }
+  }
+});
+
+ipcMain.on("close-chat", () => {
+  if (chatWin && !chatWin.isDestroyed()) {
+    chatWin.hide();
+  }
+});
+
+ipcMain.on("start-listening-click", () => {
+  // Simulate double-tap logic to start persistent recording
+  const now = Date.now();
+  if (isProcessingAI) return;
+  if (running) return;
+
+  captureSelection();
+
+  isPersistent = true;
+  running = true;
+  pressStart = now;
+
+  // We need to know which mode to start in. Defaulting to AI mode
+  // since this is being triggered from the chat window.
+  const isAIMode = true;
+  const targetHotkey = "MANUAL"; // Traceable source
+
+  win.webContents.send("record-start", {
+    persistent: true,
+    aiMode: isAIMode,
+  });
+
+  // Also notify overlay to show its states correctly
+  if (overlayWin && !overlayWin.isDestroyed()) {
+    overlayWin.webContents.send("set-ai-status", true);
+    overlayWin.webContents.send("set-controls", {
+      showCancel: true,
+      showConfirm: true,
+    });
+  }
+});
+
 // ----------------- global keyboard listener -----------------
 // ... (rest of keyboard listener)
 function setupGlobalKeyboard() {

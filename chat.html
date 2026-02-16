@@ -414,96 +414,182 @@
         flex-direction: column;
         min-height: 0;
       }
+
+      /* Compact Mode specific styles */
+      #compact-view {
+        display: none;
+        align-items: center;
+        height: 100%;
+        width: 100%;
+        padding: 0 8px;
+        gap: 6px;
+        background: rgba(24, 24, 24, 0.98);
+        border-radius: 9999px;
+      }
+
+      .compact-btn {
+        -webkit-app-region: no-drag;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+
+      .compact-btn:hover {
+        opacity: 0.8;
+      }
+
+      .listen-pill {
+        background: #1d4ed8;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .separator {
+        width: 1px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0 2px;
+      }
     </style>
   </head>
   <body>
     <div class="chat-container">
-      <!-- Header Tabs -->
-      <div class="header-bar">
-        <div class="drag-handle" title="Drag Window">
-          <i class="fa-solid fa-grip-vertical text-sm"></i>
+      <!-- Full View -->
+      <div id="full-view" class="flex flex-col h-full w-full">
+        <!-- Header Tabs -->
+        <div class="header-bar">
+          <div class="drag-handle" title="Drag Window">
+            <i class="fa-solid fa-grip-vertical text-sm"></i>
+          </div>
+          <i
+            class="fa-solid fa-plus text-sm text-white/40 cursor-pointer hover:text-white transition-colors"
+            id="new-chat-btn"
+            title="Start New Chat"
+          ></i>
+
+          <div class="flex items-center gap-2 ml-auto">
+            <div class="flex items-center bg-white/5 rounded-xl p-1">
+              <div class="tab-btn active" id="tab-chat">Chat</div>
+              <div class="tab-btn" id="tab-history">History</div>
+            </div>
+
+            <i
+              class="fa-solid fa-compress text-xs text-white/40 cursor-pointer hover:text-white transition-colors p-2"
+              id="shrink-btn"
+              title="Compact Mode"
+              style="-webkit-app-region: no-drag"
+            ></i>
+
+            <i
+              class="fa-solid fa-xmark text-sm text-white/40 cursor-pointer hover:text-red-400 transition-colors p-2"
+              id="close-btn-full"
+              title="Close"
+              style="-webkit-app-region: no-drag"
+            ></i>
+          </div>
         </div>
-        <i
-          class="fa-solid fa-plus text-sm text-white/40 cursor-pointer hover:text-white transition-colors"
-          id="new-chat-btn"
-          title="Start New Chat"
-        ></i>
-        <div class="flex items-center bg-white/5 rounded-xl p-1 ml-auto">
-          <div class="tab-btn active" id="tab-chat">Chat</div>
-          <!-- Transcript Tab removed/hidden per request if it shows chat content -->
-          <!-- <div class="tab-btn" id="tab-transcript">Transcript</div> -->
-          <div class="tab-btn" id="tab-history">History</div>
+
+        <div class="content-wrapper">
+          <div id="main-chat-view" class="flex flex-col flex-1 min-h-0">
+            <!-- Action Chips -->
+            <div
+              class="flex flex-wrap gap-2 mb-2 shrink-0"
+              id="action-chips-container"
+            >
+              <div class="action-chip" onclick="triggerAction('assist')">
+                <i
+                  class="fa-solid fa-wand-magic-sparkles text-xs text-blue-400"
+                ></i>
+                Assist
+              </div>
+              <div class="action-chip" onclick="triggerAction('what-say')">
+                <i class="fa-solid fa-comment-dots text-xs text-green-400"></i>
+                What to say?
+              </div>
+              <div class="action-chip" onclick="triggerAction('recap')">
+                <i class="fa-solid fa-rotate-left text-xs text-purple-400"></i>
+                Recap
+              </div>
+            </div>
+
+            <!-- Response Area (Appears after query) -->
+            <div id="response-area">
+              <!-- AI text will appear here -->
+            </div>
+
+            <!-- Screenshot Preview Area -->
+            <div id="screenshot-preview">
+              <img id="preview-img" src="" class="preview-thumb" />
+              <div id="remove-screenshot" class="remove-preview">
+                <i class="fa-solid fa-xmark"></i>
+              </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="input-wrapper">
+              <i
+                class="fa-solid fa-camera camera-btn"
+                id="camera-btn"
+                title="Capture your screen for AI analysis"
+              ></i>
+              <input
+                type="text"
+                id="chat-input"
+                placeholder="Ask anything or Ctrl+V to paste..."
+                autocomplete="off"
+              />
+              <div class="send-btn" id="send-btn">
+                <i class="fa-solid fa-arrow-up text-sm"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- History View (Hidden by default) -->
+          <div id="history-view" class="hidden flex-1 flex flex-col min-h-0">
+            <div
+              class="text-sm font-semibold text-white/40 mb-3 uppercase tracking-wider sticky top-0 bg-[#181818] z-10 py-2"
+            >
+              Recent Conversations
+            </div>
+            <div
+              id="history-list"
+              class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 pb-4 script-content"
+            >
+              <!-- Items injected here -->
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="content-wrapper">
-        <div id="main-chat-view" class="flex flex-col flex-1 min-h-0">
-          <!-- Action Chips -->
-          <div
-            class="flex flex-wrap gap-2 mb-2 shrink-0"
-            id="action-chips-container"
-          >
-            <div class="action-chip" onclick="triggerAction('assist')">
-              <i
-                class="fa-solid fa-wand-magic-sparkles text-xs text-blue-400"
-              ></i>
-              Assist
-            </div>
-            <div class="action-chip" onclick="triggerAction('what-say')">
-              <i class="fa-solid fa-comment-dots text-xs text-green-400"></i>
-              What to say?
-            </div>
-            <div class="action-chip" onclick="triggerAction('recap')">
-              <i class="fa-solid fa-rotate-left text-xs text-purple-400"></i>
-              Recap
-            </div>
-          </div>
+      <!-- Compact View -->
+      <div id="compact-view">
+        <i class="fa-solid fa-eye text-white/60 text-xs"></i>
 
-          <!-- Response Area (Appears after query) -->
-          <div id="response-area">
-            <!-- AI text will appear here -->
-          </div>
-
-          <!-- Screenshot Preview Area -->
-          <div id="screenshot-preview">
-            <img id="preview-img" src="" class="preview-thumb" />
-            <div id="remove-screenshot" class="remove-preview">
-              <i class="fa-solid fa-xmark"></i>
-            </div>
-          </div>
-
-          <!-- Chat Input -->
-          <div class="input-wrapper">
-            <i
-              class="fa-solid fa-camera camera-btn"
-              id="camera-btn"
-              title="Capture your screen for AI analysis"
-            ></i>
-            <input
-              type="text"
-              id="chat-input"
-              placeholder="Ask anything or Ctrl+V to paste..."
-              autocomplete="off"
-            />
-            <!-- Removed confusing hints to clean up UI -->
-            <div class="send-btn" id="send-btn">
-              <i class="fa-solid fa-arrow-up text-sm"></i>
-            </div>
-          </div>
+        <div class="compact-btn listen-pill" id="start-listening-btn">
+          Start Chat
         </div>
 
-        <!-- History View (Hidden by default) -->
-        <div id="history-view" class="hidden flex-1 flex flex-col min-h-0">
-          <div
-            class="text-sm font-semibold text-white/40 mb-3 uppercase tracking-wider sticky top-0 bg-[#181818] z-10 py-2"
-          >
-            Recent Conversations
+        <div class="compact-btn p-1" id="mic-btn" title="Start Recording">
+          <i class="fa-solid fa-microphone text-white/60 text-[10px]"></i>
+        </div>
+
+        <div class="separator"></div>
+
+        <div class="flex items-center gap-1">
+          <div class="drag-handle p-1" title="Drag">
+            <i class="fa-solid fa-grip-vertical text-white/20 text-xs"></i>
           </div>
-          <div
-            id="history-list"
-            class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 pb-4 script-content"
-          >
-            <!-- Items injected here -->
+
+          <div class="compact-btn p-1" id="close-btn-compact" title="Close">
+            <i
+              class="fa-solid fa-xmark text-white/40 text-xs hover:text-red-400 transition-colors"
+            ></i>
           </div>
         </div>
       </div>
@@ -526,9 +612,48 @@
       const removeScreenshot = document.getElementById("remove-screenshot");
 
       const newChatBtn = document.getElementById("new-chat-btn");
+      const shrinkBtn = document.getElementById("shrink-btn");
+      const micBtn = document.getElementById("mic-btn");
+      const fullView = document.getElementById("full-view");
+      const compactView = document.getElementById("compact-view");
+      const closeBtnFull = document.getElementById("close-btn-full");
+      const closeBtnCompact = document.getElementById("close-btn-compact");
+      const startListeningBtn = document.getElementById("start-listening-btn");
 
       let currentTab = "chat";
       let pendingScreenshot = null;
+      let isCompact = false;
+
+      function toggleMode(compact) {
+        isCompact = compact;
+        if (isCompact) {
+          fullView.style.display = "none";
+          compactView.style.display = "flex";
+          document.body.style.borderRadius = "9999px";
+        } else {
+          fullView.style.display = "flex";
+          compactView.style.display = "none";
+          document.body.style.borderRadius = "12px";
+        }
+        ipcRenderer.send("toggle-chat-compact", isCompact);
+      }
+
+      shrinkBtn.addEventListener("click", () => toggleMode(true));
+
+      // User requested: Start listening button should Expand the chat
+      startListeningBtn.addEventListener("click", () => toggleMode(false));
+
+      // User requested: v (now mic icon) should start recording
+      micBtn.addEventListener("click", () => {
+        ipcRenderer.send("start-listening-click");
+      });
+
+      closeBtnFull.addEventListener("click", () =>
+        ipcRenderer.send("close-chat"),
+      );
+      closeBtnCompact.addEventListener("click", () =>
+        ipcRenderer.send("close-chat"),
+      );
 
       // Initialize Marked
       marked.setOptions({
