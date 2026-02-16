@@ -1240,7 +1240,6 @@ ipcMain.handle("capture-screen-only", async () => {
     return null;
   }
 });
-
 ipcMain.on("chat-query", async (event, data) => {
   const { query, attachedScreenshot } = data;
   console.log("[IPC] chat-query received:", {
@@ -1267,6 +1266,8 @@ ipcMain.on("chat-query", async (event, data) => {
     if (!genAI) throw new Error("AI not initialized");
     const modelOptions = {
       model: currentModelName || "gemini-1.5-flash",
+      systemInstruction:
+        "You are a precise, helpful AI assistant. Provide short, direct answers. Use Markdown for formatting. If requested to write code, provide ONLY the explanation and the code block. Do not be conversational unless asked.",
     };
     const model = genAI.getGenerativeModel(modelOptions);
 
