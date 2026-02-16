@@ -1343,6 +1343,18 @@ ipcMain.on("new-chat-session", () => {
   console.log("[AI] New chat session started:", currentChatSession.id);
   if (chatWin && !chatWin.isDestroyed()) {
     chatWin.webContents.send("session-reset");
+
+    // Reset Window Size & Position (User Request: "Trim this down")
+    // Re-calculate default position (Center bottom)
+    const { width, height } =
+      require("electron").screen.getPrimaryDisplay().workAreaSize;
+    const w = 550;
+    const h = 450;
+    const x = Math.round((width - w) / 2);
+    const y = height - h - 100;
+
+    if (chatWin.isMaximized()) chatWin.unmaximize();
+    chatWin.setBounds({ x, y, width: w, height: h }, true); // animate
   }
 });
 
@@ -1407,6 +1419,14 @@ ipcMain.on("resize-chat", (event, { width, height }) => {
 
 let lastChatReleaseTime = 0;
 let lastChatReleaseKey = null;
+
+ipcMain.on("show-chat", () => {
+  if (!chatWin || chatWin.isDestroyed()) {
+    createChatWindow();
+  }
+  chatWin.show();
+  chatWin.focus();
+});
 
 // ----------------- global keyboard listener -----------------
 // ... (rest of keyboard listener)

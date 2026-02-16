@@ -796,6 +796,41 @@
                 No chats found.
               </div>
             </div>
+
+            <!-- Chat Detail View (Hidden by default) -->
+            <div
+              id="chat-detail-view"
+              class="hidden flex flex-col h-full pb-20"
+            >
+              <div
+                class="flex items-center gap-4 mb-6 sticky top-0 bg-white py-2 z-10"
+              >
+                <button
+                  id="chat-detail-back"
+                  class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-600 transition-colors"
+                >
+                  <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div class="flex-1 min-w-0">
+                  <h3
+                    id="chat-detail-title"
+                    class="text-xl font-semibold text-slate-900 truncate"
+                  >
+                    Chat Session
+                  </h3>
+                  <p
+                    id="chat-detail-meta"
+                    class="text-xs text-slate-500 italic"
+                  ></p>
+                </div>
+              </div>
+              <div
+                id="chat-detail-messages"
+                class="flex flex-col gap-4 overflow-y-auto pr-2"
+              >
+                <!-- Messages will be injected here -->
+              </div>
+            </div>
           </div>
 
           <!-- NOTES (Google Keep Style) -->

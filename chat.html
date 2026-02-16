@@ -13,29 +13,42 @@
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
+    <!-- Markdown & Syntax Highlighting -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
     <style>
       body {
         margin: 0;
-        padding: 20px;
+        padding: 0;
         overflow: hidden;
         background: transparent;
         font-family: "Outfit", sans-serif;
         color: #fff;
+        height: 100vh;
+        width: 100vw;
+        display: flex;
+        flex-direction: column;
       }
 
       .chat-container {
-        background: rgba(24, 24, 24, 0.85);
-        backdrop-filter: blur(20px);
+        background: rgba(24, 24, 24, 0.98);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 16px;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-        width: 500px;
-        max-width: 90vw;
-        max-height: 85vh; /* Ensure it stays within viewport */
         display: flex;
         flex-direction: column;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+
+      /* Optional: Add a subtle border/radius if it's a floating window */
+      body:not(.maximized) .chat-container {
+        border-radius: 12px;
       }
 
       .dashed-border {
@@ -69,16 +82,16 @@
         font-size: 13px;
         font-weight: 500;
         color: rgba(255, 255, 255, 0.8);
-        background: transparent;
-        border: 1px solid transparent;
+        background: rgba(255, 255, 255, 0.05); /* Slight bg for visibility */
+        border: 1px solid rgba(255, 255, 255, 0.05);
         transition: all 0.2s;
         -webkit-app-region: no-drag;
         cursor: pointer;
       }
 
       .action-chip:hover {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
       }
 
       .input-wrapper {
@@ -87,9 +100,10 @@
         border-radius: 14px;
         display: flex;
         align-items: center;
-        padding: 4px 6px 4px 14px;
-        margin-top: 12px;
+        padding: 8px 10px 8px 14px;
         transition: border-color 0.3s;
+        margin-top: auto; /* Push to bottom if needed, but flex handles it */
+        flex-shrink: 0;
       }
 
       .input-wrapper:focus-within {
@@ -103,7 +117,7 @@
         color: #fff;
         font-size: 14px;
         flex-grow: 1;
-        padding: 8px 0;
+        padding: 4px 0;
         -webkit-app-region: no-drag;
       }
 
@@ -123,6 +137,7 @@
         transition: all 0.2s;
         -webkit-app-region: no-drag;
         cursor: pointer;
+        flex-shrink: 0;
       }
 
       .send-btn:hover {
@@ -146,51 +161,145 @@
         color: rgba(255, 255, 255, 0.5);
       }
 
+      /* Response Area Logic */
       #response-area {
         flex: 1;
         overflow-y: auto;
-        padding-top: 16px;
+        padding: 10px 4px 10px 0;
         display: flex;
         flex-direction: column;
         gap: 16px;
-        min-height: 0;
+        min-height: 0; /* Crucial for nested flex scrolling */
+        scroll-behavior: smooth;
       }
 
+      /* Markdown & Message Styling */
       .message-user {
         align-self: flex-end;
         background: rgba(255, 255, 255, 0.1);
-        padding: 8px 14px;
+        padding: 10px 16px;
         border-radius: 14px 14px 4px 14px;
-        max-width: 80%;
+        max-width: 85%;
+        word-wrap: break-word;
+        font-size: 14px;
+        line-height: 1.5;
+        white-space: pre-wrap; /* For user text preserving spacing */
       }
 
       .message-ai {
         align-self: flex-start;
-        background: rgba(29, 78, 216, 0.2);
-        border: 1px solid rgba(29, 78, 216, 0.3);
-        padding: 8px 14px;
-        border-radius: 14px 14px 14px 4px;
-        max-width: 90%;
+        /* Removed background specifically for AI to cleaner look or keep it subtle */
+        background: transparent;
+        padding: 0 4px; /* Less padding, let markdown define it */
+        max-width: 95%;
+        width: 100%;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #e5e7eb;
       }
 
+      /* Markdown Content Styling within AI Messages */
+      .markdown-body {
+        margin: 0;
+      }
+
+      .markdown-body p {
+        margin-bottom: 12px;
+      }
+      .markdown-body p:last-child {
+        margin-bottom: 0;
+      }
+
+      .markdown-body code {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: "Menlo", "Consolas", monospace;
+        font-size: 0.9em;
+        color: #fca5a5; /* Light red/pink for inline code */
+      }
+
+      .markdown-body pre {
+        background: #0d1117 !important;
+        padding: 12px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 12px 0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .markdown-body pre code {
+        background: transparent;
+        padding: 0;
+        color: inherit;
+        font-size: 0.85em;
+        border-radius: 0;
+      }
+
+      .markdown-body ul,
+      .markdown-body ol {
+        padding-left: 20px;
+        margin-bottom: 12px;
+      }
+
+      .markdown-body li {
+        margin-bottom: 4px;
+      }
+
+      .markdown-body h1,
+      .markdown-body h2,
+      .markdown-body h3 {
+        font-weight: 600;
+        margin-top: 16px;
+        margin-bottom: 8px;
+        color: #fff;
+      }
+
+      .markdown-body h1 {
+        font-size: 1.5em;
+      }
+      .markdown-body h2 {
+        font-size: 1.3em;
+      }
+      .markdown-body h3 {
+        font-size: 1.1em;
+      }
+
+      .markdown-body a {
+        color: #60a5fa;
+        text-decoration: none;
+      }
+      .markdown-body a:hover {
+        text-decoration: underline;
+      }
+
+      /* Scrollbar */
       ::-webkit-scrollbar {
-        width: 4px;
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.15);
         border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.25);
       }
 
       #screenshot-preview {
         display: none;
         position: relative;
-        margin-top: 12px;
+        margin: 12px 0;
         align-self: flex-start;
       }
 
       .preview-thumb {
-        width: 80px;
-        height: 45px;
+        width: 120px;
+        height: auto;
+        max-height: 80px;
         object-fit: cover;
         border-radius: 8px;
         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -201,8 +310,8 @@
         position: absolute;
         top: -6px;
         right: -6px;
-        width: 18px;
-        height: 18px;
+        width: 20px;
+        height: 20px;
         background: #ef4444;
         border-radius: 50%;
         display: flex;
@@ -252,33 +361,54 @@
       }
 
       #action-chips-container.hidden {
-        display: none;
+        display: none; /* Uses !important if specificity issues arise, but class switch is cleaner */
+      }
+
+      /* Header spacing */
+      .header-bar {
+        padding: 12px 16px 8px 16px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .content-wrapper {
+        padding: 0 16px 16px 16px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
       }
     </style>
   </head>
   <body>
-    <div class="dashed-border">
-      <div class="chat-container">
-        <!-- Header Tabs -->
-        <div class="flex items-center gap-3 mb-4">
-          <div class="drag-handle" title="Drag Window">
-            <i class="fa-solid fa-grip-vertical text-sm"></i>
-          </div>
-          <i
-            class="fa-solid fa-plus text-sm text-white/40 cursor-pointer hover:text-white transition-colors"
-            id="new-chat-btn"
-            title="Start New Chat"
-          ></i>
-          <div class="flex items-center bg-white/5 rounded-xl p-1">
-            <div class="tab-btn active" id="tab-chat">Chat</div>
-            <div class="tab-btn" id="tab-transcript">Transcript</div>
-            <div class="tab-btn" id="tab-history">Chats</div>
-          </div>
+    <div class="chat-container">
+      <!-- Header Tabs -->
+      <div class="header-bar">
+        <div class="drag-handle" title="Drag Window">
+          <i class="fa-solid fa-grip-vertical text-sm"></i>
         </div>
+        <i
+          class="fa-solid fa-plus text-sm text-white/40 cursor-pointer hover:text-white transition-colors"
+          id="new-chat-btn"
+          title="Start New Chat"
+        ></i>
+        <div class="flex items-center bg-white/5 rounded-xl p-1 ml-auto">
+          <div class="tab-btn active" id="tab-chat">Chat</div>
+          <!-- Transcript Tab removed/hidden per request if it shows chat content -->
+          <!-- <div class="tab-btn" id="tab-transcript">Transcript</div> -->
+          <div class="tab-btn" id="tab-history">History</div>
+        </div>
+      </div>
 
-        <div id="main-chat-view">
+      <div class="content-wrapper">
+        <div id="main-chat-view" class="flex flex-col flex-1 min-h-0">
           <!-- Action Chips -->
-          <div class="flex flex-wrap gap-2 mb-2" id="action-chips-container">
+          <div
+            class="flex flex-wrap gap-2 mb-2 shrink-0"
+            id="action-chips-container"
+          >
             <div class="action-chip" onclick="triggerAction('assist')">
               <i
                 class="fa-solid fa-wand-magic-sparkles text-xs text-blue-400"
@@ -287,11 +417,7 @@
             </div>
             <div class="action-chip" onclick="triggerAction('what-say')">
               <i class="fa-solid fa-comment-dots text-xs text-green-400"></i>
-              What should I say?
-            </div>
-            <div class="action-chip" onclick="triggerAction('follow-up')">
-              <i class="fa-solid fa-comments text-xs text-yellow-400"></i>
-              Follow-up questions
+              What to say?
             </div>
             <div class="action-chip" onclick="triggerAction('recap')">
               <i class="fa-solid fa-rotate-left text-xs text-purple-400"></i>
@@ -322,16 +448,10 @@
             <input
               type="text"
               id="chat-input"
-              placeholder="Ask about your screen or conversation, or ^ ↵ for Assist"
+              placeholder="Ask anything or Ctrl+V to paste..."
+              autocomplete="off"
             />
-            <div class="flex items-center gap-1.5 mr-2">
-              <div class="kbd-hint">
-                <i class="fa-solid fa-arrow-up text-[8px]"></i>
-              </div>
-              <div class="kbd-hint">
-                <i class="fa-solid fa-turn-down text-[8px] rotate-90"></i>
-              </div>
-            </div>
+            <!-- Removed confusing hints to clean up UI -->
             <div class="send-btn" id="send-btn">
               <i class="fa-solid fa-arrow-up text-sm"></i>
             </div>
@@ -341,13 +461,13 @@
         <!-- History View (Hidden by default) -->
         <div id="history-view" class="hidden flex-1 flex flex-col min-h-0">
           <div
-            class="text-sm font-semibold text-white/40 mb-3 ml-1 uppercase tracking-wider sticky top-0 bg-[#181818]/0 backdrop-blur-sm z-10"
+            class="text-sm font-semibold text-white/40 mb-3 uppercase tracking-wider sticky top-0 bg-[#181818] z-10 py-2"
           >
             Recent Conversations
           </div>
           <div
             id="history-list"
-            class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 pb-4"
+            class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 pb-4 script-content"
           >
             <!-- Items injected here -->
           </div>
@@ -361,7 +481,7 @@
       const sendBtn = document.getElementById("send-btn");
       const responseArea = document.getElementById("response-area");
       const tabChat = document.getElementById("tab-chat");
-      const tabTranscript = document.getElementById("tab-transcript");
+      // const tabTranscript = document.getElementById("tab-transcript");
       const tabHistory = document.getElementById("tab-history");
       const mainChatView = document.getElementById("main-chat-view");
       const historyView = document.getElementById("history-view");
@@ -376,6 +496,16 @@
       let currentTab = "chat";
       let pendingScreenshot = null;
 
+      // Initialize Marked
+      marked.setOptions({
+        breaks: true, // Convert \n to <br>
+        gfm: true, // GitHub Flavored Markdown
+        highlight: function (code, lang) {
+          const language = hljs.getLanguage(lang) ? lang : "plaintext";
+          return hljs.highlight(code, { language }).value;
+        },
+      });
+
       newChatBtn.addEventListener("click", () => {
         ipcRenderer.send("new-chat-session");
       });
@@ -388,6 +518,10 @@
         cameraBtn.classList.remove("active");
         chatInput.disabled = false;
         sendBtn.style.opacity = "1";
+        document
+          .getElementById("action-chips-container")
+          ?.classList.remove("hidden");
+        switchTab("chat");
       });
 
       async function captureScreen() {
@@ -400,6 +534,8 @@
           previewImg.src = `data:image/png;base64,${base64}`;
           screenshotPreview.style.display = "block";
           cameraBtn.classList.add("active");
+          // Focus input again
+          chatInput.focus();
         }
       }
 
@@ -414,7 +550,7 @@
       function switchTab(tab) {
         currentTab = tab;
         tabChat.classList.toggle("active", tab === "chat");
-        tabTranscript.classList.toggle("active", tab === "transcript");
+        // tabTranscript?.classList.toggle("active", tab === "transcript");
         tabHistory.classList.toggle("active", tab === "history");
 
         if (tab === "history") {
@@ -424,11 +560,13 @@
         } else {
           mainChatView.classList.remove("hidden");
           historyView.classList.add("hidden");
+          // Focus input when switching back to chat
+          setTimeout(() => chatInput.focus(), 50);
         }
       }
 
       tabChat.addEventListener("click", () => switchTab("chat"));
-      tabTranscript.addEventListener("click", () => switchTab("transcript"));
+      // tabTranscript?.addEventListener("click", () => switchTab("transcript"));
       tabHistory.addEventListener("click", () => switchTab("history"));
 
       async function loadHistory() {
@@ -447,10 +585,10 @@
             (item) => `
                 <div class="bg-white/5 border border-white/5 rounded-xl p-3 hover:bg-white/10 transition-all cursor-pointer" onclick="showHistoryItem('${item.id}')">
                     <div class="flex justify-between items-start mb-1">
-                        <div class="text-white/90 font-medium truncate flex-1">${item.sessionTitle || item.query}</div>
+                        <div class="text-white/90 font-medium truncate flex-1">${item.sessionTitle || "Conversation"}</div>
                         <div class="text-[10px] text-white/30 ml-2 whitespace-nowrap">${new Date(item.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
                     </div>
-                    <div class="text-white/40 text-xs line-clamp-2">${item.response}</div>
+                    <div class="text-white/40 text-xs line-clamp-2">${(item.query || "").replace(/<[^>]*>/g, "")}</div>
                 </div>
             `,
           )
@@ -462,6 +600,13 @@
         const item = history.find((i) => i.id === id);
         if (item) {
           switchTab("chat");
+          // Clear current view first? Maybe user wants context.
+          // For now, let's clear to show the history item cleanly.
+          responseArea.innerHTML = "";
+          document
+            .getElementById("action-chips-container")
+            ?.classList.add("hidden");
+
           appendMessage("user", item.query);
           appendMessage("ai", item.response);
           chatInput.value = "";
@@ -470,17 +615,43 @@
 
       function appendMessage(role, text) {
         const msgDiv = document.createElement("div");
-        msgDiv.className = role === "user" ? "message-user" : "message-ai";
-        msgDiv.innerHTML = text.replace(/\n/g, "<br>");
-        responseArea.appendChild(msgDiv);
-        responseArea.scrollTop = responseArea.scrollHeight;
+        msgDiv.className =
+          role === "user" ? "message-user" : "message-ai markdown-body";
 
-        // Hide action chips if not empty
+        if (role === "ai") {
+          // Render Markdown
+          msgDiv.innerHTML = marked.parse(text);
+          // Highlight Code Blocks
+          setTimeout(() => {
+            msgDiv.querySelectorAll("pre code").forEach((block) => {
+              hljs.highlightElement(block);
+            });
+          }, 0);
+        } else {
+          // Plain text for user, preserving whitespace
+          msgDiv.innerText = text;
+        }
+
+        responseArea.appendChild(msgDiv);
+
+        // Auto-scroll
+        scrollToBottom();
+
         if (responseArea.children.length > 0) {
           document
             .getElementById("action-chips-container")
             ?.classList.add("hidden");
         }
+      }
+
+      function scrollToBottom() {
+        // smooth scroll
+        requestAnimationFrame(() => {
+          responseArea.scrollTo({
+            top: responseArea.scrollHeight,
+            behavior: "smooth",
+          });
+        });
       }
 
       // Chat Logic
@@ -504,7 +675,7 @@
           "message-ai text-white/40 italic flex items-center gap-2";
         loadingDiv.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> Thinking...`;
         responseArea.appendChild(loadingDiv);
-        responseArea.scrollTop = responseArea.scrollHeight;
+        scrollToBottom();
 
         // Send to main process
         ipcRenderer.send("chat-query", {
@@ -519,8 +690,11 @@
       }
 
       sendBtn.addEventListener("click", sendMessage);
-      chatInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") sendMessage();
+      chatInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault(); // Prioritize send over newline
+          sendMessage();
+        }
       });
 
       async function triggerAction(action) {
@@ -532,9 +706,6 @@
           chatInput.value =
             "Based on the conversation, what should I say next?";
           sendMessage();
-        } else if (action === "follow-up") {
-          chatInput.value = "Suggest some follow-up questions.";
-          sendMessage();
         } else if (action === "recap") {
           chatInput.value = "Give me a quick recap of the current state.";
           sendMessage();
@@ -545,6 +716,8 @@
       ipcRenderer.on("chat-response", (event, data) => {
         chatInput.disabled = false;
         sendBtn.style.opacity = "1";
+        // Focus input for follow-up
+        setTimeout(() => chatInput.focus(), 100);
 
         // Remove loading
         const loadings = responseArea.querySelectorAll(".italic");
@@ -560,11 +733,15 @@
         const loadings = responseArea.querySelectorAll(".italic");
         loadings.forEach((l) => l.remove());
 
-        appendMessage(
-          "ai",
-          `<span class="text-red-400">Error: ${error}</span>`,
-        );
+        const errDiv = document.createElement("div");
+        errDiv.className = "message-ai";
+        errDiv.innerHTML = `<span class="text-red-400">Error: ${error}</span>`;
+        responseArea.appendChild(errDiv);
+        scrollToBottom();
       });
+
+      // Initial Focus
+      setTimeout(() => chatInput.focus(), 500);
     </script>
   </body>
 </html>

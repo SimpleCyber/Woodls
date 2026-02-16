@@ -268,7 +268,7 @@ export function initApp() {
   document
     .querySelectorAll(".sidebar-item, .sidebar-item-link")
     .forEach((item) => {
-      item.onclick = (e) => {
+      item.addEventListener("click", (e) => {
         if (e.currentTarget.tagName === "A" && e.currentTarget.href !== "#")
           return;
 
@@ -294,7 +294,7 @@ export function initApp() {
 
         const pEl = document.getElementById(page);
         if (pEl) pEl.classList.remove("hidden");
-      };
+      });
     });
 
   // Initial Fetch

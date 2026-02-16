@@ -1,13 +1,38 @@
 // js/chats.js
 import { $ } from "./utils.js";
 
+let allSessions = {};
+
 export function initChats() {
   const refreshBtn = document.getElementById("refresh-chats-btn");
   const container = document.getElementById("chat-history-container");
   const sidebarItem = document.querySelector('[data-page="chats"]');
+  const detailView = document.getElementById("chat-detail-view");
+  const detailBack = document.getElementById("chat-detail-back");
+  const detailMessages = document.getElementById("chat-detail-messages");
+  const detailTitle = document.getElementById("chat-detail-title");
+  const detailMeta = document.getElementById("chat-detail-meta");
+  const header = document.querySelector(
+    "#chats .flex.justify-between.items-center.mb-8",
+  );
 
-  if (refreshBtn) refreshBtn.onclick = () => loadChats();
-  if (sidebarItem) sidebarItem.onclick = () => loadChats();
+  if (refreshBtn) refreshBtn.addEventListener("click", () => loadChats());
+  if (sidebarItem) {
+    sidebarItem.addEventListener("click", () => {
+      backToList();
+      loadChats();
+    });
+  }
+
+  if (detailBack) {
+    detailBack.onclick = backToList;
+  }
+
+  function backToList() {
+    if (detailView) detailView.classList.add("hidden");
+    if (container) container.classList.remove("hidden");
+    if (header) header.classList.remove("hidden");
+  }
 
   async function loadChats() {
     if (!container) return;
@@ -35,12 +60,12 @@ export function initChats() {
           };
         }
         sessions[sid].messages.push(item);
-        // Keep the latest screenshot
         if (item.screenshot) sessions[sid].screenshot = item.screenshot;
-        // Keep the latest timestamp
         if (item.timestamp > sessions[sid].timestamp)
           sessions[sid].timestamp = item.timestamp;
       });
+
+      allSessions = sessions;
 
       const sessionList = Object.values(sessions).sort(
         (a, b) => b.timestamp - a.timestamp,
@@ -57,7 +82,7 @@ export function initChats() {
             session.messages[session.messages.length - 1].response;
 
           return `
-          <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-all border border-transparent hover:border-slate-100 group" onclick="window.api.showOverlay(true)">
+          <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-all border border-transparent hover:border-slate-100 group" onclick="window.viewChatDetail('${session.id}')">
             <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 group-hover:bg-primary-50 transition-colors">
               ${
                 session.screenshot
@@ -85,6 +110,55 @@ export function initChats() {
         '<div class="col-span-full text-center text-red-400 py-20 italic">Failed to load chat history.</div>';
     }
   }
+
+  // Exposed globally for onclick
+  window.viewChatDetail = (sessionId) => {
+    const session = allSessions[sessionId];
+    if (!session) return;
+
+    if (container) container.classList.add("hidden");
+    if (header) header.classList.add("hidden");
+    if (detailView) detailView.classList.remove("hidden");
+
+    if (detailTitle) detailTitle.textContent = session.title;
+    if (detailMeta) {
+      const dateStr = new Date(session.timestamp).toLocaleDateString();
+      const timeStr = new Date(session.timestamp).toLocaleTimeString();
+      detailMeta.textContent = `${dateStr} at ${timeStr} ΓÇó ${session.messages.length} messages`;
+    }
+
+    if (detailMessages) {
+      detailMessages.innerHTML = session.messages
+        .map(
+          (msg) => `
+        <div class="flex flex-col gap-2">
+          <div class="flex flex-col items-end">
+            <div class="bg-primary-50 text-slate-800 p-3 rounded-2xl rounded-tr-none max-w-[85%] text-sm shadow-sm border border-primary-100">
+              ${msg.query}
+            </div>
+          </div>
+          <div class="flex flex-col items-start">
+            <div class="bg-white text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[90%] text-sm shadow-sm border border-slate-100 leading-relaxed">
+              ${msg.response.replace(/\n/g, "<br>")}
+            </div>
+          </div>
+          ${
+            msg.screenshot
+              ? `
+            <div class="mt-2 rounded-lg overflow-hidden border border-slate-200 max-w-[200px]">
+              <img src="woodls-screenshot://${msg.screenshot}" class="w-full h-auto">
+            </div>
+          `
+              : ""
+          }
+        </div>
+      `,
+        )
+        .join('<div class="h-px bg-slate-100 my-2"></div>');
+
+      detailMessages.scrollTop = 0;
+    }
+  };
 
   // Initial load if visible
   if (
