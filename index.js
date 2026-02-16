@@ -7,7 +7,8 @@ const {
   Tray,
   Menu,
   nativeImage,
-  clipboard,
+  shell, // Added shell
+  protocol, // Added protocol
 } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const path = require("path");
@@ -46,7 +47,7 @@ const getAssetPath = (...paths) => {
 
 let win; // Moved to top to avoid TDZ issues
 // ----------------- AI ROTATION -----------------
-const DEFAULT_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+const DEFAULT_MODELS = ["gemini-2.0-flash", "gemini-1.5-flash"];
 const MAX_DAILY_CALLS = 20;
 const AI_USAGE_FILE = path.join(app.getPath("userData"), "ai_usage.json");
 
@@ -178,6 +179,10 @@ function initGenAI() {
     settings.modelName && settings.modelName.trim()
       ? settings.modelName.trim()
       : ENV_MODEL_NAME;
+
+  // No longer migrating gemini-2.5-flash-lite/flash to gemini-1.5-flash.
+  // These models are valid and preferred if available for the API key.
+
   totalKeysAvailable = apiKeys.length;
 
   if (apiKeys.length === 0) {
@@ -237,6 +242,7 @@ let keyboard;
 
 let requiredKeys = []; // single-key expected (array but we use index 0)
 let requiredAIKeys = []; // single-key for AI mode
+let requiredChatKeys = []; // single-key for Chat mode
 let running = false;
 let pressStart = null;
 let isPersistent = false;
@@ -249,9 +255,15 @@ let holdTimeout = null;
 let captureTimeout = null; // Debounce for capture
 
 let isProcessingAI = false; // Prevents concurrent AI tasks
+let currentChatSession = {
+  id: Date.now().toString(),
+  title: "New Chat",
+  messages: [], // Array of { role: "user" | "model", parts: [{ text: "..." }] }
+};
 let tray = null;
 let isQuitting = false;
 let server = null; // Store server reference for cleanup
+let chatWin = null; // New Cluely-style chat overlay
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
@@ -365,11 +377,14 @@ function readSettings() {
   try {
     const p = getUserPaths().settings;
 
-    if (!fs.existsSync(p)) return { hotkey: [], aiHotkey: [] };
+    if (!fs.existsSync(p))
+      return { hotkey: [], aiHotkey: [], chatHotkey: ["LEFT CTRL", "SLASH"] };
     const raw = fs.readFileSync(p, "utf8");
-    return JSON.parse(raw);
+    const data = JSON.parse(raw);
+    if (!data.chatHotkey) data.chatHotkey = ["LEFT CTRL", "SLASH"];
+    return data;
   } catch (e) {
-    return { hotkey: [], aiHotkey: [] };
+    return { hotkey: [], aiHotkey: [], chatHotkey: ["LEFT CTRL", "SLASH"] };
   }
 }
 
@@ -415,10 +430,14 @@ function onUserChanged() {
 
   requiredKeys = Array.isArray(settings.hotkey) ? settings.hotkey : [];
   requiredAIKeys = Array.isArray(settings.aiHotkey) ? settings.aiHotkey : [];
+  requiredChatKeys = Array.isArray(settings.chatHotkey)
+    ? settings.chatHotkey
+    : [];
   if (win && !win.isDestroyed()) {
     win.webContents.send("settings-loaded", settings);
     win.webContents.send("hotkey-loaded", requiredKeys);
     win.webContents.send("ai-hotkey-loaded", requiredAIKeys);
+    win.webContents.send("chat-hotkey-loaded", requiredChatKeys);
   }
 }
 
@@ -428,6 +447,8 @@ function getUserPaths() {
     history: path.join(app.getPath("userData"), `history${suffix}.json`),
     notes: path.join(app.getPath("userData"), `notes${suffix}.json`),
     settings: path.join(app.getPath("userData"), `settings${suffix}.json`),
+    chats: path.join(app.getPath("userData"), `chats${suffix}.json`),
+    screenshots: path.join(app.getPath("userData"), "screenshots"),
   };
 }
 
@@ -468,6 +489,33 @@ function saveNotes(notes) {
     fs.writeFileSync(p, JSON.stringify(notes, null, 2));
   } catch (e) {
     console.error("Failed to save notes:", e);
+  }
+}
+
+function readChatHistory() {
+  try {
+    const p = getUserPaths().chats;
+    if (!fs.existsSync(p)) return [];
+    const raw = fs.readFileSync(p, "utf8");
+    return JSON.parse(raw);
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveChatHistory(history) {
+  try {
+    const p = getUserPaths().chats;
+    fs.writeFileSync(p, JSON.stringify(history, null, 2));
+  } catch (e) {
+    console.error("Failed to save chat history:", e);
+  }
+}
+
+function ensureScreenshotsDir() {
+  const p = getUserPaths().screenshots;
+  if (!fs.existsSync(p)) {
+    fs.mkdirSync(p, { recursive: true });
   }
 }
 
@@ -860,10 +908,14 @@ function createWindow() {
   const settings = readSettings();
   requiredKeys = Array.isArray(settings.hotkey) ? settings.hotkey : [];
   requiredAIKeys = Array.isArray(settings.aiHotkey) ? settings.aiHotkey : [];
+  requiredChatKeys = Array.isArray(settings.chatHotkey)
+    ? settings.chatHotkey
+    : [];
 
   win.webContents.on("did-finish-load", () => {
     win.webContents.send("hotkey-loaded", requiredKeys);
     win.webContents.send("ai-hotkey-loaded", requiredAIKeys);
+    win.webContents.send("chat-hotkey-loaded", requiredChatKeys);
     win.webContents.send("settings-loaded", settings);
     sendAIInfoToRenderer();
   });
@@ -874,7 +926,19 @@ function createWindow() {
     win = null;
   });
 
+  // Register custom protocol for screenshots
+  protocol.registerFileProtocol("woodls-screenshot", (request, callback) => {
+    const url = request.url.replace("woodls-screenshot://", "");
+    try {
+      const p = path.join(getUserPaths().screenshots, url);
+      return callback(p);
+    } catch (error) {
+      console.error("Failed to register protocol", error);
+    }
+  });
+
   createOverlayWindow();
+  createChatWindow();
 
   setupGlobalKeyboard();
   startActiveWindowMonitor();
@@ -910,6 +974,44 @@ function createWindow() {
       );
     }
   });
+}
+
+function createChatWindow() {
+  if (chatWin && !chatWin.isDestroyed()) return;
+
+  const { width, height } =
+    require("electron").screen.getPrimaryDisplay().workAreaSize;
+
+  // Modern chat overlay size
+  const w = 550;
+  const h = 450;
+  const x = Math.round((width - w) / 2);
+  const y = height - h - 100; // Positioned slightly above the taskbar
+
+  chatWin = new BrowserWindow({
+    width: w,
+    height: h,
+    x: x,
+    y: y,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: true, // Allow resizing if user wants
+    show: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+    hasShadow: false,
+    type: "toolbar",
+  });
+
+  // CLUELY FEATURE: Make window invisible to screenshots/recordings
+  chatWin.setContentProtection(true);
+
+  chatWin.loadFile("chat.html");
+  chatWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 }
 
 function createOverlayWindow() {
@@ -1100,11 +1202,176 @@ ipcMain.on("hide-overlay", () => {
   }
 });
 
+ipcMain.handle("capture-screen", async () => {
+  const { desktopCapturer, screen } = require("electron");
+  try {
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width, height } = primaryDisplay.size;
+
+    const sources = await desktopCapturer.getSources({
+      types: ["screen"],
+      thumbnailSize: { width, height },
+    });
+
+    const primarySource = sources[0]; // Usually the first one
+    if (primarySource) {
+      return primarySource.thumbnail.toDataURL();
+    }
+    return null;
+  } catch (e) {
+    console.error("Screen capture failed:", e);
+    return null;
+  }
+});
+
+ipcMain.handle("capture-screen-only", async () => {
+  console.log("[IPC] capture-screen-only called");
+  try {
+    const { desktopCapturer } = require("electron");
+    const sources = await desktopCapturer.getSources({
+      types: ["screen"],
+      thumbnailSize: { width: 1280, height: 720 }, // Lower res for preview
+    });
+    const primarySource = sources[0];
+    if (!primarySource) return null;
+    return primarySource.thumbnail.toDataURL().split(",")[1]; // Return base64
+  } catch (e) {
+    console.error("Capture failed:", e);
+    return null;
+  }
+});
+
+ipcMain.on("chat-query", async (event, data) => {
+  const { query, attachedScreenshot } = data;
+  console.log("[IPC] chat-query received:", {
+    query,
+    hasScreenshot: !!attachedScreenshot,
+  });
+
+  try {
+    // 1. Get Screenshot (either from attachment or capture now if requested specifically)
+    let screenshotBase64 = attachedScreenshot;
+    let screenshotName = null;
+
+    if (screenshotBase64) {
+      ensureScreenshotsDir();
+      screenshotName = `chat_${Date.now()}.png`;
+      const screenshotPath = path.join(
+        getUserPaths().screenshots,
+        screenshotName,
+      );
+      fs.writeFileSync(screenshotPath, Buffer.from(screenshotBase64, "base64"));
+    }
+
+    // 2. Send to Gemini with threading
+    if (!genAI) throw new Error("AI not initialized");
+    const modelOptions = {
+      model: currentModelName || "gemini-1.5-flash",
+    };
+    const model = genAI.getGenerativeModel(modelOptions);
+
+    // Initial message if session is new
+    if (currentChatSession.messages.length === 0) {
+      currentChatSession.title =
+        query.slice(0, 40) + (query.length > 40 ? "..." : "");
+    }
+
+    const chat = model.startChat({
+      history: currentChatSession.messages,
+    });
+
+    let result;
+    if (screenshotBase64) {
+      // Multimedia messages are currently better handled by generateContent directly if we don't want to keep a complex multi-part history in memory
+      // But for threading, we should try to keep the text context
+      result = await chat.sendMessage([
+        { text: query },
+        {
+          inlineData: {
+            data: screenshotBase64,
+            mimeType: "image/png",
+          },
+        },
+      ]);
+    } else {
+      result = await chat.sendMessage(query);
+    }
+
+    const response = await result.response;
+    const responseText = response.text();
+
+    // 3. Save to History (Both global and current session)
+    const chatHistory = readChatHistory();
+    const entry = {
+      id: Date.now().toString(),
+      sessionId: currentChatSession.id,
+      sessionTitle: currentChatSession.title,
+      timestamp: Date.now(),
+      query: query,
+      response: responseText,
+      screenshot: screenshotName,
+    };
+    chatHistory.push(entry);
+    saveChatHistory(chatHistory);
+
+    // Update current session messages for threading
+    // sendMessage already updates the internal 'chat' object history,
+    // but we might want to sync it if we want persistent sessions across restarts (not implemented yet)
+    // For now, it stays in memory.
+
+    if (chatWin && !chatWin.isDestroyed()) {
+      chatWin.webContents.send("chat-response", {
+        text: responseText,
+        sessionId: currentChatSession.id,
+        sessionTitle: currentChatSession.title,
+      });
+    }
+  } catch (e) {
+    console.error("Chat query failed:", e);
+    if (chatWin && !chatWin.isDestroyed()) {
+      chatWin.webContents.send("chat-error", e.message);
+    }
+  }
+});
+
+ipcMain.on("new-chat-session", () => {
+  currentChatSession = {
+    id: Date.now().toString(),
+    title: "New Chat",
+    messages: [],
+  };
+  console.log("[AI] New chat session started:", currentChatSession.id);
+  if (chatWin && !chatWin.isDestroyed()) {
+    chatWin.webContents.send("session-reset");
+  }
+});
+
+ipcMain.handle("get-chat-history", () => {
+  return readChatHistory().reverse(); // Newest first
+});
+
+ipcMain.handle("delete-chat-session", (_, sessionId) => {
+  let history = readChatHistory();
+  // Filter out items belonging to this session
+  const beforeCount = history.length;
+  history = history.filter((item) => item.sessionId !== sessionId);
+  const afterCount = history.length;
+
+  if (beforeCount !== afterCount) {
+    saveChatHistory(history);
+    return true;
+  }
+  return false;
+});
+
 ipcMain.on("mic-volume", (event, volume) => {
   if (overlayWin && !overlayWin.isDestroyed()) {
     overlayWin.webContents.send("mic-volume", volume);
   }
 });
+
+let lastChatReleaseTime = 0;
+let lastChatReleaseKey = null;
 
 // ----------------- global keyboard listener -----------------
 // ... (rest of keyboard listener)
@@ -1125,8 +1392,13 @@ function setupGlobalKeyboard() {
       requiredAIKeys && requiredAIKeys[0]
         ? normalizeKeyName(requiredAIKeys[0])
         : null;
+    const settings = readSettings();
+    const CHAT_HOTKEY =
+      settings.chatHotkey && settings.chatHotkey[0]
+        ? normalizeKeyName(settings.chatHotkey[0])
+        : null;
 
-    if (!HOTKEY && !AI_HOTKEY) return;
+    if (!HOTKEY && !AI_HOTKEY && !CHAT_HOTKEY) return;
 
     // Determine which key was pressed and set mode
     let isAIMode = false;
@@ -1141,6 +1413,25 @@ function setupGlobalKeyboard() {
       isActiveKey = true;
       isAIMode = true;
       targetHotkey = AI_HOTKEY;
+    } else if (key && key === CHAT_HOTKEY) {
+      // NEW: Cluely-style chat overlay
+      if (event.state === "DOWN") {
+        const now = Date.now();
+        // DOUBLE TAP Logic for Chat Panel
+        if (now - lastChatReleaseTime < 600 && lastChatReleaseKey === key) {
+          if (chatWin && !chatWin.isDestroyed() && chatWin.isVisible()) {
+            chatWin.hide();
+          } else {
+            if (!chatWin || chatWin.isDestroyed()) createChatWindow();
+            chatWin.show();
+            chatWin.focus();
+          }
+        }
+      } else if (event.state === "UP") {
+        lastChatReleaseTime = Date.now();
+        lastChatReleaseKey = key;
+      }
+      return true; // Block hotkey
     }
 
     if (event.state === "DOWN" && isActiveKey) {
@@ -1349,6 +1640,24 @@ ipcMain.on("clear-ai-hotkey", (event) => {
   requiredAIKeys = [];
   saveSettings({ aiHotkey: [] });
   event.reply("ai-hotkey-cleared");
+});
+
+// ----------------- IPC: Chat Hotkey management -----------------
+ipcMain.on("save-chat-hotkey", (event, keys) => {
+  const normalized = (keys || []).map((k) => normalizeKeyName(k));
+  requiredChatKeys = normalized;
+  saveSettings({ chatHotkey: normalized });
+  event.reply("chat-hotkey-saved", normalized);
+});
+
+ipcMain.on("clear-chat-hotkey", (event) => {
+  requiredChatKeys = [];
+  saveSettings({ chatHotkey: [] });
+  event.reply("chat-hotkey-cleared");
+});
+
+ipcMain.on("get-chat-hotkey", (event) => {
+  event.reply("chat-hotkey-loaded", requiredChatKeys);
 });
 
 ipcMain.on("get-ai-hotkey", (event) => {

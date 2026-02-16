@@ -47,6 +47,13 @@ contextBridge.exposeInMainWorld("api", {
   onAIHotkeySaved: (cb) => ipcRenderer.on("ai-hotkey-saved", cb),
   onAIHotkeyCleared: (cb) => ipcRenderer.on("ai-hotkey-cleared", cb),
 
+  saveChatHotkey: (keys) => ipcRenderer.send("save-chat-hotkey", keys),
+  clearChatHotkey: () => ipcRenderer.send("clear-chat-hotkey"),
+  getChatHotkey: () => ipcRenderer.send("get-chat-hotkey"),
+  onChatHotkeyLoaded: (cb) => ipcRenderer.on("chat-hotkey-loaded", cb),
+  onChatHotkeySaved: (cb) => ipcRenderer.on("chat-hotkey-saved", cb),
+  onChatHotkeyCleared: (cb) => ipcRenderer.on("chat-hotkey-cleared", cb),
+
   // Recording events from main
   onRecordStart: (cb) => ipcRenderer.on("record-start", cb),
   onRecordStop: (cb) => ipcRenderer.on("record-stop", cb),
@@ -73,6 +80,9 @@ contextBridge.exposeInMainWorld("api", {
   saveNote: (note) => ipcRenderer.invoke("save-note", note),
   deleteNote: (id) => ipcRenderer.invoke("delete-note", id),
   getAIInfo: () => ipcRenderer.invoke("get-ai-info"),
+  getChatHistory: () => ipcRenderer.invoke("get-chat-history"),
+  deleteChatSession: (sessionId) =>
+    ipcRenderer.invoke("delete-chat-session", sessionId),
 
   // Window Controls
   minimizeWindow: () => ipcRenderer.send("window-minimize"),

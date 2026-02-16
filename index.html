@@ -330,6 +330,57 @@
       [data-theme="dark"] #notes.bg-white {
         background-color: var(--bg-primary) !important;
       }
+      /* Chats Sidebar Layout */
+      #chats-sidebar {
+        width: 320px;
+        border-right: 1px solid var(--border-color, #f1f5f9);
+        display: flex;
+        flex-direction: column;
+        background-color: #f8fafc;
+      }
+      #chats-detail {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background-color: white;
+        overflow: hidden;
+      }
+      .chat-session-item {
+        padding: 12px 16px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+      }
+      .chat-session-item:hover {
+        background-color: white;
+        border-color: #e2e8f0;
+      }
+      .chat-session-item.active {
+        background-color: white;
+        border-color: #3b82f6;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      }
+      .message-bubble {
+        padding: 12px 16px;
+        border-radius: 16px;
+        max-width: 80%;
+        line-height: 1.5;
+        font-size: 14px;
+      }
+      .message-bubble.user {
+        align-self: flex-end;
+        background-color: #f1f5f9;
+        color: #1e293b;
+        border-bottom-right-radius: 4px;
+      }
+      .message-bubble.ai {
+        align-self: flex-start;
+        background-color: #eff6ff;
+        color: #1e3a8a;
+        border-bottom-left-radius: 4px;
+        border: 1px solid #dbeafe;
+      }
     </style>
   </head>
 
@@ -379,6 +430,16 @@
               class="fa-solid fa-clock-rotate-left w-5 text-center transition-colors"
             ></i>
             <span class="text-sm font-medium">History</span>
+          </div>
+
+          <div
+            data-page="chats"
+            class="sidebar-item px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center gap-3 group transition-colors"
+          >
+            <i
+              class="fa-solid fa-comments w-5 text-center transition-colors"
+            ></i>
+            <span class="text-sm font-medium">Chats</span>
           </div>
 
           <div
@@ -759,6 +820,94 @@
                 Loading history...
               </div>
             </div>
+          </div>
+
+          <!-- CHATS HISTORY (Redesigned) -->
+          <div
+            id="chats"
+            class="page hidden flex-1 h-full flex overflow-hidden"
+          >
+            <!-- Sidebar -->
+            <aside id="chats-sidebar">
+              <div
+                class="p-6 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10"
+              >
+                <h2 class="text-xl font-bold text-slate-800">Your chats</h2>
+                <button
+                  id="refresh-chats-btn"
+                  class="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all flex items-center justify-center"
+                >
+                  <i class="fa-solid fa-rotate-right text-xs"></i>
+                </button>
+              </div>
+              <div
+                id="chat-sidebar-list"
+                class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar"
+              >
+                <!-- Session items will be injected here -->
+                <div class="text-center text-slate-400 py-10 italic text-sm">
+                  Loading chats...
+                </div>
+              </div>
+            </aside>
+
+            <!-- Detail View -->
+            <main id="chats-detail">
+              <div
+                id="chat-detail-empty"
+                class="flex-1 flex flex-col items-center justify-center text-slate-400 p-10 text-center bg-slate-50/30"
+              >
+                <div
+                  class="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center mb-6 text-slate-200"
+                >
+                  <i class="fa-regular fa-comments text-4xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-700 mb-2">
+                  Select a conversation
+                </h3>
+                <p class="text-sm max-w-xs mx-auto leading-relaxed">
+                  Choose a chat from the sidebar to view the full message
+                  history and screenshots.
+                </p>
+              </div>
+
+              <div
+                id="chat-detail-view"
+                class="hidden flex-1 flex flex-col overflow-hidden"
+              >
+                <div
+                  class="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md shrink-0"
+                >
+                  <div>
+                    <h2
+                      id="chat-detail-title"
+                      class="text-xl font-bold text-slate-900 line-clamp-1"
+                    >
+                      Chat Topic
+                    </h2>
+                    <p
+                      id="chat-detail-date"
+                      class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1"
+                    >
+                      Date
+                    </p>
+                  </div>
+                  <button
+                    id="delete-session-btn"
+                    class="w-10 h-10 rounded-full hover:bg-red-50 text-red-400 hover:text-red-500 transition-colors flex items-center justify-center"
+                    title="Delete Session"
+                  >
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
+                <div
+                  id="chat-detail-messages"
+                  class="flex-1 overflow-y-auto p-8 space-y-6 flex flex-col custom-scrollbar bg-slate-50/10"
+                >
+                  <!-- Messages will appear here -->
+                </div>
+              </div>
+            </main>
           </div>
 
           <!-- NOTES (Google Keep Style) -->
@@ -1305,6 +1454,36 @@
                     </div>
                   </div>
 
+                  <!-- Chat Hotkey -->
+                  <div class="p-4 flex items-center justify-between">
+                    <div>
+                      <div class="text-sm font-medium text-slate-800">
+                        Chat Panel Hotkey
+                      </div>
+                      <div class="text-xs text-slate-500">
+                        Double-press to toggle chat panel.
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button
+                        id="startChatHotkeyCapture"
+                        class="group bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg text-sm font-mono text-blue-600 min-w-[100px] text-center hover:border-blue-500 hover:text-blue-700 transition-all focus:ring-2 focus:ring-blue-100 flex items-center justify-center gap-2"
+                      >
+                        <i
+                          class="fa-solid fa-comments opacity-50 group-hover:opacity-100"
+                        ></i>
+                        <span id="chatHotkeyDisplay">Set Chat Hotkey</span>
+                      </button>
+                      <button
+                        id="clearChatHotkey"
+                        class="text-slate-400 hover:text-red-500 p-2 transition-colors relative"
+                        title="Clear"
+                      >
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </div>
+                  </div>
+
                   <!-- Instant Paste -->
                   <div class="p-4 flex items-center justify-between">
                     <div>
@@ -1354,8 +1533,6 @@
                       ></div>
                     </label>
                   </div>
-
-                 
                 </div>
               </div>
             </div>

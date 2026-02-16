@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Woodls Chat Overlay</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: transparent;
+        font-family: "Outfit", sans-serif;
+        color: #fff;
+        height: 100vh;
+        width: 100vw;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-app-region: drag;
+      }
+
+      .chat-container {
+        background: rgba(24, 24, 24, 0.85);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 16px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        width: 500px;
+        max-width: 95vw;
+        height: 85vh; /* Fixed height for scrollable area */
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+      }
+
+      .dashed-border {
+        border: 2px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 24px;
+        padding: 8px;
+      }
+
+      .tab-btn {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.6);
+        transition: all 0.2s;
+        -webkit-app-region: no-drag;
+        cursor: pointer;
+      }
+
+      .tab-btn.active {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+      }
+
+      .action-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.8);
+        background: transparent;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+        -webkit-app-region: no-drag;
+        cursor: pointer;
+      }
+
+      .action-chip:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .input-wrapper {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        padding: 4px 6px 4px 14px;
+        margin-top: 12px;
+        transition: border-color 0.3s;
+      }
+
+      .input-wrapper:focus-within {
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      #chat-input {
+        background: transparent;
+        border: none;
+        outline: none;
+        color: #fff;
+        font-size: 14px;
+        flex-grow: 1;
+        padding: 8px 0;
+        -webkit-app-region: no-drag;
+      }
+
+      #chat-input::placeholder {
+        color: rgba(255, 255, 255, 0.3);
+      }
+
+      .send-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #1d4ed8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        transition: all 0.2s;
+        -webkit-app-region: no-drag;
+        cursor: pointer;
+      }
+
+      .send-btn:hover {
+        background: #2563eb;
+        transform: scale(1.05);
+      }
+
+      .send-btn:active {
+        transform: scale(0.95);
+      }
+
+      .kbd-hint {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        padding: 2px 4px;
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      .chat-view {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* Critical for inner scroll */
+        min-height: 0;
+      }
+
+      #response-area {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 4px;
+        margin-bottom: 8px;
+        scroll-behavior: smooth;
+        min-height: 0;
+      }
+
+      .message-user {
+        align-self: flex-end;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 8px 14px;
+        border-radius: 14px 14px 4px 14px;
+        max-width: 80%;
+      }
+
+      .message-ai {
+        align-self: flex-start;
+        background: rgba(29, 78, 216, 0.2);
+        border: 1px solid rgba(29, 78, 216, 0.3);
+        padding: 8px 14px;
+        border-radius: 14px 14px 14px 4px;
+        max-width: 90%;
+      }
+
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+      }
+
+      #screenshot-preview {
+        display: none;
+        position: relative;
+        margin-top: 12px;
+        align-self: flex-start;
+      }
+
+      .preview-thumb {
+        width: 80px;
+        height: 45px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      .remove-preview {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        width: 18px;
+        height: 18px;
+        background: #ef4444;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        color: white;
+        -webkit-app-region: no-drag;
+      }
+
+      .camera-btn {
+        color: rgba(255, 255, 255, 0.4);
+        margin-right: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 16px;
+        -webkit-app-region: no-drag;
+      }
+
+      .camera-btn:hover {
+        color: rgba(255, 255, 255, 0.9);
+        transform: scale(1.1);
+      }
+
+      .camera-btn.active {
+        color: #3b82f6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashed-border">
+      <div class="chat-container">
+        <!-- Header Tabs -->
+        <div class="flex items-center gap-4 mb-4 shrink-0">
+          <button
+            id="new-chat-btn"
+            class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all flex items-center justify-center"
+            title="Start New Chat"
+          >
+            <i class="fa-solid fa-plus text-xs"></i>
+          </button>
+          <div class="flex items-center bg-white/5 rounded-xl p-1">
+            <div class="tab-btn active" id="tab-chat">Chat</div>
+            <div class="tab-btn" id="tab-transcript">Transcript</div>
+            <div class="tab-btn" id="tab-history">Chats</div>
+          </div>
+        </div>
+
+        <div id="main-chat-view" class="chat-view active-view">
+          <!-- Action Chips -->
+          <div class="flex flex-wrap gap-2 mb-4 shrink-0">
+            <div class="action-chip" onclick="triggerAction('assist')">
+              <i
+                class="fa-solid fa-wand-magic-sparkles text-xs text-blue-400"
+              ></i>
+              Assist
+            </div>
+            <div class="action-chip" onclick="triggerAction('what-say')">
+              <i class="fa-solid fa-comment-dots text-xs text-green-400"></i>
+              What should I say?
+            </div>
+            <div class="action-chip" onclick="triggerAction('follow-up')">
+              <i class="fa-solid fa-comments text-xs text-yellow-400"></i>
+              Follow-up questions
+            </div>
+            <div class="action-chip" onclick="triggerAction('recap')">
+              <i class="fa-solid fa-rotate-left text-xs text-purple-400"></i>
+              Recap
+            </div>
+          </div>
+
+          <!-- Response Area -->
+          <div id="response-area" class="custom-scrollbar">
+            <!-- Messages injected here -->
+          </div>
+
+          <!-- Screenshot Preview -->
+          <div id="screenshot-preview" class="hidden shrink-0 mt-2">
+            <div class="relative inline-block">
+              <img
+                id="preview-img"
+                src=""
+                class="w-20 h-20 object-cover rounded-xl border border-white/20"
+              />
+              <div
+                id="remove-screenshot"
+                class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center cursor-pointer shadow-lg"
+              >
+                <i class="fa-solid fa-xmark text-[10px]"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Input -->
+          <div class="input-wrapper shrink-0">
+            <i
+              class="fa-solid fa-camera camera-btn"
+              id="camera-btn"
+              title="Capture your screen for AI analysis"
+            ></i>
+            <input
+              type="text"
+              id="chat-input"
+              placeholder="Ask about your screen or conversation..."
+              class="flex-1"
+            />
+            <div class="flex items-center gap-1.5 mr-2">
+              <div class="kbd-hint">
+                <i class="fa-solid fa-arrow-up text-[8px]"></i>
+              </div>
+              <div class="kbd-hint">
+                <i class="fa-solid fa-turn-down text-[8px] rotate-90"></i>
+              </div>
+            </div>
+            <div class="send-btn" id="send-btn">
+              <i class="fa-solid fa-arrow-up text-sm"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- History View (Hidden by default) -->
+        <div id="history-view" class="hidden flex-1 flex flex-col min-h-0">
+          <div
+            class="text-sm font-semibold text-white/40 mb-3 ml-1 uppercase tracking-wider sticky top-0 bg-[#181818]/0 backdrop-blur-sm z-10"
+          >
+            Recent Conversations
+          </div>
+          <div
+            id="history-list"
+            class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 pb-4"
+          >
+            <!-- Items injected here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { ipcRenderer } = require("electron");
+      const chatInput = document.getElementById("chat-input");
+      const sendBtn = document.getElementById("send-btn");
+      const responseArea = document.getElementById("response-area");
+      const tabChat = document.getElementById("tab-chat");
+      const tabTranscript = document.getElementById("tab-transcript");
+      const tabHistory = document.getElementById("tab-history");
+      const mainChatView = document.getElementById("main-chat-view");
+      const historyView = document.getElementById("history-view");
+      const historyList = document.getElementById("history-list");
+      const cameraBtn = document.getElementById("camera-btn");
+      const screenshotPreview = document.getElementById("screenshot-preview");
+      const previewImg = document.getElementById("preview-img");
+      const removeScreenshot = document.getElementById("remove-screenshot");
+
+      const newChatBtn = document.getElementById("new-chat-btn");
+
+      let currentTab = "chat";
+      let pendingScreenshot = null;
+
+      newChatBtn.addEventListener("click", () => {
+        ipcRenderer.send("new-chat-session");
+      });
+
+      ipcRenderer.on("session-reset", () => {
+        responseArea.innerHTML = "";
+        chatInput.value = "";
+        pendingScreenshot = null;
+        screenshotPreview.style.display = "none";
+        cameraBtn.classList.remove("active");
+        chatInput.disabled = false;
+        sendBtn.style.opacity = "1";
+      });
+
+      async function captureScreen() {
+        cameraBtn.classList.add("animate-pulse", "text-blue-400");
+        const base64 = await ipcRenderer.invoke("capture-screen-only");
+        cameraBtn.classList.remove("animate-pulse", "text-blue-400");
+
+        if (base64) {
+          pendingScreenshot = base64;
+          previewImg.src = `data:image/png;base64,${base64}`;
+          screenshotPreview.style.display = "block";
+          cameraBtn.classList.add("active");
+        }
+      }
+
+      cameraBtn.addEventListener("click", captureScreen);
+
+      removeScreenshot.addEventListener("click", () => {
+        pendingScreenshot = null;
+        screenshotPreview.style.display = "none";
+        cameraBtn.classList.remove("active");
+      });
+
+      function switchTab(tab) {
+        currentTab = tab;
+        tabChat.classList.toggle("active", tab === "chat");
+        tabTranscript.classList.toggle("active", tab === "transcript");
+        tabHistory.classList.toggle("active", tab === "history");
+
+        if (tab === "history") {
+          mainChatView.classList.add("hidden");
+          historyView.classList.remove("hidden");
+          loadHistory();
+        } else {
+          mainChatView.classList.remove("hidden");
+          historyView.classList.add("hidden");
+        }
+      }
+
+      tabChat.addEventListener("click", () => switchTab("chat"));
+      tabTranscript.addEventListener("click", () => switchTab("transcript"));
+      tabHistory.addEventListener("click", () => switchTab("history"));
+
+      async function loadHistory() {
+        historyList.innerHTML =
+          '<div class="text-white/20 italic p-4 text-center">Loading chats...</div>';
+        const history = await ipcRenderer.invoke("get-chat-history");
+
+        if (!history || history.length === 0) {
+          historyList.innerHTML =
+            '<div class="text-white/20 italic p-4 text-center">No chats yet.</div>';
+          return;
+        }
+
+        historyList.innerHTML = history
+          .map(
+            (item) => `
+                <div class="bg-white/5 border border-white/5 rounded-xl p-3 hover:bg-white/10 transition-all cursor-pointer" onclick="showHistoryItem('${item.id}')">
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="text-white/90 font-medium truncate flex-1">${item.sessionTitle || item.query}</div>
+                        <div class="text-[10px] text-white/30 ml-2 whitespace-nowrap">${new Date(item.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+                    </div>
+                    <div class="text-white/40 text-xs line-clamp-2">${item.response}</div>
+                </div>
+            `,
+          )
+          .join("");
+      }
+
+      window.showHistoryItem = async (id) => {
+        const history = await ipcRenderer.invoke("get-chat-history");
+        const item = history.find((i) => i.id === id);
+        if (item) {
+          switchTab("chat");
+          appendMessage("user", item.query);
+          appendMessage("ai", item.response);
+          chatInput.value = "";
+        }
+      };
+
+      function appendMessage(role, text) {
+        const msgDiv = document.createElement("div");
+        msgDiv.className = role === "user" ? "message-user" : "message-ai";
+        msgDiv.innerHTML = text.replace(/\n/g, "<br>");
+        responseArea.appendChild(msgDiv);
+        responseArea.scrollTop = responseArea.scrollHeight;
+      }
+
+      // Chat Logic
+      function sendMessage() {
+        const text = chatInput.value.trim();
+        if (!text && !pendingScreenshot) return;
+
+        // Show user message in UI
+        appendMessage("user", text || "Analyze this screen.");
+
+        // UI state
+        chatInput.value = "";
+        chatInput.disabled = true;
+        sendBtn.style.opacity = "0.5";
+
+        // Loading indicator
+        const loadingId = "loading-" + Date.now();
+        const loadingDiv = document.createElement("div");
+        loadingDiv.id = loadingId;
+        loadingDiv.className =
+          "message-ai text-white/40 italic flex items-center gap-2";
+        loadingDiv.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> Thinking...`;
+        responseArea.appendChild(loadingDiv);
+        responseArea.scrollTop = responseArea.scrollHeight;
+
+        // Send to main process
+        ipcRenderer.send("chat-query", {
+          query: text || "Analyze this screen.",
+          attachedScreenshot: pendingScreenshot,
+        });
+
+        // Clear pending screenshot
+        pendingScreenshot = null;
+        screenshotPreview.style.display = "none";
+        cameraBtn.classList.remove("active");
+      }
+
+      sendBtn.addEventListener("click", sendMessage);
+      chatInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+      });
+
+      async function triggerAction(action) {
+        if (action === "assist") {
+          chatInput.value = "What is going on my screen?";
+          await captureScreen();
+          sendMessage();
+        } else if (action === "what-say") {
+          chatInput.value =
+            "Based on the conversation, what should I say next?";
+          sendMessage();
+        } else if (action === "follow-up") {
+          chatInput.value = "Suggest some follow-up questions.";
+          sendMessage();
+        } else if (action === "recap") {
+          chatInput.value = "Give me a quick recap of the current state.";
+          sendMessage();
+        }
+      }
+
+      // Handle AI Response
+      ipcRenderer.on("chat-response", (event, data) => {
+        chatInput.disabled = false;
+        sendBtn.style.opacity = "1";
+
+        // Remove loading
+        const loadings = responseArea.querySelectorAll(".italic");
+        loadings.forEach((l) => l.remove());
+
+        appendMessage("ai", data.text);
+      });
+
+      ipcRenderer.on("chat-error", (event, error) => {
+        chatInput.disabled = false;
+        sendBtn.style.opacity = "1";
+
+        const loadings = responseArea.querySelectorAll(".italic");
+        loadings.forEach((l) => l.remove());
+
+        appendMessage(
+          "ai",
+          `<span class="text-red-400">Error: ${error}</span>`,
+        );
+      });
+    </script>
+  </body>
+</html>

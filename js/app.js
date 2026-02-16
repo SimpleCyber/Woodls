@@ -4,6 +4,7 @@ import * as Notes from "./notes.js";
 import { initAuth, logout } from "./auth.js";
 import { initOnboarding, startOnboarding } from "./onboarding.js";
 import { initHelpDeck, syncHelpDeckUser } from "./helpdeck.js";
+import { initChats } from "./chats.js";
 
 // ---------- LLM UI / Settings References ----------
 const assistantName = document.getElementById("assistantName");
@@ -24,6 +25,14 @@ const startAIHotkeyCaptureBtn = document.getElementById("startAIHotkeyCapture");
 const clearAIHotkeyBtn = document.getElementById("clearAIHotkey");
 const aiHotkeyDisplay = document.getElementById("aiHotkeyDisplay");
 let currentAIHotkey = [];
+
+// ---------- Chat Hotkey UI ----------
+const startChatHotkeyCaptureBtn = document.getElementById(
+  "startChatHotkeyCapture",
+);
+const clearChatHotkeyBtn = document.getElementById("clearChatHotkey");
+const chatHotkeyDisplay = document.getElementById("chatHotkeyDisplay");
+let currentChatHotkey = [];
 
 // ---------- Audio / History ----------
 const historyList = document.getElementById("history-list");
@@ -104,6 +113,7 @@ export function initApp() {
   setupSettings();
   setupHotkeyUI();
   setupAIHotkeyUI(); // New
+  setupChatHotkeyUI(); // New
   setupRecordingEvents();
   fetchAndDisplayVersion();
 
@@ -124,6 +134,7 @@ export function initApp() {
 
   // Init other modules
   Notes.initNotes();
+  initChats();
   initOnboarding();
   initHelpDeck();
 
@@ -289,6 +300,7 @@ export function initApp() {
   // Initial Fetch
   window.api.getHotkey();
   window.api.getAIHotkey(); // New
+  window.api.getChatHotkey(); // New
 }
 
 function setupSettings() {
@@ -545,6 +557,9 @@ function setupHotkeyUI() {
       if (window.capturingAI) {
         window.api.saveAIHotkey([keyToSave]);
         window.capturingAI = false;
+      } else if (window.capturingChat) {
+        window.api.saveChatHotkey([keyToSave]);
+        window.capturingChat = false;
       } else {
         window.api.saveHotkey([keyToSave]);
       }
@@ -656,6 +671,55 @@ function updateHotkeyDisplay(keys) {
     hotkeyDisplay.textContent = keys.length
       ? keys.join(" + ")
       : "No hotkey set";
+  }
+}
+
+function setupChatHotkeyUI() {
+  if (startChatHotkeyCaptureBtn) {
+    startChatHotkeyCaptureBtn.onclick = () => {
+      capturing = true;
+      captured.clear();
+      capturedKeysSpan.textContent = "[]";
+      captureArea.classList.remove("hidden");
+      captureArea.style.display = "flex";
+      addLog("Capturing chat hotkey...", "blue");
+      window.focus();
+
+      window.capturingChat = true;
+    };
+  }
+
+  if (clearChatHotkeyBtn) {
+    clearChatHotkeyBtn.onclick = () => window.api.clearChatHotkey();
+  }
+
+  window.api.onChatHotkeyLoaded((_, keys) => {
+    currentChatHotkey = keys || [];
+    updateChatHotkeyDisplay(currentChatHotkey);
+  });
+  window.api.onChatHotkeySaved((_, keys) => {
+    currentChatHotkey = keys || [];
+    updateChatHotkeyDisplay(currentChatHotkey);
+    addLog("Chat Hotkey saved", "blue");
+  });
+  window.api.onChatHotkeyCleared(() => {
+    currentChatHotkey = [];
+    updateChatHotkeyDisplay([]);
+    addLog("Chat Hotkey cleared", "red");
+  });
+}
+
+function updateChatHotkeyDisplay(keys) {
+  if (chatHotkeyDisplay) {
+    if (keys && keys.length > 0) {
+      chatHotkeyDisplay.textContent = keys[0];
+      chatHotkeyDisplay.classList.remove("text-slate-500", "italic");
+      chatHotkeyDisplay.classList.add("text-blue-600", "font-bold");
+    } else {
+      chatHotkeyDisplay.textContent = "Set Chat Hotkey";
+      chatHotkeyDisplay.classList.remove("text-blue-600", "font-bold");
+      chatHotkeyDisplay.classList.add("text-slate-500", "italic");
+    }
   }
 }
 
