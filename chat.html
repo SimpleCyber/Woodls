@@ -16,16 +16,11 @@
     <style>
       body {
         margin: 0;
-        padding: 0;
+        padding: 20px;
         overflow: hidden;
         background: transparent;
         font-family: "Outfit", sans-serif;
         color: #fff;
-        height: 100vh;
-        width: 100vw;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         -webkit-app-region: drag;
       }
 
@@ -37,12 +32,11 @@
         padding: 16px;
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
         width: 500px;
-        max-width: 95vw;
-        height: 85vh; /* Fixed height for scrollable area */
+        max-width: 90vw;
+        max-height: 85vh; /* Ensure it stays within viewport */
         display: flex;
         flex-direction: column;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow: hidden;
       }
 
       .dashed-border {
@@ -153,23 +147,13 @@
         color: rgba(255, 255, 255, 0.5);
       }
 
-      .chat-view {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden; /* Critical for inner scroll */
-        min-height: 0;
-      }
-
       #response-area {
         flex: 1;
         overflow-y: auto;
+        padding-top: 16px;
         display: flex;
         flex-direction: column;
         gap: 16px;
-        padding: 4px;
-        margin-bottom: 8px;
-        scroll-behavior: smooth;
         min-height: 0;
       }
 
@@ -255,14 +239,12 @@
     <div class="dashed-border">
       <div class="chat-container">
         <!-- Header Tabs -->
-        <div class="flex items-center gap-4 mb-4 shrink-0">
-          <button
+        <div class="flex items-center gap-4 mb-4">
+          <i
+            class="fa-solid fa-plus text-sm text-white/40 cursor-pointer hover:text-white transition-colors"
             id="new-chat-btn"
-            class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all flex items-center justify-center"
             title="Start New Chat"
-          >
-            <i class="fa-solid fa-plus text-xs"></i>
-          </button>
+          ></i>
           <div class="flex items-center bg-white/5 rounded-xl p-1">
             <div class="tab-btn active" id="tab-chat">Chat</div>
             <div class="tab-btn" id="tab-transcript">Transcript</div>
@@ -270,9 +252,9 @@
           </div>
         </div>
 
-        <div id="main-chat-view" class="chat-view active-view">
+        <div id="main-chat-view">
           <!-- Action Chips -->
-          <div class="flex flex-wrap gap-2 mb-4 shrink-0">
+          <div class="flex flex-wrap gap-2 mb-2">
             <div class="action-chip" onclick="triggerAction('assist')">
               <i
                 class="fa-solid fa-wand-magic-sparkles text-xs text-blue-400"
@@ -293,30 +275,21 @@
             </div>
           </div>
 
-          <!-- Response Area -->
-          <div id="response-area" class="custom-scrollbar">
-            <!-- Messages injected here -->
+          <!-- Response Area (Appears after query) -->
+          <div id="response-area">
+            <!-- AI text will appear here -->
           </div>
 
-          <!-- Screenshot Preview -->
-          <div id="screenshot-preview" class="hidden shrink-0 mt-2">
-            <div class="relative inline-block">
-              <img
-                id="preview-img"
-                src=""
-                class="w-20 h-20 object-cover rounded-xl border border-white/20"
-              />
-              <div
-                id="remove-screenshot"
-                class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center cursor-pointer shadow-lg"
-              >
-                <i class="fa-solid fa-xmark text-[10px]"></i>
-              </div>
+          <!-- Screenshot Preview Area -->
+          <div id="screenshot-preview">
+            <img id="preview-img" src="" class="preview-thumb" />
+            <div id="remove-screenshot" class="remove-preview">
+              <i class="fa-solid fa-xmark"></i>
             </div>
           </div>
 
           <!-- Chat Input -->
-          <div class="input-wrapper shrink-0">
+          <div class="input-wrapper">
             <i
               class="fa-solid fa-camera camera-btn"
               id="camera-btn"
@@ -325,8 +298,7 @@
             <input
               type="text"
               id="chat-input"
-              placeholder="Ask about your screen or conversation..."
-              class="flex-1"
+              placeholder="Ask about your screen or conversation, or ^ ↵ for Assist"
             />
             <div class="flex items-center gap-1.5 mr-2">
               <div class="kbd-hint">

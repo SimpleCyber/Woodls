@@ -1370,6 +1370,41 @@ ipcMain.on("mic-volume", (event, volume) => {
   }
 });
 
+ipcMain.on("resize-chat", (event, { width, height }) => {
+  if (chatWin && !chatWin.isDestroyed()) {
+    // Optional: animate? Electron doesn't animate resize well natively, but we'll set it.
+    // Maintain x/y position but change size.
+    // However, if we shrink height, we want it to stay at the "bottom" or "center"?
+    // The current positioning logic in createChatWindow puts it near bottom: y = height - h - 100.
+    // If we resize, we probably want to keep the bottom position fixed?
+    // Let's see. The user said "expand it once the chat begins".
+    // If it expands UPWARDS, we need to adjust Y.
+
+    const bounds = chatWin.getBounds();
+    const newHeight = height || bounds.height;
+    const newWidth = width || bounds.width;
+
+    // Check if we need to adjust Y to make it grow upwards
+    // Old bottom = bounds.y + bounds.height
+    // New bottom should be same?
+    // newY = (bounds.y + bounds.height) - newHeight
+
+    // BUT createChatWindow uses: y = screenHeight - h - 100.
+    // So the "anchor" is the bottom.
+
+    // Let's recalculate Y based on the screen size to be safe, or just use current bounds.
+    const currentBottom = bounds.y + bounds.height;
+    const newY = currentBottom - newHeight;
+
+    chatWin.setBounds({
+      x: bounds.x,
+      y: newY,
+      width: newWidth,
+      height: newHeight,
+    });
+  }
+});
+
 let lastChatReleaseTime = 0;
 let lastChatReleaseKey = null;
 

@@ -81,8 +81,6 @@ contextBridge.exposeInMainWorld("api", {
   deleteNote: (id) => ipcRenderer.invoke("delete-note", id),
   getAIInfo: () => ipcRenderer.invoke("get-ai-info"),
   getChatHistory: () => ipcRenderer.invoke("get-chat-history"),
-  deleteChatSession: (sessionId) =>
-    ipcRenderer.invoke("delete-chat-session", sessionId),
 
   // Window Controls
   minimizeWindow: () => ipcRenderer.send("window-minimize"),
