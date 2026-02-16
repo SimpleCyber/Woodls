@@ -47,7 +47,11 @@ const getAssetPath = (...paths) => {
 
 let win; // Moved to top to avoid TDZ issues
 // ----------------- AI ROTATION -----------------
-const DEFAULT_MODELS = ["gemini-2.0-flash", "gemini-1.5-flash"];
+const DEFAULT_MODELS = [
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-1.5-flash",
+];
 const MAX_DAILY_CALLS = 20;
 const AI_USAGE_FILE = path.join(app.getPath("userData"), "ai_usage.json");
 
@@ -146,7 +150,7 @@ ipcMain.handle("get-ai-info", () => {
 
 // Default env values
 const ENV_API_KEY = process.env.GEN_AI_API_KEY; // Can be "key1,key2"
-const ENV_MODEL_NAME = process.env.GEN_AI_MODEL || "gemini-2.5-flash-lite";
+const ENV_MODEL_NAME = process.env.GEN_AI_MODEL || "gemini-2.0-flash-lite";
 
 let genAI;
 let currentModelName = ENV_MODEL_NAME;
@@ -648,6 +652,9 @@ function createWindow() {
     show: false, // Don't show initially, we'll decide later
   });
 
+  win.setContentProtection(true);
+  win.on("show", () => win.setContentProtection(true));
+
   // Check if we should start hidden
   const hasHiddenArg =
     process.argv.includes("--hidden") ||
@@ -1009,6 +1016,7 @@ function createChatWindow() {
 
   // CLUELY FEATURE: Make window invisible to screenshots/recordings
   chatWin.setContentProtection(true);
+  chatWin.on("show", () => chatWin.setContentProtection(true));
 
   chatWin.loadFile("chat.html");
   chatWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -1045,6 +1053,9 @@ function createOverlayWindow() {
     hasShadow: false,
     type: "toolbar", // Helps with staying on top on Windows
   });
+
+  overlayWin.setContentProtection(true);
+  overlayWin.on("show", () => overlayWin.setContentProtection(true));
 
   overlayWin.setIgnoreMouseEvents(true);
   overlayWin.loadFile("overlay.html");
@@ -1083,6 +1094,9 @@ function createCopyOverlayWindow() {
     hasShadow: true, // Shadow for toast
     type: "toolbar",
   });
+
+  copyOverlayWin.setContentProtection(true);
+  copyOverlayWin.on("show", () => copyOverlayWin.setContentProtection(true));
 
   copyOverlayWin.loadFile("copy_popup.html");
   copyOverlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -1204,6 +1218,11 @@ ipcMain.on("hide-overlay", () => {
 
 ipcMain.handle("capture-screen", async () => {
   const { desktopCapturer, screen } = require("electron");
+  // Failsafe: Temporarily hide our windows if protection fails for desktopCapturer
+  const wasChatVisible =
+    chatWin && !chatWin.isDestroyed() && chatWin.isVisible();
+  if (wasChatVisible) chatWin.hide();
+
   try {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.size;
@@ -1214,6 +1233,11 @@ ipcMain.handle("capture-screen", async () => {
     });
 
     const primarySource = sources[0]; // Usually the first one
+    if (wasChatVisible) {
+      setTimeout(() => {
+        if (chatWin && !chatWin.isDestroyed()) chatWin.show();
+      }, 50);
+    }
     if (primarySource) {
       return primarySource.thumbnail.toDataURL();
     }
@@ -1226,6 +1250,9 @@ ipcMain.handle("capture-screen", async () => {
 
 ipcMain.handle("capture-screen-only", async () => {
   console.log("[IPC] capture-screen-only called");
+  const wasChatVisible =
+    chatWin && !chatWin.isDestroyed() && chatWin.isVisible();
+  if (wasChatVisible) chatWin.hide();
   try {
     const { desktopCapturer } = require("electron");
     const sources = await desktopCapturer.getSources({
@@ -1233,8 +1260,13 @@ ipcMain.handle("capture-screen-only", async () => {
       thumbnailSize: { width: 1280, height: 720 }, // Lower res for preview
     });
     const primarySource = sources[0];
-    if (!primarySource) return null;
-    return primarySource.thumbnail.toDataURL().split(",")[1]; // Return base64
+    const result = primarySource.thumbnail.toDataURL().split(",")[1]; // Return base64
+    if (wasChatVisible) {
+      setTimeout(() => {
+        if (chatWin && !chatWin.isDestroyed()) chatWin.show();
+      }, 50);
+    }
+    return result;
   } catch (e) {
     console.error("Capture failed:", e);
     return null;
@@ -1247,90 +1279,114 @@ ipcMain.on("chat-query", async (event, data) => {
     hasScreenshot: !!attachedScreenshot,
   });
 
-  try {
-    // 1. Get Screenshot (either from attachment or capture now if requested specifically)
-    let screenshotBase64 = attachedScreenshot;
-    let screenshotName = null;
+  const maxRetries = 3;
+  let attempt = 0;
 
-    if (screenshotBase64) {
-      ensureScreenshotsDir();
-      screenshotName = `chat_${Date.now()}.png`;
-      const screenshotPath = path.join(
-        getUserPaths().screenshots,
-        screenshotName,
-      );
-      fs.writeFileSync(screenshotPath, Buffer.from(screenshotBase64, "base64"));
-    }
+  while (attempt < maxRetries) {
+    try {
+      // 1. Get Screenshot (either from attachment or capture now if requested specifically)
+      let screenshotBase64 = attachedScreenshot;
+      let screenshotName = null;
 
-    // 2. Send to Gemini with threading
-    if (!genAI) throw new Error("AI not initialized");
-    const modelOptions = {
-      model: currentModelName || "gemini-1.5-flash",
-      systemInstruction:
-        "You are a precise, helpful AI assistant. Provide short, direct answers. Use Markdown for formatting. If requested to write code, provide ONLY the explanation and the code block. Do not be conversational unless asked.",
-    };
-    const model = genAI.getGenerativeModel(modelOptions);
+      if (screenshotBase64 && attempt === 0) {
+        ensureScreenshotsDir();
+        screenshotName = `chat_${Date.now()}.png`;
+        const screenshotPath = path.join(
+          getUserPaths().screenshots,
+          screenshotName,
+        );
+        fs.writeFileSync(
+          screenshotPath,
+          Buffer.from(screenshotBase64, "base64"),
+        );
+      }
 
-    // Initial message if session is new
-    if (currentChatSession.messages.length === 0) {
-      currentChatSession.title =
-        query.slice(0, 40) + (query.length > 40 ? "..." : "");
-    }
+      // 2. Send to Gemini with threading
+      if (!genAI) throw new Error("AI not initialized");
+      const modelOptions = {
+        model: currentModelName || "gemini-2.0-flash-lite",
+        systemInstruction:
+          "You are a precise, helpful AI assistant. Provide short, direct answers. Use Markdown for formatting. If requested to write code, provide ONLY the explanation and the code block. Do not be conversational unless asked.",
+      };
+      const model = genAI.getGenerativeModel(modelOptions);
 
-    const chat = model.startChat({
-      history: currentChatSession.messages,
-    });
+      // Initial message if session is new
+      if (currentChatSession.messages.length === 0) {
+        currentChatSession.title =
+          query.slice(0, 40) + (query.length > 40 ? "..." : "");
+      }
 
-    let result;
-    if (screenshotBase64) {
-      // Multimedia messages are currently better handled by generateContent directly if we don't want to keep a complex multi-part history in memory
-      // But for threading, we should try to keep the text context
-      result = await chat.sendMessage([
-        { text: query },
-        {
-          inlineData: {
-            data: screenshotBase64,
-            mimeType: "image/png",
+      const chat = model.startChat({
+        history: currentChatSession.messages,
+      });
+
+      let result;
+      if (screenshotBase64) {
+        result = await chat.sendMessage([
+          { text: query },
+          {
+            inlineData: {
+              data: screenshotBase64,
+              mimeType: "image/png",
+            },
           },
-        },
-      ]);
-    } else {
-      result = await chat.sendMessage(query);
-    }
+        ]);
+      } else {
+        result = await chat.sendMessage(query);
+      }
 
-    const response = await result.response;
-    const responseText = response.text();
+      const response = await result.response;
+      const responseText = response.text();
 
-    // 3. Save to History (Both global and current session)
-    const chatHistory = readChatHistory();
-    const entry = {
-      id: Date.now().toString(),
-      sessionId: currentChatSession.id,
-      sessionTitle: currentChatSession.title,
-      timestamp: Date.now(),
-      query: query,
-      response: responseText,
-      screenshot: screenshotName,
-    };
-    chatHistory.push(entry);
-    saveChatHistory(chatHistory);
+      // SUCCESS: Update usage
+      updateAIUsage(currentKeyIndex, currentModelName);
 
-    // Update current session messages for threading
-    // sendMessage already updates the internal 'chat' object history,
-    // but we might want to sync it if we want persistent sessions across restarts (not implemented yet)
-    // For now, it stays in memory.
-
-    if (chatWin && !chatWin.isDestroyed()) {
-      chatWin.webContents.send("chat-response", {
-        text: responseText,
+      // 3. Save to History (Both global and current session)
+      const chatHistory = readChatHistory();
+      const entry = {
+        id: Date.now().toString(),
         sessionId: currentChatSession.id,
         sessionTitle: currentChatSession.title,
-      });
-    }
-  } catch (e) {
-    console.error("Chat query failed:", e);
-    if (chatWin && !chatWin.isDestroyed()) {
-      chatWin.webContents.send("chat-error", e.message);
+        timestamp: Date.now(),
+        query: query,
+        response: responseText,
+        screenshot: screenshotName,
+      };
+      chatHistory.push(entry);
+      saveChatHistory(chatHistory);
+
+      if (chatWin && !chatWin.isDestroyed()) {
+        chatWin.webContents.send("chat-response", {
+          text: responseText,
+          sessionId: currentChatSession.id,
+          sessionTitle: currentChatSession.title,
+        });
+      }
+      return; // Exit loop on success
+    } catch (e) {
+      console.error(
+        `Chat query failed (Attempt ${attempt + 1}/${maxRetries}):`,
+        e,
+      );
+
+      if (attempt < maxRetries - 1) {
+        console.warn(`[AI] Rotating key/model for chat retry...`);
+        // Mark current as exhausted to force rotation
+        const usageData = readAIUsage();
+        if (!usageData.keys[currentKeyIndex])
+          usageData.keys[currentKeyIndex] = {};
+        usageData.keys[currentKeyIndex][currentModelName] = MAX_DAILY_CALLS;
+        saveAIUsage(usageData);
+
+        initGenAI();
+        attempt++;
+        continue;
+      }
+
+      if (chatWin && !chatWin.isDestroyed()) {
+        chatWin.webContents.send("chat-error", e.message);
+      }
+      break;
     }
   }
 });
