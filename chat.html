@@ -224,8 +224,42 @@
         padding: 12px;
         border-radius: 8px;
         overflow-x: auto;
-        margin: 12px 0;
+        margin: 0; /* Reset for wrapper */
         border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .code-wrapper {
+        position: relative;
+        margin: 12px 0;
+      }
+
+      .copy-btn {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        color: rgba(255, 255, 255, 0.7);
+        padding: 4px 8px;
+        font-size: 11px;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.2s;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-family: inherit;
+      }
+
+      .code-wrapper:hover .copy-btn {
+        opacity: 1;
+      }
+
+      .copy-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff;
       }
 
       .markdown-body pre code {
@@ -621,10 +655,36 @@
         if (role === "ai") {
           // Render Markdown
           msgDiv.innerHTML = marked.parse(text);
-          // Highlight Code Blocks
+          // Highlight Code Blocks & Add Copy Buttons
           setTimeout(() => {
-            msgDiv.querySelectorAll("pre code").forEach((block) => {
-              hljs.highlightElement(block);
+            msgDiv.querySelectorAll("pre").forEach((pre) => {
+              // Highlight codes inside
+              pre
+                .querySelectorAll("code")
+                .forEach((c) => hljs.highlightElement(c));
+
+              // Add Copy Button Wrapper
+              if (pre.parentNode.classList.contains("code-wrapper")) return;
+
+              const wrapper = document.createElement("div");
+              wrapper.className = "code-wrapper";
+              pre.parentNode.insertBefore(wrapper, pre);
+              wrapper.appendChild(pre);
+
+              const btn = document.createElement("button");
+              btn.className = "copy-btn";
+              btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+              btn.addEventListener("click", () => {
+                const code =
+                  pre.querySelector("code")?.innerText || pre.innerText;
+                navigator.clipboard.writeText(code).then(() => {
+                  btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                  setTimeout(() => {
+                    btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+                  }, 2000);
+                });
+              });
+              wrapper.appendChild(btn);
             });
           }, 0);
         } else {
