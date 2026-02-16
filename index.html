@@ -6,6 +6,13 @@
     <title>Woodls</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Markdown & Syntax Highlighting -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
@@ -232,6 +239,97 @@
         border-radius: 50%;
         border: 2px solid var(--timeline-dot-border);
         box-shadow: 0 0 0 1px var(--border-primary);
+      }
+
+      /* Markdown & Message Styling */
+      .markdown-body {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .markdown-body p {
+        margin-bottom: 12px;
+      }
+      .markdown-body p:last-child {
+        margin-bottom: 0;
+      }
+
+      .markdown-body code {
+        background: rgba(0, 0, 0, 0.05); /* Light mode bg */
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: "Menlo", "Consolas", monospace;
+        font-size: 0.9em;
+        color: #d97706; /* Amber for inline code in light mode */
+      }
+
+      [data-theme="dark"] .markdown-body code {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fca5a5;
+      }
+
+      .markdown-body pre {
+        background: #0d1117 !important;
+        padding: 12px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 12px 0;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+      }
+
+      [data-theme="dark"] .markdown-body pre {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .markdown-body pre code {
+        background: transparent !important;
+        padding: 0;
+        color: inherit;
+        font-size: 0.85em;
+        border-radius: 0;
+      }
+
+      .markdown-body ul,
+      .markdown-body ol {
+        padding-left: 20px;
+        margin-bottom: 12px;
+        list-style-type: disc;
+      }
+
+      .markdown-body ol {
+        list-style-type: decimal;
+      }
+
+      .markdown-body li {
+        margin-bottom: 4px;
+      }
+
+      .markdown-body h1,
+      .markdown-body h2,
+      .markdown-body h3 {
+        font-weight: 600;
+        margin-top: 16px;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+      }
+
+      .markdown-body h1 {
+        font-size: 1.5em;
+      }
+      .markdown-body h2 {
+        font-size: 1.3em;
+      }
+      .markdown-body h3 {
+        font-size: 1.1em;
+      }
+
+      .markdown-body a {
+        color: #3b82f6;
+        text-decoration: none;
+      }
+      .markdown-body a:hover {
+        text-decoration: underline;
       }
 
       /* ========== DARK MODE OVERRIDES ========== */

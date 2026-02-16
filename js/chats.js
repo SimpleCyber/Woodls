@@ -128,6 +128,21 @@ export function initChats() {
     }
 
     if (detailMessages) {
+      // Initialize Marked Options (if not already set globally)
+      if (window.marked) {
+        window.marked.setOptions({
+          breaks: true,
+          gfm: true,
+          highlight: function (code, lang) {
+            const language =
+              window.hljs && window.hljs.getLanguage(lang) ? lang : "plaintext";
+            return window.hljs
+              ? window.hljs.highlight(code, { language }).value
+              : code;
+          },
+        });
+      }
+
       detailMessages.innerHTML = session.messages
         .map(
           (msg) => `
@@ -138,8 +153,8 @@ export function initChats() {
             </div>
           </div>
           <div class="flex flex-col items-start">
-            <div class="bg-white text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[90%] text-sm shadow-sm border border-slate-100 leading-relaxed">
-              ${msg.response.replace(/\n/g, "<br>")}
+            <div class="bg-white text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[90%] text-sm shadow-sm border border-slate-100 leading-relaxed markdown-body">
+              ${window.marked ? window.marked.parse(msg.response) : msg.response.replace(/\n/g, "<br>")}
             </div>
           </div>
           ${
@@ -155,6 +170,13 @@ export function initChats() {
       `,
         )
         .join('<div class="h-px bg-slate-100 my-2"></div>');
+
+      // Apply highlighting after render
+      if (window.hljs) {
+        detailMessages.querySelectorAll("pre code").forEach((block) => {
+          window.hljs.highlightElement(block);
+        });
+      }
 
       detailMessages.scrollTop = 0;
     }
