@@ -21,7 +21,6 @@
         background: transparent;
         font-family: "Outfit", sans-serif;
         color: #fff;
-        -webkit-app-region: drag;
       }
 
       .chat-container {
@@ -233,13 +232,38 @@
       .camera-btn.active {
         color: #3b82f6;
       }
+
+      .drag-handle {
+        -webkit-app-region: drag;
+        cursor: grab;
+        padding: 4px;
+        color: rgba(255, 255, 255, 0.2);
+        transition: color 0.2s;
+        display: flex;
+        align-items: center;
+      }
+
+      .drag-handle:hover {
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .drag-handle:active {
+        cursor: grabbing;
+      }
+
+      #action-chips-container.hidden {
+        display: none;
+      }
     </style>
   </head>
   <body>
     <div class="dashed-border">
       <div class="chat-container">
         <!-- Header Tabs -->
-        <div class="flex items-center gap-4 mb-4">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="drag-handle" title="Drag Window">
+            <i class="fa-solid fa-grip-vertical text-sm"></i>
+          </div>
           <i
             class="fa-solid fa-plus text-sm text-white/40 cursor-pointer hover:text-white transition-colors"
             id="new-chat-btn"
@@ -254,7 +278,7 @@
 
         <div id="main-chat-view">
           <!-- Action Chips -->
-          <div class="flex flex-wrap gap-2 mb-2">
+          <div class="flex flex-wrap gap-2 mb-2" id="action-chips-container">
             <div class="action-chip" onclick="triggerAction('assist')">
               <i
                 class="fa-solid fa-wand-magic-sparkles text-xs text-blue-400"
@@ -450,6 +474,13 @@
         msgDiv.innerHTML = text.replace(/\n/g, "<br>");
         responseArea.appendChild(msgDiv);
         responseArea.scrollTop = responseArea.scrollHeight;
+
+        // Hide action chips if not empty
+        if (responseArea.children.length > 0) {
+          document
+            .getElementById("action-chips-container")
+            ?.classList.add("hidden");
+        }
       }
 
       // Chat Logic
