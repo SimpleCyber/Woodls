@@ -421,8 +421,8 @@
         align-items: center;
         height: 100%;
         width: 100%;
-        padding: 0 8px;
-        gap: 6px;
+        padding: 0 6px;
+        gap: 4px;
         background: rgba(24, 24, 24, 0.98);
         border-radius: 9999px;
       }
@@ -443,9 +443,9 @@
       .listen-pill {
         background: #1d4ed8;
         color: white;
-        padding: 4px 12px;
+        padding: 4px 10px;
         border-radius: 9999px;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 600;
         white-space: nowrap;
       }
@@ -569,7 +569,11 @@
 
       <!-- Compact View -->
       <div id="compact-view">
-        <i class="fa-solid fa-eye text-white/60 text-xs"></i>
+        <i
+          class="fa-solid fa-house text-white/60 text-xs compact-btn"
+          id="eye-toggle-btn"
+          title="Toggle Main Window"
+        ></i>
 
         <div class="compact-btn listen-pill" id="start-listening-btn">
           Start Chat
@@ -581,7 +585,7 @@
 
         <div class="separator"></div>
 
-        <div class="flex items-center gap-1">
+        <div class="flex items-center gap-2">
           <div class="drag-handle p-1" title="Drag">
             <i class="fa-solid fa-grip-vertical text-white/20 text-xs"></i>
           </div>
@@ -614,6 +618,7 @@
       const newChatBtn = document.getElementById("new-chat-btn");
       const shrinkBtn = document.getElementById("shrink-btn");
       const micBtn = document.getElementById("mic-btn");
+      const eyeToggleBtn = document.getElementById("eye-toggle-btn");
       const fullView = document.getElementById("full-view");
       const compactView = document.getElementById("compact-view");
       const closeBtnFull = document.getElementById("close-btn-full");
@@ -646,6 +651,11 @@
       // User requested: v (now mic icon) should start recording
       micBtn.addEventListener("click", () => {
         ipcRenderer.send("start-listening-click");
+      });
+
+      // User requested: eye icon toggles main window visibility
+      eyeToggleBtn.addEventListener("click", () => {
+        ipcRenderer.send("toggle-main-window");
       });
 
       closeBtnFull.addEventListener("click", () =>

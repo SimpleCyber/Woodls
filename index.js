@@ -1490,7 +1490,7 @@ ipcMain.on("toggle-chat-compact", (event, isCompact) => {
     const bounds = chatWin.getBounds();
 
     if (isCompact) {
-      const w = 260; // Trimming down width from 320 to 260
+      const w = 210; // Further trimming down width from 260 to 210
       const h = 48;
       // Maintain top-left position (or adjust so it stays "in place")
       // If we want it to stay at the same location, we'll keep x and y.
@@ -1524,6 +1524,17 @@ ipcMain.on("toggle-chat-compact", (event, isCompact) => {
 ipcMain.on("close-chat", () => {
   if (chatWin && !chatWin.isDestroyed()) {
     chatWin.hide();
+  }
+});
+
+ipcMain.on("toggle-main-window", () => {
+  if (win && !win.isDestroyed()) {
+    if (win.isVisible()) {
+      win.hide();
+    } else {
+      win.show();
+      win.focus();
+    }
   }
 });
 
