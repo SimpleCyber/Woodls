@@ -48,9 +48,9 @@ const getAssetPath = (...paths) => {
 let win; // Moved to top to avoid TDZ issues
 // ----------------- AI ROTATION -----------------
 const DEFAULT_MODELS = [
-  "gemini-2.0-flash",
-  "gemini-2.0-flash-lite",
-  "gemini-1.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-3-flash-preview",
 ];
 const MAX_DAILY_CALLS = 20;
 const AI_USAGE_FILE = path.join(app.getPath("userData"), "ai_usage.json");
