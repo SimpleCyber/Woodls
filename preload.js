@@ -113,5 +113,9 @@ contextBridge.exposeInMainWorld("api", {
   checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
   quitAndInstall: () => ipcRenderer.send("restart-app"),
   testUpdateUI: () => ipcRenderer.send("test-update-ui"),
+  // Screen Protection
+  setScreenProtection: (enabled) =>
+    ipcRenderer.send("set-screen-protection", enabled),
+
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
 });

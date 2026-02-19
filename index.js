@@ -652,8 +652,18 @@ function createWindow() {
     show: false, // Don't show initially, we'll decide later
   });
 
-  win.setContentProtection(true);
-  win.on("show", () => win.setContentProtection(true));
+  const tempSettings = readSettings();
+  const screenProtection =
+    tempSettings.screenProtection !== undefined
+      ? tempSettings.screenProtection
+      : true;
+  win.setContentProtection(screenProtection);
+  win.on("show", () => {
+    const s = readSettings();
+    win.setContentProtection(
+      s.screenProtection !== undefined ? s.screenProtection : true,
+    );
+  });
 
   // Check if we should start hidden
   const hasHiddenArg =
@@ -1015,8 +1025,18 @@ function createChatWindow() {
   });
 
   // CLUELY FEATURE: Make window invisible to screenshots/recordings
-  chatWin.setContentProtection(true);
-  chatWin.on("show", () => chatWin.setContentProtection(true));
+  const tempSettings = readSettings();
+  const screenProtection =
+    tempSettings.screenProtection !== undefined
+      ? tempSettings.screenProtection
+      : true;
+  chatWin.setContentProtection(screenProtection);
+  chatWin.on("show", () => {
+    const s = readSettings();
+    chatWin.setContentProtection(
+      s.screenProtection !== undefined ? s.screenProtection : true,
+    );
+  });
 
   chatWin.loadFile("chat.html");
   chatWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -1054,8 +1074,18 @@ function createOverlayWindow() {
     type: "toolbar", // Helps with staying on top on Windows
   });
 
-  overlayWin.setContentProtection(true);
-  overlayWin.on("show", () => overlayWin.setContentProtection(true));
+  const tempSettings = readSettings();
+  const screenProtection =
+    tempSettings.screenProtection !== undefined
+      ? tempSettings.screenProtection
+      : true;
+  overlayWin.setContentProtection(screenProtection);
+  overlayWin.on("show", () => {
+    const s = readSettings();
+    overlayWin.setContentProtection(
+      s.screenProtection !== undefined ? s.screenProtection : true,
+    );
+  });
 
   overlayWin.setIgnoreMouseEvents(true);
   overlayWin.loadFile("overlay.html");
@@ -1095,8 +1125,18 @@ function createCopyOverlayWindow() {
     type: "toolbar",
   });
 
-  copyOverlayWin.setContentProtection(true);
-  copyOverlayWin.on("show", () => copyOverlayWin.setContentProtection(true));
+  const tempSettings = readSettings();
+  const screenProtection =
+    tempSettings.screenProtection !== undefined
+      ? tempSettings.screenProtection
+      : true;
+  copyOverlayWin.setContentProtection(screenProtection);
+  copyOverlayWin.on("show", () => {
+    const s = readSettings();
+    copyOverlayWin.setContentProtection(
+      s.screenProtection !== undefined ? s.screenProtection : true,
+    );
+  });
 
   copyOverlayWin.loadFile("copy_popup.html");
   copyOverlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -1809,6 +1849,15 @@ ipcMain.on("save-setting", (event, { key, value }) => {
 
 ipcMain.on("set-startup-settings", (event, { openAtLogin, startHidden }) => {
   applyStartupSettings(openAtLogin, startHidden);
+});
+
+ipcMain.on("set-screen-protection", (event, enabled) => {
+  if (win && !win.isDestroyed()) win.setContentProtection(enabled);
+  if (chatWin && !chatWin.isDestroyed()) chatWin.setContentProtection(enabled);
+  if (overlayWin && !overlayWin.isDestroyed())
+    overlayWin.setContentProtection(enabled);
+  if (copyOverlayWin && !copyOverlayWin.isDestroyed())
+    copyOverlayWin.setContentProtection(enabled);
 });
 
 function applyStartupSettings(openAtLogin, startHidden) {

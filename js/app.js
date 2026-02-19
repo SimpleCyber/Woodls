@@ -91,6 +91,7 @@ const pasteToggle = document.getElementById("pasteToggle");
 const aiToggle = document.getElementById("aiToggle");
 const startupToggle = document.getElementById("startupToggle");
 const hiddenToggle = document.getElementById("hiddenToggle");
+const protectionToggle = document.getElementById("protectionToggle");
 
 const newKeyInput = document.getElementById("newKeyInput");
 const addKeyBtn = document.getElementById("addKeyBtn");
@@ -344,6 +345,13 @@ function setupSettings() {
 
       if (startupToggle) startupToggle.checked = runOnStartup;
       if (hiddenToggle) hiddenToggle.checked = startHidden;
+
+      // Screen Protection
+      const screenProtection =
+        settings.screenProtection !== undefined
+          ? settings.screenProtection
+          : true; // Default to true
+      if (protectionToggle) protectionToggle.checked = screenProtection;
     }
 
     // Load API Settings
@@ -394,6 +402,17 @@ function setupSettings() {
 
   if (startupToggle) startupToggle.onchange = updateStartup;
   if (hiddenToggle) hiddenToggle.onchange = updateStartup;
+
+  if (protectionToggle) {
+    protectionToggle.onchange = () => {
+      const enabled = protectionToggle.checked;
+      window.api.saveSetting("screenProtection", enabled);
+      // We also need to notify the main process to apply it to all windows immediately
+      if (window.api.setScreenProtection) {
+        window.api.setScreenProtection(enabled);
+      }
+    };
+  }
 
   const aiUsageBadge = document.getElementById("ai-usage-badge");
   const aiUsageCount = document.getElementById("ai-usage-count");
