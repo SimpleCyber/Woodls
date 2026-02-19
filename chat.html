@@ -372,6 +372,41 @@
         transform: scale(1.1);
       }
 
+      .mic-btn-chat {
+        color: rgba(255, 255, 255, 0.4);
+        margin-right: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 16px;
+        -webkit-app-region: no-drag;
+        position: relative;
+      }
+
+      .mic-btn-chat:hover {
+        color: rgba(255, 255, 255, 0.9);
+        transform: scale(1.1);
+      }
+
+      .mic-btn-chat.recording {
+        color: #ef4444;
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.2);
+          opacity: 0.7;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
       .camera-btn.active {
         color: #3b82f6;
       }
@@ -538,6 +573,11 @@
                 id="camera-btn"
                 title="Capture your screen for AI analysis"
               ></i>
+              <i
+                class="fa-solid fa-microphone mic-btn-chat"
+                id="mic-recording-btn"
+                title="Record system sound"
+              ></i>
               <input
                 type="text"
                 id="chat-input"
@@ -614,6 +654,7 @@
       const screenshotPreview = document.getElementById("screenshot-preview");
       const previewImg = document.getElementById("preview-img");
       const removeScreenshot = document.getElementById("remove-screenshot");
+      const micRecordingBtn = document.getElementById("mic-recording-btn");
 
       const newChatBtn = document.getElementById("new-chat-btn");
       const shrinkBtn = document.getElementById("shrink-btn");
@@ -715,6 +756,126 @@
         screenshotPreview.style.display = "none";
         cameraBtn.classList.remove("active");
       });
+
+      // --- Voice to Text Logic ---
+      let chatMediaRecorder = null;
+      let chatAudioChunks = [];
+      let isChatRecording = false;
+
+      async function toggleChatVoiceRecording() {
+        if (isChatRecording) {
+          stopChatRecording();
+        } else {
+          startChatRecording();
+        }
+      }
+
+      async function startChatRecording() {
+        try {
+          const sourceId = await ipcRenderer.invoke("get-desktop-source-id");
+
+          // 1. Get Microphone Stream
+          const micStream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+
+          // 2. Get System Audio Stream
+          let systemStream = null;
+          if (sourceId) {
+            try {
+              systemStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                  mandatory: {
+                    chromeMediaSource: "desktop",
+                    chromeMediaSourceId: sourceId,
+                  },
+                },
+                video: {
+                  mandatory: {
+                    chromeMediaSource: "desktop",
+                    chromeMediaSourceId: sourceId,
+                    maxWidth: 1,
+                    maxHeight: 1,
+                    maxFrameRate: 1,
+                  },
+                },
+              });
+            } catch (err) {
+              console.warn("System audio capture failed, using mic only:", err);
+            }
+          }
+
+          // 3. Mix Streams using AudioContext
+          const audioCtx = new AudioContext();
+          const destination = audioCtx.createMediaStreamDestination();
+
+          const micSource = audioCtx.createMediaStreamSource(micStream);
+          micSource.connect(destination);
+
+          if (systemStream && systemStream.getAudioTracks().length > 0) {
+            const systemSource = audioCtx.createMediaStreamSource(systemStream);
+            systemSource.connect(destination);
+          }
+
+          // 4. Setup MediaRecorder on Joined Stream
+          chatMediaRecorder = new MediaRecorder(destination.stream);
+          chatAudioChunks = [];
+
+          chatMediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) chatAudioChunks.push(e.data);
+          };
+
+          chatMediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(chatAudioChunks, { type: "audio/webm" });
+            const arrayBuffer = await audioBlob.arrayBuffer();
+
+            micRecordingBtn.classList.remove("recording");
+            micRecordingBtn.classList.add("fa-spinner", "fa-spin");
+            micRecordingBtn.style.color = "#3b82f6";
+
+            try {
+              const result = await ipcRenderer.invoke(
+                "transcribe-audio",
+                arrayBuffer,
+              );
+              if (result && result.text) {
+                const currentVal = chatInput.value;
+                chatInput.value = currentVal
+                  ? currentVal + " " + result.text
+                  : result.text;
+                chatInput.focus();
+              }
+            } catch (err) {
+              console.error("Transcription failed:", err);
+            } finally {
+              micRecordingBtn.classList.remove("fa-spinner", "fa-spin");
+              micRecordingBtn.classList.add("fa-microphone");
+              micRecordingBtn.style.color = "";
+            }
+
+            // Cleanup
+            micStream.getTracks().forEach((t) => t.stop());
+            if (systemStream) systemStream.getTracks().forEach((t) => t.stop());
+            audioCtx.close();
+          };
+
+          chatMediaRecorder.start();
+          isChatRecording = true;
+          micRecordingBtn.classList.add("recording");
+        } catch (err) {
+          console.error("Error starting combined recording:", err);
+          alert("Could not start recording. Please check permissions.");
+        }
+      }
+
+      function stopChatRecording() {
+        if (chatMediaRecorder && chatMediaRecorder.state !== "inactive") {
+          chatMediaRecorder.stop();
+          isChatRecording = false;
+        }
+      }
+
+      micRecordingBtn.addEventListener("click", toggleChatVoiceRecording);
 
       function switchTab(tab) {
         currentTab = tab;

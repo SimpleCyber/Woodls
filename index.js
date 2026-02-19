@@ -1272,6 +1272,22 @@ ipcMain.handle("capture-screen-only", async () => {
     return null;
   }
 });
+
+ipcMain.handle("get-desktop-source-id", async () => {
+  const { desktopCapturer } = require("electron");
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ["screen"],
+      thumbnailSize: { width: 0, height: 0 },
+    });
+    // Return primary screen or first source
+    return sources[0] ? sources[0].id : null;
+  } catch (e) {
+    console.error("Failed to get desktop sources:", e);
+    return null;
+  }
+});
+
 ipcMain.on("chat-query", async (event, data) => {
   const { query, attachedScreenshot } = data;
   console.log("[IPC] chat-query received:", {
