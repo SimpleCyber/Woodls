@@ -184,6 +184,9 @@
         font-size: 14px;
         line-height: 1.5;
         white-space: pre-wrap; /* For user text preserving spacing */
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
       }
 
       .message-ai {
@@ -328,12 +331,26 @@
         position: relative;
         margin: 12px 0;
         align-self: flex-start;
+        display: none; /* Changed from flex to handle via JS */
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .preview-item {
+        position: relative;
+        display: inline-block;
+      }
+
+      #screenshot-preview {
+        display: none;
+        position: relative;
+        margin: 12px 0;
+        align-self: flex-start;
       }
 
       .preview-thumb {
-        width: 120px;
-        height: auto;
-        max-height: 80px;
+        width: 100px;
+        height: 60px;
         object-fit: cover;
         border-radius: 8px;
         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -344,18 +361,19 @@
         position: absolute;
         top: -6px;
         right: -6px;
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         background: #ef4444;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 10px;
+        font-size: 8px;
         cursor: pointer;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         color: white;
         -webkit-app-region: no-drag;
+        z-index: 5;
       }
 
       .camera-btn {
@@ -559,14 +577,20 @@
             </div>
 
             <!-- Screenshot Preview Area -->
-            <div id="screenshot-preview">
-              <img id="preview-img" src="" class="preview-thumb" />
-              <div id="remove-screenshot" class="remove-preview">
-                <i class="fa-solid fa-xmark"></i>
-              </div>
+            <div id="screenshot-preview" class="flex flex-wrap gap-2">
+              <!-- Thumbnails injected here -->
             </div>
 
-            <!-- Chat Input -->
+            <!-- Duplicate Warning -->
+            <div
+              id="duplicate-warning"
+              class="hidden text-[10px] text-amber-400/80 mb-2 px-1 flex items-center gap-1 animate-pulse"
+            >
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              It is already uploaded.
+            </div>
+
+            <!-- Chat Input Area -->
             <div class="input-wrapper">
               <i
                 class="fa-solid fa-camera camera-btn"
@@ -652,8 +676,8 @@
       const historyList = document.getElementById("history-list");
       const cameraBtn = document.getElementById("camera-btn");
       const screenshotPreview = document.getElementById("screenshot-preview");
+      const duplicateWarning = document.getElementById("duplicate-warning");
       const previewImg = document.getElementById("preview-img");
-      const removeScreenshot = document.getElementById("remove-screenshot");
       const micRecordingBtn = document.getElementById("mic-recording-btn");
 
       const newChatBtn = document.getElementById("new-chat-btn");
@@ -667,7 +691,7 @@
       const startListeningBtn = document.getElementById("start-listening-btn");
 
       let currentTab = "chat";
-      let pendingScreenshot = null;
+      let pendingScreenshots = []; // Array of { base64: string, id: number }
       let isCompact = false;
 
       function toggleMode(compact) {
@@ -723,8 +747,8 @@
       ipcRenderer.on("session-reset", () => {
         responseArea.innerHTML = "";
         chatInput.value = "";
-        pendingScreenshot = null;
-        screenshotPreview.style.display = "none";
+        pendingScreenshots = [];
+        renderPreviews();
         cameraBtn.classList.remove("active");
         chatInput.disabled = false;
         sendBtn.style.opacity = "1";
@@ -734,16 +758,60 @@
         switchTab("chat");
       });
 
+      function renderPreviews() {
+        screenshotPreview.innerHTML = "";
+        if (pendingScreenshots.length > 0) {
+          screenshotPreview.style.display = "flex";
+          pendingScreenshots.forEach((item, index) => {
+            const div = document.createElement("div");
+            div.className = "preview-item";
+            div.innerHTML = `
+              <img src="data:image/png;base64,${item.base64}" class="preview-thumb" />
+              <div class="remove-preview" onclick="window.removeScreenshot(${index})">
+                <i class="fa-solid fa-xmark"></i>
+              </div>
+            `;
+            screenshotPreview.appendChild(div);
+          });
+          cameraBtn.classList.add("active");
+        } else {
+          screenshotPreview.style.display = "none";
+          cameraBtn.classList.remove("active");
+        }
+      }
+
+      function addPendingScreenshot(base64) {
+        // Check for duplicates
+        if (pendingScreenshots.find((s) => s.base64 === base64)) {
+          showDuplicateWarning();
+          return;
+        }
+
+        pendingScreenshots.push({ base64, id: Date.now() });
+        renderPreviews();
+      }
+
+      function showDuplicateWarning() {
+        duplicateWarning.classList.remove("hidden");
+        // Auto hide after 3 seconds
+        if (window.warningTimeout) clearTimeout(window.warningTimeout);
+        window.warningTimeout = setTimeout(() => {
+          duplicateWarning.classList.add("hidden");
+        }, 3000);
+      }
+
+      window.removeScreenshot = (index) => {
+        pendingScreenshots.splice(index, 1);
+        renderPreviews();
+      };
+
       async function captureScreen() {
         cameraBtn.classList.add("animate-pulse", "text-blue-400");
         const base64 = await ipcRenderer.invoke("capture-screen-only");
         cameraBtn.classList.remove("animate-pulse", "text-blue-400");
 
         if (base64) {
-          pendingScreenshot = base64;
-          previewImg.src = `data:image/png;base64,${base64}`;
-          screenshotPreview.style.display = "block";
-          cameraBtn.classList.add("active");
+          addPendingScreenshot(base64);
           // Focus input again
           chatInput.focus();
         }
@@ -751,10 +819,21 @@
 
       cameraBtn.addEventListener("click", captureScreen);
 
-      removeScreenshot.addEventListener("click", () => {
-        pendingScreenshot = null;
-        screenshotPreview.style.display = "none";
-        cameraBtn.classList.remove("active");
+      // Clipboard Paste Support
+      chatInput.addEventListener("paste", async (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+          const item = items[index];
+          if (item.kind === "file" && item.type.startsWith("image/")) {
+            const blob = item.getAsFile();
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const base64 = event.target.result.split(",")[1];
+              addPendingScreenshot(base64);
+            };
+            reader.readAsDataURL(blob);
+          }
+        }
       });
 
       // --- Voice to Text Logic ---
@@ -937,13 +1016,17 @@
             .getElementById("action-chips-container")
             ?.classList.add("hidden");
 
-          appendMessage("user", item.query);
+          appendMessage(
+            "user",
+            item.query,
+            item.screenshots || (item.screenshot ? [item.screenshot] : []),
+          );
           appendMessage("ai", item.response);
           chatInput.value = "";
         }
       };
 
-      function appendMessage(role, text) {
+      function appendMessage(role, text, images = []) {
         const msgDiv = document.createElement("div");
         msgDiv.className =
           role === "user" ? "message-user" : "message-ai markdown-body";
@@ -984,8 +1067,28 @@
             });
           }, 0);
         } else {
-          // Plain text for user, preserving whitespace
-          msgDiv.innerText = text;
+          // User text
+          const textDiv = document.createElement("div");
+          textDiv.innerText = text;
+          msgDiv.appendChild(textDiv);
+
+          // User images
+          if (images && images.length > 0) {
+            const imagesDiv = document.createElement("div");
+            imagesDiv.className = "flex flex-wrap gap-2 mt-2";
+            images.forEach((imgSrc) => {
+              const img = document.createElement("img");
+              // Check if it's base64 or a filename
+              img.src =
+                imgSrc.length > 100
+                  ? `data:image/png;base64,${imgSrc}`
+                  : `woodls-screenshot://${imgSrc}`;
+              img.className =
+                "w-24 h-auto rounded-lg border border-white/10 shadow-sm";
+              imagesDiv.appendChild(img);
+            });
+            msgDiv.appendChild(imagesDiv);
+          }
         }
 
         responseArea.appendChild(msgDiv);
@@ -1013,10 +1116,14 @@
       // Chat Logic
       function sendMessage() {
         const text = chatInput.value.trim();
-        if (!text && !pendingScreenshot) return;
+        if (!text && pendingScreenshots.length === 0) return;
 
-        // Show user message in UI
-        appendMessage("user", text || "Analyze this screen.");
+        // Show user message in UI with images
+        appendMessage(
+          "user",
+          text || "Analyze this screen.",
+          pendingScreenshots.map((s) => s.base64),
+        );
 
         // UI state
         chatInput.value = "";
@@ -1036,13 +1143,12 @@
         // Send to main process
         ipcRenderer.send("chat-query", {
           query: text || "Analyze this screen.",
-          attachedScreenshot: pendingScreenshot,
+          attachedScreenshots: pendingScreenshots.map((s) => s.base64),
         });
 
-        // Clear pending screenshot
-        pendingScreenshot = null;
-        screenshotPreview.style.display = "none";
-        cameraBtn.classList.remove("active");
+        // Clear pending screenshots
+        pendingScreenshots = [];
+        renderPreviews();
       }
 
       sendBtn.addEventListener("click", sendMessage);

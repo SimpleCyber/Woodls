@@ -67,6 +67,11 @@ export function initChats() {
 
       allSessions = sessions;
 
+      // Sort messages within each session chronologically
+      Object.values(sessions).forEach((session) => {
+        session.messages.sort((a, b) => a.timestamp - b.timestamp);
+      });
+
       const sessionList = Object.values(sessions).sort(
         (a, b) => b.timestamp - a.timestamp,
       );

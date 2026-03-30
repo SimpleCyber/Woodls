@@ -1329,32 +1329,27 @@ ipcMain.handle("get-desktop-source-id", async () => {
 });
 
 ipcMain.on("chat-query", async (event, data) => {
-  const { query, attachedScreenshot } = data;
+  const { query, attachedScreenshots } = data; // Array of base64
   console.log("[IPC] chat-query received:", {
     query,
-    hasScreenshot: !!attachedScreenshot,
+    count: attachedScreenshots ? attachedScreenshots.length : 0,
   });
 
   const maxRetries = 3;
   let attempt = 0;
+  let screenshotNames = [];
 
   while (attempt < maxRetries) {
     try {
-      // 1. Get Screenshot (either from attachment or capture now if requested specifically)
-      let screenshotBase64 = attachedScreenshot;
-      let screenshotName = null;
-
-      if (screenshotBase64 && attempt === 0) {
+      // 1. Save Screenshots
+      if (attachedScreenshots && attachedScreenshots.length > 0 && attempt === 0) {
         ensureScreenshotsDir();
-        screenshotName = `chat_${Date.now()}.png`;
-        const screenshotPath = path.join(
-          getUserPaths().screenshots,
-          screenshotName,
-        );
-        fs.writeFileSync(
-          screenshotPath,
-          Buffer.from(screenshotBase64, "base64"),
-        );
+        attachedScreenshots.forEach((base64, index) => {
+          const name = `chat_${Date.now()}_${index}.png`;
+          const filePath = path.join(getUserPaths().screenshots, name);
+          fs.writeFileSync(filePath, Buffer.from(base64, "base64"));
+          screenshotNames.push(name);
+        });
       }
 
       // 2. Send to Gemini with threading
@@ -1377,19 +1372,20 @@ ipcMain.on("chat-query", async (event, data) => {
       });
 
       let result;
-      if (screenshotBase64) {
-        result = await chat.sendMessage([
-          { text: query },
-          {
+      // Prepare message parts
+      const messageParts = [{ text: query }];
+      if (attachedScreenshots && attachedScreenshots.length > 0) {
+        attachedScreenshots.forEach((base64) => {
+          messageParts.push({
             inlineData: {
-              data: screenshotBase64,
+              data: base64,
               mimeType: "image/png",
             },
-          },
-        ]);
-      } else {
-        result = await chat.sendMessage(query);
+          });
+        });
       }
+
+      result = await chat.sendMessage(messageParts);
 
       const response = await result.response;
       const responseText = response.text();
@@ -1406,7 +1402,8 @@ ipcMain.on("chat-query", async (event, data) => {
         timestamp: Date.now(),
         query: query,
         response: responseText,
-        screenshot: screenshotName,
+        screenshot: screenshotNames.length > 0 ? screenshotNames[0] : null, // legacy support
+        screenshots: screenshotNames, // New support for multiple
       };
       chatHistory.push(entry);
       saveChatHistory(chatHistory);

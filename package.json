@@ -35,7 +35,9 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "build/woodls.ico"
+      "icon": "build/woodls.ico",
+      "certificateFile": "path/to/certificate.p12",
+      "certificatePassword": "password_if_not_using_env_vars"
     },
     "nsis": {
       "oneClick": false,
