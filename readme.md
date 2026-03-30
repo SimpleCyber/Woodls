@@ -2,7 +2,6 @@
 
 **Woodls** is an intelligent AI-powered voice typing assistant designed to streamline your workflow. By combining global hotkeys with Google's advanced Gemini AI, Woodls captures your speech, refines it for perfect grammar and punctuation, and types it directly into any active application.
 
-
 <img width="1500" height="940" alt="Screenshot 2026-02-16 144603" src="https://github.com/user-attachments/assets/d92f31e0-34f6-4ab5-bf58-63172dc60ad0" />
 
 ## 🚀 Features
@@ -85,9 +84,9 @@ This project is licensed under the ISC License.
 
 <!-- Build releases command -->
 
-git tag -d v2.8.2
-git tag v2.8.2
-git push origin v2.8.2 --force
+git tag -d v2.8.3
+git tag v2.8.3
+git push origin v2.8.3 --force
 
 ---
 
@@ -97,9 +96,9 @@ steps to follow for the new releases
 2. commit the changes
 3. <!-- Build releases command -->
 
-   git tag -d v2.8.2
-   git tag v2.8.2
-   git push origin v2.8.2 --force
+   git tag -d v2.8.3
+   git tag v2.8.3
+   git push origin v2.8.3 --force
 
 4. now update the relsease -> draft to publish changes
 5. Great Good to go now users will see the update info
