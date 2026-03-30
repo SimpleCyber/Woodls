@@ -2,6 +2,9 @@
 
 **Woodls** is an intelligent AI-powered voice typing assistant designed to streamline your workflow. By combining global hotkeys with Google's advanced Gemini AI, Woodls captures your speech, refines it for perfect grammar and punctuation, and types it directly into any active application.
 
+
+<img width="1500" height="940" alt="Screenshot 2026-02-16 144603" src="https://github.com/user-attachments/assets/d92f31e0-34f6-4ab5-bf58-63172dc60ad0" />
+
 ## 🚀 Features
 
 - **Global Hotkey Activation**: Press a custom hotkey anywhere on your system to start recording instantly.
