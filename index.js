@@ -2507,6 +2507,7 @@ function sendDevLog(message) {
 // Auto-Update Events and Configuration
 autoUpdater.autoDownload = true;
 autoUpdater.allowPrerelease = false;
+autoUpdater.verifyUpdateCodeSignature = false; // Allow testing unsigned builds locally
 autoUpdater.requestHeaders = { "Cache-Control": "no-cache" };
 
 // Set up logger
