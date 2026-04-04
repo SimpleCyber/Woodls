@@ -2295,6 +2295,62 @@ ipcMain.handle("retranscribe-audio", async (_, id) => {
   }
 });
 
+// ----------------- IPC: Real-time Whisper Transcription -----------------
+const { spawn } = require("child_process");
+let whisperProcess = null;
+
+ipcMain.handle("start-transcription", () => {
+  if (whisperProcess) return false;
+  
+  let streamExe = getAssetPath("assets", "whisper", "stream.exe");
+  let modelBin = getAssetPath("assets", "whisper", "ggml-base.en.bin");
+  
+  if (streamExe.includes("app.asar")) {
+    streamExe = streamExe.replace("app.asar", "app.asar.unpacked");
+    modelBin = modelBin.replace("app.asar", "app.asar.unpacked");
+  }
+
+  whisperProcess = spawn(streamExe, [
+    "-m", modelBin,
+    "-c", "0"
+  ]);
+
+  whisperProcess.stdout.on("data", (data) => {
+    const output = data.toString();
+    // whisper.cpp often echoes text wrapped in ANSI controls and timestamps
+    // Regex strips out ANSI escape codes (like colors and \x1b[2K) and timestamps like [00:00:00.000 --> 00:00:03.000]
+    let cleanText = output.replace(/\x1b\[[0-9;]*[mK]/g, '').replace(/\[.*?\]\s*/g, '').trim();
+    if (cleanText) {
+      console.log(`[Whisper] Transcribed: ${cleanText}`);
+      if (chatWin && !chatWin.isDestroyed()) {
+        chatWin.webContents.send("transcription-data", cleanText);
+      }
+    }
+  });
+
+  whisperProcess.stderr.on("data", (data) => {
+    // whisper outputs initialization details and errors to stderr
+    console.log("Whisper [stderr]:", data.toString());
+  });
+
+  whisperProcess.on("close", () => {
+    whisperProcess = null;
+    if (chatWin && !chatWin.isDestroyed()) {
+      chatWin.webContents.send("transcription-stopped");
+    }
+  });
+
+  return true;
+});
+
+ipcMain.handle("stop-transcription", () => {
+  if (whisperProcess) {
+    whisperProcess.kill();
+    whisperProcess = null;
+  }
+  return true;
+});
+
 // ----------------- IPC: LLM generation (placeholder) -----------------
 ipcMain.handle("generate-text", async (_, { info, assistantName, appName }) => {
   const maxRetries = 3;

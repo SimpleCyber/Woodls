@@ -31,7 +31,8 @@
       "**/*.dll",
       "node_modules/node-global-key-listener/**/*",
       "node_modules/@jitsi/robotjs/**/*",
-      "node_modules/active-win/**/*"
+      "node_modules/active-win/**/*",
+      "assets/whisper/**/*"
     ],
     "win": {
       "target": "nsis",

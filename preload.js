@@ -70,6 +70,12 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("transcribe-audio", buffer, context),
   retranscribeAudio: (id) => ipcRenderer.invoke("retranscribe-audio", id),
 
+  // Real-time Whisper
+  startWhisper: () => ipcRenderer.invoke("start-transcription"),
+  stopWhisper: () => ipcRenderer.invoke("stop-transcription"),
+  onWhisperData: (cb) => ipcRenderer.on("transcription-data", (e, data) => cb(data)),
+  onWhisperStopped: (cb) => ipcRenderer.on("transcription-stopped", cb),
+
   // Auto type
 
   // System

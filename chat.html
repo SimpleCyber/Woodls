@@ -602,6 +602,11 @@
                 id="mic-recording-btn"
                 title="Record system sound"
               ></i>
+              <i
+                class="fa-solid fa-ear-listen mic-btn-chat"
+                id="transcribe-btn"
+                title="Live Transcribe to English"
+              ></i>
               <input
                 type="text"
                 id="chat-input"
@@ -647,6 +652,10 @@
           <i class="fa-solid fa-microphone text-white/60 text-[10px]"></i>
         </div>
 
+        <div class="compact-btn p-1" id="compact-transcribe-btn" title="Live Transcribe">
+          <i class="fa-solid fa-ear-listen text-white/60 text-[10px]"></i>
+        </div>
+
         <div class="separator"></div>
 
         <div class="flex items-center gap-2">
@@ -683,6 +692,8 @@
       const newChatBtn = document.getElementById("new-chat-btn");
       const shrinkBtn = document.getElementById("shrink-btn");
       const micBtn = document.getElementById("mic-btn");
+      const transcribeBtn = document.getElementById("transcribe-btn");
+      const compactTranscribeBtn = document.getElementById("compact-transcribe-btn");
       const eyeToggleBtn = document.getElementById("eye-toggle-btn");
       const fullView = document.getElementById("full-view");
       const compactView = document.getElementById("compact-view");
@@ -713,9 +724,78 @@
       // User requested: Start listening button should Expand the chat
       startListeningBtn.addEventListener("click", () => toggleMode(false));
 
+      let isWhisperRecording = false;
+
+      function toggleWhisper() {
+        if (!isWhisperRecording) {
+            isWhisperRecording = true;
+            if (transcribeBtn) transcribeBtn.classList.add("recording");
+            if (compactTranscribeBtn) compactTranscribeBtn.style.color = "#ef4444";
+            ipcRenderer.invoke("start-transcription");
+        } else {
+            isWhisperRecording = false;
+            if (transcribeBtn) transcribeBtn.classList.remove("recording");
+            if (compactTranscribeBtn) compactTranscribeBtn.style.color = "";
+            ipcRenderer.invoke("stop-transcription");
+        }
+      }
+
       // User requested: v (now mic icon) should start recording
       micBtn.addEventListener("click", () => {
         ipcRenderer.send("start-listening-click");
+      });
+
+      if (transcribeBtn) {
+         transcribeBtn.addEventListener("click", () => toggleWhisper());
+      }
+      
+      if (compactTranscribeBtn) {
+         compactTranscribeBtn.addEventListener("click", () => toggleWhisper());
+      }
+
+      let tempTranscriptionBubble = null;
+      let transcriptionSilenceTimeout = null;
+
+      function finalizeTranscriptionBubble() {
+          if (tempTranscriptionBubble) {
+              tempTranscriptionBubble.classList.remove("temp-transcription");
+              tempTranscriptionBubble.style.opacity = "1";
+              tempTranscriptionBubble = null;
+          }
+      }
+
+      ipcRenderer.on("transcription-data", (e, text) => {
+         // Create the bubble if it doesn't exist yet
+         if (!tempTranscriptionBubble) {
+             tempTranscriptionBubble = document.createElement("div");
+             tempTranscriptionBubble.className = "message-user temp-transcription";
+             tempTranscriptionBubble.style.opacity = "0.7";
+             tempTranscriptionBubble.innerHTML = `<span></span>`;
+             document.getElementById("response-area").appendChild(tempTranscriptionBubble);
+         }
+         
+         const span = tempTranscriptionBubble.querySelector('span');
+         span.innerText = span.innerText + (span.innerText ? " " : "") + text;
+         
+         // Auto-scroll to latest
+         const responseArea = document.getElementById("response-area");
+         responseArea.scrollTop = responseArea.scrollHeight;
+
+         // Reset silence timeout
+         if (transcriptionSilenceTimeout) clearTimeout(transcriptionSilenceTimeout);
+         
+         // If user goes quiet for 2.5 seconds, auto-commit the chat bubble!
+         transcriptionSilenceTimeout = setTimeout(() => {
+             finalizeTranscriptionBubble();
+         }, 2500); 
+      });
+
+      ipcRenderer.on("transcription-stopped", () => {
+         isWhisperRecording = false;
+         if (transcribeBtn) transcribeBtn.classList.remove("recording");
+         if (compactTranscribeBtn) compactTranscribeBtn.style.color = "";
+         if (transcriptionSilenceTimeout) clearTimeout(transcriptionSilenceTimeout);
+         finalizeTranscriptionBubble();
       });
 
       // User requested: eye icon toggles main window visibility
