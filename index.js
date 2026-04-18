@@ -2315,10 +2315,11 @@ ipcMain.handle("start-transcription", () => {
   }
 
   try {
+    const whisperDir = path.dirname(streamExe);
     whisperProcess = spawn(streamExe, [
       "-m", modelBin,
       "-c", "0"
-    ]);
+    ], { cwd: whisperDir });
 
     whisperProcess.on("error", (err) => {
       console.error("Failed to start whisper:", err);

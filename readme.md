@@ -84,9 +84,9 @@ This project is licensed under the ISC License.
 
 <!-- Build releases command -->
 
-git tag -d v2.9.2
-git tag v2.9.2
-git push origin v2.9.2 --force
+git tag -d v2.9.3
+git tag v2.9.3
+git push origin v2.9.3 --force
 
 ---
 
@@ -96,9 +96,9 @@ steps to follow for the new releases
 2. commit the changes
 3. <!-- Build releases command -->
 
-   git tag -d v2.9.2
-   git tag v2.9.2
-   git push origin v2.9.2 --force
+   git tag -d v2.9.3
+   git tag v2.9.3
+   git push origin v2.9.3 --force
 
 4. now update the relsease -> draft to publish changes
 5. Great Good to go now users will see the update info
