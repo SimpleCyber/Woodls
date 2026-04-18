@@ -1,6 +1,6 @@
 {
   "name": "woodls",
-  "version": "2.9.3",
+  "version": "2.9.4",
   "description": "Woodls : Auto voice typing",
   "main": "index.js",
   "author": "Satyam Yadav",
@@ -37,7 +37,7 @@
     "win": {
       "target": "nsis",
       "icon": "build/woodls.ico",
-      "publisherName": "Satyam Yadav"
+      "verifyUpdateCodeSignature": false
     },
     "nsis": {
       "oneClick": false,
