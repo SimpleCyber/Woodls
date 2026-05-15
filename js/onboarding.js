@@ -53,7 +53,7 @@ function renderStep(step) {
                     </div>
                     <h2 class="text-3xl font-bold text-slate-800 mb-4">Welcome to Woodls</h2>
                     <p class="text-slate-500 max-w-md text-lg leading-relaxed mb-10">
-                        Let's get you set up in less than a minute. We'll configure your hotkey and test your microphone.
+                        Let's get you set up in less than a minute. We'll configure your hotkeys and preferences.
                     </p>
                     <button id="ob-next-btn" class="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg transform active:scale-95">
                         Get Started <i class="fa-solid fa-arrow-right ml-2"></i>
@@ -62,10 +62,10 @@ function renderStep(step) {
             `;
       break;
 
-    case 1: // Hotkey
+    case 1: // Detection Hotkey
       html = `
                 <div class="flex-1 flex flex-col items-center justify-center p-10 text-center animate-in slide-in-from-right-8 duration-300">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Set your Activation Key</h2>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Detection Hotkey</h2>
                     <p class="text-slate-500 mb-8">Choose a single key to hold down for dictation.</p>
                     
                     <div id="ob-capture-area" class="w-full max-w-sm h-32 bg-white border-2 border-slate-200 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-primary-500 hover:bg-primary-50/30 transition-all group shadow-sm">
@@ -87,10 +87,10 @@ function renderStep(step) {
             `;
       break;
 
-    case 2: // AI Hotkey
+    case 2: // AI Efficient Hotkey
       html = `
                 <div class="flex-1 flex flex-col items-center justify-center p-10 text-center animate-in slide-in-from-right-8 duration-300">
-                    <h2 class="text-2xl font-bold text-purple-600 mb-2">Power up with AI</h2>
+                    <h2 class="text-2xl font-bold text-purple-600 mb-2">AI Efficient Hotkey</h2>
                     <p class="text-slate-500 mb-8 max-w-sm mx-auto">Set a dedicated key for AI commands. Use it to create lists, draft emails, or fix grammar instantly.</p>
                     
                     <div id="ob-ai-capture-area" class="w-full max-w-sm h-32 bg-purple-50 border-2 border-purple-200 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 hover:bg-purple-100 transition-all group shadow-sm">
@@ -113,35 +113,26 @@ function renderStep(step) {
             `;
       break;
 
-    case 3: // Test Drive
+    case 3: // Chat Panel Hotkey
       html = `
                 <div class="flex-1 flex flex-col items-center justify-center p-10 text-center animate-in slide-in-from-right-8 duration-300">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Let's test it out</h2>
-                    <p class="text-slate-500 mb-6">Hold <span class="font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-900 mx-1 border border-slate-200">${
-                      userHotkey || "Hotkey"
-                    }</span> to dictate.</p>
+                    <h2 class="text-2xl font-bold text-blue-600 mb-2">Chat Panel Hotkey</h2>
+                    <p class="text-slate-500 mb-8 max-w-sm mx-auto">Set a key to quickly toggle the AI Chat panel. Double-press it to open or close the chat anytime.</p>
                     
-                    <!-- Recording Status -->
-                    <div id="ob-rec-status" class="h-6 mb-4 text-sm font-bold text-red-500 opacity-0 transition-opacity flex items-center justify-center gap-2">
-                        <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                        Recording...
-                    </div>
-
-                    <div class="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden flex flex-col relative">
-                        <div class="bg-slate-50 px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-                             <div class="w-3 h-3 rounded-full bg-red-400"></div>
-                             <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
-                             <div class="w-3 h-3 rounded-full bg-green-400"></div>
-                             <div class="ml-auto text-xs font-mono text-slate-400">Untitled.txt</div>
-                        </div>
-                        <div id="ob-test-area" class="h-32 p-5 text-left text-slate-700 font-medium whitespace-pre-wrap outline-none bg-white transition-colors">
-                            <span class="text-slate-300 italic">Dictated text will appear here...</span>
-                        </div>
+                    <div id="ob-chat-capture-area" class="w-full max-w-sm h-32 bg-blue-50 border-2 border-blue-200 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-100 transition-all group shadow-sm">
+                         <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-sm">
+                            <i class="fa-solid fa-comments text-blue-400 group-hover:text-blue-600"></i>
+                         </div>
+                         <span class="text-blue-700 font-medium group-hover:text-blue-800 transition-colors">Click to Set Chat Key</span>
+                         <span id="ob-chat-hotkey-display" class="text-3xl font-bold text-blue-800 mt-2 hidden"></span>
                     </div>
                     
-                    <div class="mt-8">
-                         <button id="ob-next-btn" class="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg">
-                            Looks Good <i class="fa-solid fa-check ml-2"></i>
+                    <div class="mt-8 flex gap-3">
+                         <button id="ob-skip-btn" class="px-6 py-3 text-slate-400 font-medium hover:text-slate-600 transition-colors">
+                            Skip
+                        </button>
+                        <button id="ob-next-btn" class="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 opacity-50 cursor-not-allowed" disabled>
+                            Continue <i class="fa-solid fa-arrow-right ml-2"></i>
                         </button>
                     </div>
                 </div>
@@ -203,7 +194,7 @@ function renderStep(step) {
 
   if (step === 1) setupHotkeyCapture();
   if (step === 2) setupAIHotkeyCapture();
-  if (step === 3) setupDictationTest();
+  if (step === 3) setupChatHotkeyCapture();
   if (step === 4) setupSettingsReview();
 }
 
@@ -340,48 +331,63 @@ function setupAIHotkeyCapture() {
   window.addEventListener("keydown", handler);
 }
 
-function setupDictationTest() {
-  const testArea = document.getElementById("ob-test-area");
-  const recStatus = document.getElementById("ob-rec-status");
+function setupChatHotkeyCapture() {
+  const area = document.getElementById("ob-chat-capture-area");
+  const display = document.getElementById("ob-chat-hotkey-display");
+  const nextBtn = document.getElementById("ob-next-btn");
+  const span = area.querySelector("span");
 
-  // Show "Recording..." state
-  window.api.onRecordStart(() => {
-    if (onboardingStep === 3 && recStatus) {
-      recStatus.classList.remove("opacity-0");
-      recStatus.innerHTML =
-        '<div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div> Recording...';
-      recStatus.className =
-        "h-6 mb-4 text-sm font-bold text-red-500 transition-opacity flex items-center justify-center gap-2";
+  let listening = false;
+
+  area.onclick = () => {
+    listening = true;
+    area.classList.add("border-blue-500", "bg-blue-50");
+    area.classList.remove("border-blue-200");
+    span.textContent = "Listening... Press a key";
+    display.classList.add("hidden");
+  };
+
+  const handler = (e) => {
+    if (!listening) return;
+    e.preventDefault();
+
+    const rawKey = e.key.toUpperCase();
+    let displayKey = rawKey;
+    let backendKey = rawKey;
+
+    if (e.location === 3) {
+      displayKey = `Numpad ${e.key}`;
+      backendKey = `NUMPAD${e.key.toUpperCase()}`;
     }
-  });
 
-  // Show "Processing..." state
-  window.api.onRecordStop(() => {
-    if (onboardingStep === 3 && recStatus) {
-      recStatus.innerHTML =
-        '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
-      recStatus.className =
-        "h-6 mb-4 text-sm font-bold text-blue-500 transition-opacity flex items-center justify-center gap-2";
+    if (e.code === "Space") {
+      displayKey = "Space";
+      backendKey = "SPACE";
     }
-  });
 
-  // Handle Result from custom event in app.js
-  document.addEventListener(
-    "woodls-transcription",
-    (e) => {
-      if (onboardingStep === 3 && testArea) {
-        const text = e.detail.text;
-        testArea.innerHTML = text;
-        testArea.classList.add("text-slate-800");
-        testArea.classList.remove("text-slate-300", "italic");
+    // Save chat hotkey (single key as per current logic)
+    const userChatHotkey = backendKey;
 
-        // Hide status
-        if (recStatus) recStatus.classList.add("opacity-0");
-      }
-    },
-    { once: true },
-  ); // Only need one successful test? Or generic listener?
-  // Let's make it generic but check step.
+    display.textContent = displayKey;
+    display.classList.remove("hidden");
+    span.textContent = "Active Chat Hotkey";
+
+    area.classList.remove("border-blue-500", "bg-blue-50");
+    area.classList.add("border-blue-500", "bg-blue-100");
+
+    nextBtn.disabled = false;
+    nextBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    nextBtn.classList.add("bg-blue-600", "hover:bg-blue-700");
+
+    if (window.api && window.api.saveChatHotkey) {
+      window.api.saveChatHotkey([userChatHotkey]);
+    }
+
+    listening = false;
+    window.removeEventListener("keydown", handler);
+  };
+
+  window.addEventListener("keydown", handler);
 }
 
 function setupSettingsReview() {
